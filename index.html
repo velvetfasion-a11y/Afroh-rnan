@@ -3,790 +3,720 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Afrohörnan – Smak & Kultur</title>
+<title>Afrohörnan – Afrikansk Skönhet & Mat</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --rust:    #C8541C;
-    --gold:    #D4941A;
-    --gold-lt: #F0C060;
-    --cream:   #F5EFE4;
-    --dark:    #0E0B07;
-    --dark2:   #1C1610;
-    --text:    #2A1E0E;
-    --muted:   #7A6548;
-    --green:   #2C5A38;
-    --border:  rgba(200,84,28,.16);
-    --white:   #FFFFFF;
-  }
+:root {
+  --rust:   #C8541C;
+  --gold:   #D4941A;
+  --gold-lt:#F0C060;
+  --brown:  #1C1610;
+  --dark:   #0E0B07;
+  --text:   #1A1208;
+  --muted:  #6B5A3E;
+  --green:  #2C5A38;
+  --bg:     #FFFFFF;
+  --bg2:    #F7F4EF;
+}
 
-  html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-  body {
-    font-family: 'Outfit', sans-serif;
-    background: var(--cream);
-    color: var(--text);
-    overflow-x: hidden;
-  }
+/* ===== NAV ===== */
+nav {
+  position: sticky; top: 0; z-index: 200;
+  background: #fff;
+  border-bottom: 1px solid #E8E0D5;
+  padding: 0 2.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px;
+}
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 700;
+  color: var(--brown); letter-spacing: .02em;
+}
+.logo em { font-style: italic; color: var(--rust); }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  text-decoration: none; font-size: .8rem; font-weight: 500;
+  color: var(--muted); letter-spacing: .05em; text-transform: uppercase;
+  transition: color .2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-icon { background: none; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; }
+.nav-icon svg { width: 20px; height: 20px; }
+.nav-cart-btn {
+  position: relative;
+  background: var(--gold); color: #1A0D00;
+  border: none; border-radius: 4px;
+  padding: .42rem .6rem; cursor: pointer;
+  display: flex; align-items: center;
+  transition: background .2s;
+}
+.nav-cart-btn:hover { background: var(--gold-lt); }
+.nav-cart-btn svg { width: 19px; height: 19px; }
+.cart-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--brown); color: var(--gold);
+  font-size: .55rem; font-weight: 700;
+  width: 15px; height: 15px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
 
-  /* ======= NAV ======= */
-  nav {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 100;
-    padding: 0 3rem;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 72px;
-  }
-  .logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.7rem; font-weight: 700;
-    color: #fff; letter-spacing: .02em;
-  }
-  .logo em { font-style: italic; color: var(--gold-lt); }
-  nav ul { display: flex; gap: 2.2rem; list-style: none; }
-  nav ul a {
-    text-decoration: none; font-size: .85rem; font-weight: 400;
-    color: rgba(255,255,255,.72); letter-spacing: .06em; text-transform: uppercase;
-    transition: color .2s;
-  }
-  nav ul a:hover { color: #fff; }
-  .nav-cta {
-    background: rgba(255,255,255,.12) !important;
-    color: #fff !important;
-    border: 1px solid rgba(255,255,255,.28) !important;
-    padding: .4rem 1.2rem; border-radius: 4px;
-    backdrop-filter: blur(8px);
-    transition: background .2s !important;
-  }
-  .nav-cta:hover { background: rgba(255,255,255,.22) !important; }
+/* ===== HERO – fullbredd med bakgrundsbild ===== */
+.hero-wrap {
+  position: relative;
+  height: clamp(300px, 42vh, 440px);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background: url('https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=1400&auto=format&fit=crop&q=85') center/cover no-repeat;
+}
+.hero-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+    rgba(10,7,3,.55) 0%,
+    rgba(10,7,3,.4) 40%,
+    rgba(10,7,3,.65) 100%);
+}
+.hero-center {
+  position: relative; z-index: 2;
+  text-align: center;
+  padding: 1.5rem 2rem 1.75rem;
+  display: flex; flex-direction: column; align-items: center;
+}
+.h-eyebrow {
+  display: flex; align-items: center; gap: .7rem;
+  margin-bottom: .9rem; justify-content: center;
+  animation: fadeUp .5s .1s ease both;
+}
+.h-eyebrow-line { width: 28px; height: 1px; background: var(--gold); }
+.h-eyebrow span {
+  font-size: .65rem; font-weight: 600; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--gold);
+}
+.hero-center h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 5.5vw, 3.2rem);
+  line-height: 1.05; font-weight: 700; color: #fff;
+  margin-bottom: 1rem; text-shadow: 0 2px 20px rgba(0,0,0,.4);
+  animation: fadeUp .6s .2s ease both;
+}
+.hero-center h1 em { font-style: italic; color: var(--gold-lt); }
+.btn-hitta {
+  background: linear-gradient(135deg, var(--gold) 0%, #B87D10 100%);
+  color: #1A0D00;
+  padding: .7rem 2rem; border-radius: 50px; border: none;
+  font-family: 'Outfit', sans-serif; font-size: .85rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; text-decoration: none;
+  box-shadow: 0 4px 24px rgba(212,148,26,.45);
+  transition: transform .2s, box-shadow .2s;
+  display: inline-block;
+  animation: fadeUp .6s .35s ease both;
+}
+.btn-hitta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,148,26,.55); }
+.hero-locs {
+  display: flex; gap: 1.5rem; margin-top: 1rem; justify-content: center;
+  animation: fadeUp .6s .5s ease both;
+}
+.hloc { display: flex; align-items: center; gap: .5rem; }
+.hloc-dot { width: 7px; height: 7px; border-radius: 50%; background: #4AE080; box-shadow: 0 0 0 3px rgba(74,224,128,.22); }
+.hloc span { font-size: .8rem; color: rgba(255,255,255,.55); }
+.hloc strong { color: #fff; font-weight: 600; }
 
-  /* ======= HERO ======= */
-  .hero {
-    min-height: 100vh;
-    background: var(--dark2);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    position: relative;
-    overflow: hidden;
-  }
+/* ===== CATEGORY PANELS ===== */
+.cat-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #D8D0C5;
+  border-top: 3px solid #fff;
+}
+.cat-panel {
+  position: relative;
+  height: 220px;
+  background: linear-gradient(to bottom, #C8C0B4 0%, #2A2018 100%);
+  text-decoration: none;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: opacity .2s;
+}
+.cat-panel:hover .cp-overlay { background: linear-gradient(to bottom, rgba(20,14,6,0) 0%, rgba(20,14,6,.92) 100%); }
+.cp-label {
+  padding: 1rem 1.3rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: .9rem; font-weight: 400; color: var(--text);
+  background: #fff;
+  border-bottom: 1px solid #E8E0D5;
+}
+.cp-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(20,14,6,0) 0%, rgba(20,14,6,.88) 100%);
+  display: flex; flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.8rem 1.5rem;
+  transition: background .3s;
+}
+.cp-tag {
+  font-size: .62rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: .5rem;
+}
+.cp-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem; font-weight: 700; color: #fff; line-height: 1.05;
+  margin-bottom: .9rem;
+}
+.cp-cta {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(255,255,255,.75);
+  border-bottom: 1px solid rgba(255,255,255,.3);
+  padding-bottom: 2px; width: fit-content;
+}
 
-  /* subtle pattern overlay */
-  .hero::before {
-    content: '';
-    position: absolute; inset: 0; z-index: 0;
-    background-image:
-      repeating-linear-gradient(60deg, rgba(212,148,26,.04) 0px, rgba(212,148,26,.04) 1px, transparent 1px, transparent 40px),
-      repeating-linear-gradient(-60deg, rgba(212,148,26,.04) 0px, rgba(212,148,26,.04) 1px, transparent 1px, transparent 40px);
-    pointer-events: none;
-  }
+/* ===== SECTION HEADER ===== */
+.sec-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 2.8rem 2.5rem 1.2rem;
+}
+.sec-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem; font-weight: 700; color: var(--text);
+}
+.sec-head a {
+  font-size: .75rem; font-weight: 500; color: var(--muted);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.sec-head a:hover { color: var(--rust); }
 
-  /* gold accent line left edge */
-  .hero-left {
-    position: relative; z-index: 2;
-    padding: 9rem 4rem 5rem 5vw;
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .hero-left::after {
-    content: '';
-    position: absolute; left: 0; top: 15%; bottom: 15%;
-    width: 3px;
-    background: linear-gradient(to bottom, transparent, var(--gold), transparent);
-  }
+/* ===== PRODUCT GRID ===== */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #E8E0D5;
+  border-top: 1px solid #E8E0D5;
+  border-bottom: 1px solid #E8E0D5;
+}
+.pcard {
+  background: #fff;
+  cursor: pointer;
+  transition: background .15s;
+  position: relative;
+}
+.pcard:hover { background: var(--bg2); }
+.pcard-img {
+  width: 100%; aspect-ratio: 1;
+  overflow: hidden; position: relative;
+  background: #F3EDE5;
+  display: flex; align-items: center; justify-content: center;
+}
+.pcard-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .5s ease;
+}
+.pcard:hover .pcard-img img { transform: scale(1.05); }
+.pcard-badge {
+  position: absolute; top: 10px; left: 10px;
+  background: var(--rust); color: #fff;
+  font-size: .6rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  padding: .22rem .55rem; border-radius: 2px;
+}
+.pcard-badge.gold { background: var(--gold); color: #1A0D00; }
+.pcard-body { padding: .9rem 1rem 1.1rem; }
+.pcard-brand { font-size: .68rem; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: .15rem; }
+.pcard-name { font-size: .82rem; font-weight: 400; color: var(--text); line-height: 1.4; margin-bottom: .55rem; }
+.pcard-price { font-size: .98rem; font-weight: 600; color: var(--rust); }
+.pcard-buy {
+  display: block; width: 100%;
+  margin-top: .55rem;
+  background: var(--brown); color: #fff;
+  border: none; border-radius: 3px;
+  padding: .5rem; font-family: 'Outfit', sans-serif;
+  font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  cursor: pointer; transition: background .2s;
+}
+.pcard-buy:hover { background: var(--rust); }
 
-  .eyebrow {
-    display: flex; align-items: center; gap: .8rem;
-    margin-bottom: 1.8rem;
-    animation: fadeUp .5s .1s ease both;
-  }
-  .eyebrow-line {
-    width: 32px; height: 1px; background: var(--gold);
-  }
-  .eyebrow span {
-    font-size: .7rem; font-weight: 600; letter-spacing: .2em;
-    text-transform: uppercase; color: var(--gold);
-  }
+/* ===== FOOD SECTION (dark bg) ===== */
+.food-section { background: var(--brown); }
+.food-section .sec-head h2 { color: #fff; }
+.food-section .sec-head a { color: rgba(255,255,255,.4); }
+.food-section .sec-head a:hover { color: var(--gold); }
+.food-section .product-grid { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.06); }
+.food-section .pcard { background: var(--brown); }
+.food-section .pcard:hover { background: #2a1e10; }
+.food-section .pcard-img { background: #2a1e10; }
+.food-section .pcard-brand { color: rgba(255,255,255,.4); }
+.food-section .pcard-name { color: rgba(255,255,255,.85); }
+.food-section .pcard-buy { background: var(--gold); color: #1A0D00; }
+.food-section .pcard-buy:hover { background: var(--gold-lt); }
 
-  .hero-left h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(3.2rem, 5.5vw, 5.2rem);
-    line-height: 1.0; font-weight: 700;
-    color: #fff;
-    margin-bottom: 1.8rem;
-    animation: fadeUp .6s .2s ease both;
-  }
-  .hero-left h1 em {
-    font-style: italic; color: var(--gold-lt);
-  }
-  .hero-left h1 .h1-line2 {
-    display: block;
-    margin-top: 0.15em;
-  }
+/* ===== BANNER STRIP ===== */
+.banner-strip {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  height: 220px; gap: 1px; background: #E8E0D5;
+}
+.bstrip {
+  position: relative; overflow: hidden; cursor: pointer;
+}
+.bstrip img { width:100%; height:100%; object-fit:cover; transition: transform .5s; }
+.bstrip:hover img { transform: scale(1.06); }
+.bstrip-label {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(14,11,7,.65) 0%, transparent 60%);
+  display: flex; align-items: flex-end; padding: 1rem 1.1rem;
+}
+.bstrip-label span {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-weight: 700; color: #fff;
+}
 
-  .hero-divider {
-    width: 48px; height: 2px;
-    background: var(--rust);
-    margin-bottom: 1.5rem;
-    animation: fadeUp .6s .28s ease both;
-  }
+/* ===== LOCATIONS ===== */
+.loc-section {
+  background: var(--bg2);
+  padding: 4rem 2.5rem;
+}
+.loc-section-head {
+  text-align: center; margin-bottom: 2.5rem;
+}
+.loc-section-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem; font-weight: 700; color: var(--text);
+}
+.loc-section-head p { font-size: .82rem; color: var(--muted); margin-top: .3rem; }
+.loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; max-width: 800px; margin: 0 auto; }
+.loc-card {
+  background: #fff;
+  border: 1px solid #E8E0D5;
+  border-radius: 10px; padding: 1.8rem;
+  position: relative; overflow: hidden;
+}
+.loc-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(to right, var(--rust), var(--gold));
+}
+.loc-num { font-size: 3rem; font-weight: 700; color: rgba(200,84,28,.08); font-family: 'Cormorant Garamond', serif; line-height: 1; margin-bottom: .6rem; }
+.loc-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: .15rem; }
+.loc-area { font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--rust); margin-bottom: .9rem; }
+.loc-detail { font-size: .8rem; color: var(--muted); line-height: 1.8; }
+.loc-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.2rem; }
+.open-pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: rgba(44,90,56,.1); color: #2C7A45;
+  font-size: .65rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  padding: .28rem .65rem; border-radius: 2px;
+}
+.open-dot { width: 5px; height: 5px; border-radius: 50%; background: #2C7A45; }
+.btn-maps {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--gold); color: #1A0D00;
+  border: none; border-radius: 3px;
+  padding: .48rem 1rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  text-decoration: none; cursor: pointer;
+  transition: background .2s;
+}
+.btn-maps:hover { background: var(--gold-lt); }
+.btn-maps svg { width: 13px; height: 13px; }
 
-  .hero-left p {
-    font-size: .95rem; line-height: 1.8; color: rgba(255,255,255,.55);
-    max-width: 400px; margin-bottom: 2.5rem;
-    font-weight: 300;
-    animation: fadeUp .6s .35s ease both;
-  }
+/* ===== CONTACT ===== */
+.contact-section {
+  background: var(--brown);
+  padding: 4rem 2.5rem;
+  text-align: center;
+}
+.contact-section h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.8rem; font-weight: 700; color: #fff; margin-bottom: .4rem;
+}
+.contact-section p { font-size: .82rem; color: rgba(255,255,255,.45); margin-bottom: 2rem; }
+.contact-cards {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.8rem;
+}
+.cc {
+  display: flex; align-items: center; gap: .8rem;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px; padding: 1rem 1.4rem;
+  text-decoration: none; color: #fff;
+  transition: background .2s; min-width: 200px;
+}
+.cc:hover { background: rgba(255,255,255,.09); }
+.cc-icon {
+  width: 36px; height: 36px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cc-label { font-size: .62rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: .1rem; }
+.cc-val { font-size: .82rem; font-weight: 500; }
+.coming-pill {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: rgba(212,148,26,.12); border: 1px solid rgba(212,148,26,.22);
+  border-radius: 4px; padding: .65rem 1.1rem;
+  font-size: .73rem; color: rgba(255,255,255,.55);
+}
+.coming-pill strong { color: var(--gold); }
 
-  .hero-buttons {
-    display: flex; gap: 1rem; flex-wrap: wrap;
-    animation: fadeUp .6s .42s ease both;
-  }
-  .btn-primary {
-    background: var(--rust); color: #fff;
-    padding: .8rem 2rem; border-radius: 4px; border: none;
-    font-family: 'Outfit', sans-serif; font-size: .85rem; font-weight: 600;
-    letter-spacing: .06em; text-transform: uppercase;
-    cursor: pointer; text-decoration: none;
-    transition: background .2s, transform .15s;
-    display: inline-block;
-  }
-  .btn-primary:hover { background: #a03f10; transform: translateY(-1px); }
-  .btn-ghost {
-    background: transparent; color: rgba(255,255,255,.7);
-    padding: .8rem 2rem; border-radius: 4px;
-    border: 1px solid rgba(255,255,255,.2);
-    font-family: 'Outfit', sans-serif;
-    font-size: .85rem; font-weight: 500;
-    letter-spacing: .06em; text-transform: uppercase;
-    cursor: pointer; text-decoration: none;
-    transition: border-color .2s, color .2s;
-    display: inline-block;
-  }
-  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+/* ===== FOOTER ===== */
+footer {
+  background: var(--dark);
+  border-top: 1px solid rgba(212,148,26,.1);
+  text-align: center; padding: 2.5rem 2rem;
+  font-size: .75rem; color: rgba(255,255,255,.3); line-height: 2;
+}
+footer .fl { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: rgba(255,255,255,.6); display: block; margin-bottom: .2rem; }
+footer a { color: var(--gold); text-decoration: none; }
 
-  /* locations strip */
-  .hero-locations {
-    display: flex; gap: 1.8rem; margin-top: 3rem;
-    padding-top: 2.4rem;
-    border-top: 1px solid rgba(255,255,255,.08);
-    animation: fadeUp .6s .5s ease both;
-  }
-  .loc-item { display: flex; align-items: center; gap: .6rem; }
-  .loc-dot-pulse {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #4AE080;
-    box-shadow: 0 0 0 3px rgba(74,224,128,.2);
-  }
-  .loc-item span {
-    font-size: .78rem; font-weight: 500; letter-spacing: .04em;
-    color: rgba(255,255,255,.5);
-  }
-  .loc-item strong { color: rgba(255,255,255,.85); }
+/* ===== ANIMATIONS ===== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-  /* ======= HERO RIGHT – COLLAGE ======= */
-  .hero-right {
-    position: relative; z-index: 2;
-    display: flex; align-items: center; justify-content: center;
-    padding: 7rem 3rem 4rem;
-    animation: fadeUp .8s .35s ease both;
-  }
-
-  .collage {
-    position: relative;
-    width: 100%; max-width: 460px;
-    height: 520px;
-  }
-
-  /* three panels */
-  .c-img {
-    position: absolute;
-    border-radius: 12px;
-    overflow: hidden;
-    display: flex; align-items: flex-end;
-    box-shadow: 0 24px 60px rgba(0,0,0,.55);
-  }
-
-  /* spices – large, top-left */
-  .c-img-1 {
-    width: 62%; height: 58%;
-    top: 0; left: 0; z-index: 2;
-    background: linear-gradient(160deg, #7B2C08 0%, #C2521A 45%, #E07A30 100%);
-  }
-  /* craft – bottom right */
-  .c-img-2 {
-    width: 56%; height: 55%;
-    bottom: 0; right: 0; z-index: 3;
-    background: linear-gradient(150deg, #142D1A 0%, #2E5C38 55%, #4A8C5C 100%);
-  }
-  /* pattern – bottom left, smallest */
-  .c-img-3 {
-    width: 42%; height: 44%;
-    bottom: 20px; left: 20px; z-index: 4;
-    background:
-      repeating-conic-gradient(
-        #D4941A 0% 25%, #C2521A 0% 50%,
-        #2E5C38 0% 75%, #0E0B07 0% 100%
-      ) 0 0 / 24px 24px;
-    border: 2px solid rgba(255,255,255,.12);
-  }
-
-  /* subtle label on each panel */
-  .c-label {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: .6rem .8rem;
-    background: linear-gradient(to top, rgba(0,0,0,.6), transparent);
-    font-size: .68rem; font-weight: 600; letter-spacing: .1em;
-    text-transform: uppercase; color: rgba(255,255,255,.7);
-  }
-  .c-icon {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -60%);
-    font-size: 3.2rem;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
-  }
-
-  /* TESTIMONIAL */
-  .testimonial {
-    position: absolute; top: 28px; right: -18px; z-index: 10;
-    background: var(--dark);
-    border: 1px solid rgba(212,148,26,.25);
-    border-radius: 10px;
-    padding: .9rem 1.1rem;
-    max-width: 200px;
-    box-shadow: 0 16px 40px rgba(0,0,0,.45);
-    animation: fadeUp 1s .65s ease both;
-  }
-  .stars { color: var(--gold); font-size: .85rem; letter-spacing: 2px; margin-bottom: .4rem; }
-  .testimonial p { font-size: .72rem; line-height: 1.55; color: rgba(255,255,255,.55); }
-  .t-reviewer {
-    display: flex; align-items: center; gap: .5rem; margin-top: .55rem;
-  }
-  .t-avatar {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: var(--rust); display: flex; align-items: center;
-    justify-content: center; font-size: .6rem; font-weight: 700; color: #fff;
-    flex-shrink: 0;
-  }
-  .t-name { font-size: .7rem; font-weight: 500; color: rgba(255,255,255,.75); }
-
-  /* STAT CHIP */
-  .stat-chip {
-    position: absolute; bottom: 40px; right: -22px; z-index: 10;
-    background: var(--gold);
-    border-radius: 8px;
-    padding: .7rem 1.1rem;
-    display: flex; align-items: center; gap: .6rem;
-    box-shadow: 0 8px 30px rgba(212,148,26,.4);
-    animation: fadeUp 1s .75s ease both;
-  }
-  .stat-chip .big { font-size: 1.5rem; font-weight: 700; color: #1A0D00; }
-  .stat-chip .sub { font-size: .65rem; font-weight: 600; line-height: 1.3; color: rgba(26,13,0,.65); text-transform: uppercase; letter-spacing: .05em; }
-
-  /* ======= SCROLL INDICATOR ======= */
-  .scroll-hint {
-    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-    z-index: 10; display: flex; flex-direction: column; align-items: center; gap: .4rem;
-    animation: fadeUp 1s .9s ease both;
-  }
-  .scroll-hint span {
-    font-size: .65rem; letter-spacing: .18em; text-transform: uppercase;
-    color: rgba(255,255,255,.3);
-  }
-  .scroll-arrow {
-    width: 1px; height: 36px;
-    background: linear-gradient(to bottom, rgba(255,255,255,.3), transparent);
-    animation: scrollPulse 1.8s ease-in-out infinite;
-  }
-  @keyframes scrollPulse {
-    0%, 100% { opacity: .4; transform: scaleY(1); }
-    50% { opacity: 1; transform: scaleY(1.15); }
-  }
-
-  /* ======= BESTSELLERS ======= */
-  .section-header {
-    text-align: center; padding: 5rem 2rem 2.8rem;
-  }
-  .section-header .s-eyebrow {
-    display: inline-flex; align-items: center; gap: .6rem;
-    font-size: .68rem; font-weight: 600; letter-spacing: .18em;
-    text-transform: uppercase; color: var(--rust);
-    margin-bottom: 1rem;
-  }
-  .s-eyebrow::before, .s-eyebrow::after {
-    content: ''; display: block;
-    width: 24px; height: 1px; background: var(--rust);
-  }
-  .section-header h2 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 700; color: var(--text);
-  }
-  .section-header p { font-size: .88rem; color: var(--muted); margin-top: .5rem; }
-
-  .carousel-wrapper {
-    padding: 0 4vw 5rem;
-    overflow-x: auto;
-    scrollbar-width: none; -ms-overflow-style: none;
-  }
-  .carousel-wrapper::-webkit-scrollbar { display: none; }
-  .carousel { display: flex; gap: 1.2rem; width: max-content; }
-
-  .product-card {
-    background: #fff;
-    border: 1px solid rgba(0,0,0,.07);
-    border-radius: 14px;
-    width: 216px; flex-shrink: 0;
-    overflow: hidden;
-    transition: transform .22s, box-shadow .22s;
-    cursor: pointer;
-  }
-  .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 48px rgba(200,84,28,.12);
-  }
-  .product-thumb {
-    height: 156px; width: 100%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 3rem; position: relative;
-  }
-  .p1 .product-thumb { background: #FDF0E8; }
-  .p2 .product-thumb { background: #EAF3EC; }
-  .p3 .product-thumb { background: #FEF3E2; }
-  .p4 .product-thumb { background: #EBF2EE; }
-  .p5 .product-thumb { background: #FDF0E8; }
-
-  .pc-badge {
-    position: absolute; top: 10px; left: 10px;
-    background: var(--rust); color: #fff;
-    font-size: .62rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
-    padding: .22rem .6rem; border-radius: 3px;
-  }
-  .pc-badge.green { background: var(--green); }
-  .pc-badge.gold  { background: var(--gold); color: #1A0D00; }
-
-  .product-info { padding: 1rem 1.1rem 1.15rem; }
-  .product-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.05rem; font-weight: 700; color: var(--text);
-    margin-bottom: .15rem;
-  }
-  .product-sub { font-size: .74rem; color: var(--muted); margin-bottom: .9rem; }
-  .product-footer { display: flex; align-items: center; justify-content: space-between; }
-  .price { font-size: .98rem; font-weight: 600; color: var(--rust); }
-  .btn-buy {
-    background: var(--dark2); color: #fff;
-    border: none; border-radius: 4px;
-    padding: .38rem .9rem; font-size: .72rem; font-weight: 600;
-    font-family: 'Outfit', sans-serif; letter-spacing: .05em; text-transform: uppercase;
-    cursor: pointer; transition: background .2s;
-  }
-  .btn-buy:hover { background: var(--rust); }
-
-  /* ======= LOCATIONS ======= */
-  .locations-section {
-    background: var(--dark2);
-    color: var(--cream);
-    padding: 6rem 5vw;
-    position: relative; overflow: hidden;
-  }
-  .locations-section::before {
-    content: '';
-    position: absolute; inset: 0;
-    background-image:
-      repeating-linear-gradient(60deg, rgba(212,148,26,.03) 0px, rgba(212,148,26,.03) 1px, transparent 1px, transparent 40px),
-      repeating-linear-gradient(-60deg, rgba(212,148,26,.03) 0px, rgba(212,148,26,.03) 1px, transparent 1px, transparent 40px);
-    pointer-events: none;
-  }
-  .locations-section h2 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2rem, 3.5vw, 2.8rem); font-weight: 700;
-    text-align: center; margin-bottom: .4rem;
-    position: relative;
-  }
-  .locations-section .sub {
-    text-align: center; color: rgba(250,245,236,.4);
-    font-size: .82rem; margin-bottom: 3.5rem; position: relative;
-    letter-spacing: .06em; text-transform: uppercase; font-weight: 400;
-  }
-  .locations-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 1.5rem; max-width: 820px; margin: 0 auto; position: relative;
-  }
-  .loc-card {
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(212,148,26,.14);
-    border-radius: 14px; padding: 2.2rem;
-    transition: background .2s, border-color .2s;
-    position: relative; overflow: hidden;
-  }
-  .loc-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(to right, var(--rust), var(--gold));
-    opacity: 0; transition: opacity .2s;
-  }
-  .loc-card:hover { background: rgba(255,255,255,.07); border-color: rgba(212,148,26,.3); }
-  .loc-card:hover::before { opacity: 1; }
-  .loc-number {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 3.5rem; font-weight: 700; line-height: 1;
-    color: rgba(212,148,26,.15); margin-bottom: .8rem;
-  }
-  .loc-card h3 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.35rem; font-weight: 700;
-    margin-bottom: .2rem;
-  }
-  .loc-card .area { color: var(--gold); font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 1.2rem; }
-  .loc-card .detail { font-size: .83rem; color: rgba(250,245,236,.52); line-height: 1.8; }
-  .open-tag {
-    display: inline-flex; align-items: center; gap: .4rem; margin-top: 1rem;
-    background: rgba(46,92,56,.35); color: #7FC88C;
-    font-size: .67rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-    padding: .3rem .75rem; border-radius: 3px;
-  }
-  .open-dot { width: 5px; height: 5px; border-radius: 50%; background: #7FC88C; }
-
-  /* ======= ABOUT ======= */
-  .about-section {
-    padding: 6rem 5vw;
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 5rem; align-items: center;
-    max-width: 1100px; margin: 0 auto;
-  }
-  .about-eyebrow {
-    display: flex; align-items: center; gap: .7rem; margin-bottom: 1.4rem;
-  }
-  .about-eyebrow span {
-    font-size: .68rem; font-weight: 600; letter-spacing: .18em;
-    text-transform: uppercase; color: var(--rust);
-  }
-  .about-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(200,84,28,.2); }
-  .about-section h2 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2rem, 3vw, 2.8rem); font-weight: 700;
-    color: var(--text); margin-bottom: 1.2rem; line-height: 1.12;
-  }
-  .about-section h2 em { color: var(--rust); font-style: italic; }
-  .about-section p { color: var(--muted); line-height: 1.85; font-size: .9rem; margin-bottom: .9rem; font-weight: 300; }
-
-  .about-visual {
-    position: relative; aspect-ratio: .9;
-    border-radius: 16px; overflow: hidden;
-    background: var(--dark2);
-  }
-  .av-pattern {
-    position: absolute; inset: 0;
-    background:
-      repeating-conic-gradient(
-        #D4941A 0% 25%, #C2521A 0% 50%,
-        #2E5C38 0% 75%, #0E0B07 0% 100%
-      ) 0 0 / 36px 36px;
-    opacity: .7;
-  }
-  .av-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(14,11,7,.5) 0%, rgba(14,11,7,.2) 100%);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .av-text {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 7rem; font-weight: 700; font-style: italic;
-    color: rgba(255,255,255,.85); text-align: center; line-height: .9;
-    text-shadow: 0 4px 30px rgba(0,0,0,.5);
-  }
-
-  /* ======= FOOTER ======= */
-  footer {
-    background: var(--dark);
-    border-top: 1px solid rgba(212,148,26,.12);
-    color: rgba(250,245,236,.4);
-    text-align: center; padding: 3rem 2rem;
-    font-size: .78rem; line-height: 2;
-  }
-  footer .f-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.4rem; font-weight: 700;
-    color: rgba(255,255,255,.7); display: block; margin-bottom: .3rem;
-  }
-  footer a { color: var(--gold); text-decoration: none; }
-
-  /* ======= ANIMATIONS ======= */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ======= RESPONSIVE ======= */
-  @media (max-width: 860px) {
-    .hero { grid-template-columns: 1fr; }
-    .hero-right { display: none; }
-    .hero-left { padding: 8rem 1.5rem 4rem; }
-    nav ul { display: none; }
-    .locations-grid, .about-section { grid-template-columns: 1fr; gap: 2rem; }
-    .about-visual { aspect-ratio: 16/7; }
-  }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .hero-wrap { height: clamp(280px, 38vh, 360px); }
+  .hero-center h1 { font-size: clamp(1.75rem, 8vw, 2.5rem); }
+  .product-grid { grid-template-columns: 1fr 1fr; }
+  .banner-strip { grid-template-columns: 1fr; height: auto; }
+  .bstrip { height: 140px; }
+  .loc-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  nav { padding: 0 1.2rem; }
+}
 </style>
 </head>
 <body>
 
-<!-- NAV -->
+<!-- ===== NAV ===== -->
 <nav>
   <div class="logo">Afro<em>hörnan</em></div>
-  <ul>
-    <li><a href="#bestsellers">Bästsäljare</a></li>
+  <ul class="nav-links">
+    <li><a href="#kosmetika">Kosmetika</a></li>
+    <li><a href="#mat">Mat & Kryddor</a></li>
     <li><a href="#butiker">Butiker</a></li>
-    <li><a href="#om-oss">Om oss</a></li>
-    <li><a href="#butiker" class="nav-cta">Hitta oss</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
   </ul>
+  <div class="nav-right">
+    <button class="nav-icon" aria-label="Sök">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="nav-cart-btn" id="cartBtn" aria-label="Varukorg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </button>
+  </div>
 </nav>
 
-<!-- ========== HERO ========== -->
-<section class="hero">
-
-  <!-- LEFT: text -->
-  <div class="hero-left">
-
-    <div class="eyebrow">
-      <div class="eyebrow-line"></div>
+<!-- ===== HERO ===== -->
+<div class="hero-wrap">
+  <div class="hero-bg"></div>
+  <div class="hero-center">
+    <div class="h-eyebrow">
+      <div class="h-eyebrow-line"></div>
       <span>Smak &amp; Kultur sedan 2010</span>
+      <div class="h-eyebrow-line"></div>
     </div>
-
-    <h1>
-      Afrikas&nbsp;rika <em>smaker</em><br>
-      <span class="h1-line2">I Sverige</span>
-    </h1>
-
-    <div class="hero-divider"></div>
-
-    <p>Välkommen till Afrohörnan – din lokala butik för autentiska kryddor, hantverk och delikatesser direktimporterade från hela den afrikanska kontinenten.</p>
-
-    <div class="hero-buttons">
-      <a href="#bestsellers" class="btn-primary">Utforska sortimentet</a>
-      <a href="#butiker" class="btn-ghost">Hitta butiken</a>
-    </div>
-
-    <div class="hero-locations">
-      <div class="loc-item">
-        <div class="loc-dot-pulse"></div>
-        <span><strong>Stockholm</strong> · Fittja</span>
-      </div>
-      <div class="loc-item">
-        <div class="loc-dot-pulse"></div>
-        <span><strong>Uppsala</strong> · Gottsunda</span>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- RIGHT: collage -->
-  <div class="hero-right">
-    <div class="collage">
-
-      <!-- 1: spices -->
-      <div class="c-img c-img-1">
-        <span class="c-icon">🌶️</span>
-        <div class="c-label">Kryddor &amp; Smak</div>
-      </div>
-
-      <!-- 2: craft -->
-      <div class="c-img c-img-2">
-        <span class="c-icon">🧺</span>
-        <div class="c-label">Handgjorda Hantverk</div>
-      </div>
-
-      <!-- 3: pattern -->
-      <div class="c-img c-img-3">
-        <span class="c-icon" style="font-size:2rem">🎨</span>
-      </div>
-
-      <!-- testimonial card -->
-      <div class="testimonial">
-        <div class="stars">★★★★★</div>
-        <p>"Äkta smaker, alltid färskt och välsorterat!"</p>
-        <div class="t-reviewer">
-          <div class="t-avatar">AM</div>
-          <span class="t-name">Amina M., Uppsala</span>
-        </div>
-      </div>
-
-      <!-- stat chip -->
-      <div class="stat-chip">
-        <div class="big">500+</div>
-        <div class="sub">Produkter<br>i lager</div>
-      </div>
-
+    <h1>Afrikas rika <em>smaker</em> I Sverige</h1>
+    <a href="#butiker" class="btn-hitta">Hitta butiken</a>
+    <div class="hero-locs">
+      <div class="hloc"><div class="hloc-dot"></div><span><strong>Stockholm</strong> · Fittja</span></div>
+      <div class="hloc"><div class="hloc-dot"></div><span><strong>Uppsala</strong> · Gottsunda</span></div>
     </div>
   </div>
+</div>
 
-  <!-- scroll hint -->
-  <div class="scroll-hint">
-    <span>Scrolla</span>
-    <div class="scroll-arrow"></div>
-  </div>
+<!-- ===== CATEGORY PANELS ===== -->
+<div class="cat-panels">
 
-</section>
-
-<!-- ========== BESTSELLERS ========== -->
-<section id="bestsellers">
-  <div class="section-header">
-    <div class="s-eyebrow">Våra Bästsäljare</div>
-    <h2>Handplockade favoriter</h2>
-    <p>Direktimporterade med kärlek – från kontinenten till ditt kök</p>
-  </div>
-  <div class="carousel-wrapper">
-    <div class="carousel">
-
-      <div class="product-card p1">
-        <div class="product-thumb">🌶️<span class="pc-badge">Populär</span></div>
-        <div class="product-info">
-          <div class="product-name">Berbere Blend</div>
-          <div class="product-sub">Etiopisk kryddblandning · 200 g</div>
-          <div class="product-footer">
-            <span class="price">89 kr</span>
-            <button class="btn-buy">Köp nu</button>
-          </div>
-        </div>
+  <a href="#kosmetika-products" class="cat-panel">
+    <div class="cp-overlay">
+      <div class="cp-tag">Skönhet &amp; Hudvård</div>
+      <div class="cp-title">Afrikansk<br>Kosmetika</div>
+      <div class="cp-cta">Utforska
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </div>
-
-      <div class="product-card p2">
-        <div class="product-thumb">🍃<span class="pc-badge green">Nyhet</span></div>
-        <div class="product-info">
-          <div class="product-name">Rooibos Chai</div>
-          <div class="product-sub">Sydafrikanskt te · 100 g</div>
-          <div class="product-footer">
-            <span class="price">65 kr</span>
-            <button class="btn-buy">Köp nu</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card p3">
-        <div class="product-thumb">🥜</div>
-        <div class="product-info">
-          <div class="product-name">Suya Spice Mix</div>
-          <div class="product-sub">Nigeriansk grillkrydda · 150 g</div>
-          <div class="product-footer">
-            <span class="price">75 kr</span>
-            <button class="btn-buy">Köp nu</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card p4">
-        <div class="product-thumb">🍫<span class="pc-badge gold">Ekologisk</span></div>
-        <div class="product-info">
-          <div class="product-name">Baobab Snacks</div>
-          <div class="product-sub">Superfrukt chips · 80 g</div>
-          <div class="product-footer">
-            <span class="price">55 kr</span>
-            <button class="btn-buy">Köp nu</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="product-card p5">
-        <div class="product-thumb">🧄</div>
-        <div class="product-info">
-          <div class="product-name">Harissa Paste</div>
-          <div class="product-sub">Nordafrikansk chilipasta · 180 g</div>
-          <div class="product-footer">
-            <span class="price">49 kr</span>
-            <button class="btn-buy">Köp nu</button>
-          </div>
-        </div>
-      </div>
-
     </div>
+  </a>
+
+  <a href="#mat-products" class="cat-panel">
+    <div class="cp-overlay">
+      <div class="cp-tag">Mat &amp; Delikatesser</div>
+      <div class="cp-title">Afrikanska<br>Smaker</div>
+      <div class="cp-cta">Utforska
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<!-- ===== KOSMETIKA PRODUCTS (white section) ===== -->
+<section id="kosmetika-products">
+  <div class="sec-head">
+    <h2>Kosmetika &amp; Hudvård</h2>
+    <a href="#kontakt">Kontakta för mer →</a>
+  </div>
+  <div class="product-grid">
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=500&auto=format&fit=crop&q=80" alt="Shea Butter">
+        <span class="pcard-badge">Populär</span>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Sheabutter</div>
+        <div class="pcard-name">Oraffinerad Shea Butter 100% naturell 200 g</div>
+        <div class="pcard-price">129 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1612817288484-6f916006741a?w=500&auto=format&fit=crop&q=80" alt="Black Soap">
+        <span class="pcard-badge gold">Nyhet</span>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Tvål</div>
+        <div class="pcard-name">Afrikansk Svart Tvål – Rå & Naturlig 150 g</div>
+        <div class="pcard-price">89 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1590439471364-192aa70c0b53?w=500&auto=format&fit=crop&q=80" alt="Argan Oil">
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Hårolja</div>
+        <div class="pcard-name">Marockansk Arganolja Kall­pressad 100 ml</div>
+        <div class="pcard-price">149 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1631730486784-74757a1e7f24?w=500&auto=format&fit=crop&q=80" alt="Coconut Oil">
+        <span class="pcard-badge">Ekologisk</span>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Kokosolja</div>
+        <div class="pcard-name">Virgin Kokosolja Hudvård & Hår 250 ml</div>
+        <div class="pcard-price">99 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
   </div>
 </section>
 
-<!-- ========== LOCATIONS ========== -->
-<section id="butiker" class="locations-section">
-  <h2>Hitta oss</h2>
-  <p class="sub">Besök oss i en av våra två butiker</p>
-  <div class="locations-grid">
+<!-- ===== BANNER STRIP ===== -->
+<div class="banner-strip">
+  <div class="bstrip">
+    <img src="https://images.unsplash.com/photo-1583241749184-2a4e14571ec5?w=600&auto=format&fit=crop&q=80" alt="Kryddor">
+    <div class="bstrip-label"><span>Kryddor</span></div>
+  </div>
+  <div class="bstrip">
+    <img src="https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=600&auto=format&fit=crop&q=80" alt="Naturlig hudvård">
+    <div class="bstrip-label"><span>Naturlig hudvård</span></div>
+  </div>
+  <div class="bstrip">
+    <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&auto=format&fit=crop&q=80" alt="Hantverk">
+    <div class="bstrip-label"><span>Hantverk & Kultur</span></div>
+  </div>
+</div>
+
+<!-- ===== MAT & KRYDDOR (dark section) ===== -->
+<section class="food-section" id="mat-products">
+  <div class="sec-head">
+    <h2>Mat &amp; Kryddor</h2>
+    <a href="#kontakt">Kontakta för mer →</a>
+  </div>
+  <div class="product-grid">
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=500&auto=format&fit=crop&q=80" alt="Berbere krydda">
+        <span class="pcard-badge">Bästsäljare</span>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Kryddblandning</div>
+        <div class="pcard-name">Berbere – Etiopisk Kryddblandning 200 g</div>
+        <div class="pcard-price">89 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80" alt="Rooibos te">
+        <span class="pcard-badge gold">Nyhet</span>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Te</div>
+        <div class="pcard-name">Rooibos Chai – Sydafrikanskt Te 100 g</div>
+        <div class="pcard-price">65 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80" alt="Suya Spice">
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Grillkrydda</div>
+        <div class="pcard-name">Suya Spice – Nigeriansk Grillkrydda 150 g</div>
+        <div class="pcard-price">75 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-img">
+        <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&auto=format&fit=crop&q=80" alt="Baobab">
+        <span class="pcard-badge">Ekologisk</span>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-brand">Superfood</div>
+        <div class="pcard-name">Baobab Snacks – Superfrukt Chips 80 g</div>
+        <div class="pcard-price">55 kr</div>
+        <button class="pcard-buy">Köp nu</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== LOCATIONS ===== -->
+<section class="loc-section" id="butiker">
+  <div class="loc-section-head">
+    <h2>Hitta oss</h2>
+    <p>Besök oss i en av våra två butiker</p>
+  </div>
+  <div class="loc-grid">
 
     <div class="loc-card">
-      <div class="loc-number">01</div>
+      <div class="loc-num">01</div>
       <h3>Stockholm Fittja</h3>
-      <div class="area">Botkyrka · Stockholms Län</div>
-      <div class="detail">
+      <div class="loc-area">Botkyrka · Stockholms Län</div>
+      <div class="loc-detail">
         Fittja Centrum, Butik 12<br>145 84 Norsborg<br><br>
-        Mån–Fre &nbsp;10:00 – 19:00<br>
-        Lördag &nbsp;&nbsp;&nbsp;10:00 – 17:00<br>
-        Söndag &nbsp;&nbsp;11:00 – 16:00
+        Mån–Fre &nbsp;10:00–19:00<br>
+        Lördag &nbsp;&nbsp;&nbsp;10:00–17:00<br>
+        Söndag &nbsp;&nbsp;11:00–16:00
       </div>
-      <span class="open-tag"><span class="open-dot"></span>Öppen nu</span>
+      <div class="loc-footer">
+        <span class="open-pill"><span class="open-dot"></span>Öppen nu</span>
+        <a href="https://www.google.com/maps/search/Fittja+Centrum+Norsborg+Stockholm" target="_blank" class="btn-maps">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Hitta hit
+        </a>
+      </div>
     </div>
 
     <div class="loc-card">
-      <div class="loc-number">02</div>
+      <div class="loc-num">02</div>
       <h3>Uppsala Gottsunda</h3>
-      <div class="area">Gottsunda · Uppsala</div>
-      <div class="detail">
+      <div class="loc-area">Gottsunda · Uppsala</div>
+      <div class="loc-detail">
         Gottsunda Centrum, Plan 1<br>756 45 Uppsala<br><br>
-        Mån–Fre &nbsp;10:00 – 18:30<br>
-        Lördag &nbsp;&nbsp;&nbsp;10:00 – 16:00<br>
+        Mån–Fre &nbsp;10:00–18:30<br>
+        Lördag &nbsp;&nbsp;&nbsp;10:00–16:00<br>
         Söndag &nbsp;&nbsp;Stängt
       </div>
-      <span class="open-tag"><span class="open-dot"></span>Öppen nu</span>
-    </div>
-
-  </div>
-</section>
-
-<!-- ========== ABOUT ========== -->
-<section id="om-oss">
-  <div class="about-section">
-    <div>
-      <div class="about-eyebrow"><span>Om Afrohörnan</span></div>
-      <h2>En butik med<br><em>hjärta &amp; rötter</em></h2>
-      <p>Afrohörnan grundades med en enkel vision: att göra äkta afrikanska råvaror, hantverk och smaker tillgängliga för alla i Sverige.</p>
-      <p>Vi samarbetar direkt med producenter och hantverkare i Etiopien, Nigeria, Sydafrika, Marocko och Kongo – för att garantera äkthet, kvalitet och rättvisa villkor.</p>
-      <a href="#bestsellers" class="btn-primary" style="display:inline-block;margin-top:1.5rem">Se vårt sortiment</a>
-    </div>
-    <div class="about-visual">
-      <div class="av-pattern"></div>
-      <div class="av-overlay">
-        <div class="av-text">A<br>H</div>
+      <div class="loc-footer">
+        <span class="open-pill"><span class="open-dot"></span>Öppen nu</span>
+        <a href="https://www.google.com/maps/search/Gottsunda+Centrum+Uppsala" target="_blank" class="btn-maps">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Hitta hit
+        </a>
       </div>
     </div>
+
   </div>
 </section>
 
-<!-- ========== FOOTER ========== -->
+<!-- ===== CONTACT ===== -->
+<section class="contact-section" id="kontakt">
+  <h2>Kontakta oss</h2>
+  <p>Frågor om produkter eller beställning? Vi hjälper dig gärna.</p>
+  <div class="contact-cards">
+    <a href="mailto:info@afrohörnan.se" class="cc">
+      <div class="cc-icon" style="background:rgba(212,148,26,.15);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4941A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div>
+        <div class="cc-label">E-post</div>
+        <div class="cc-val">info@afrohörnan.se</div>
+      </div>
+    </a>
+    <a href="tel:+46701234567" class="cc">
+      <div class="cc-icon" style="background:rgba(200,84,28,.15);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8541C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.75a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+      </div>
+      <div>
+        <div class="cc-label">Telefon</div>
+        <div class="cc-val">+46 70 123 45 67</div>
+      </div>
+    </a>
+  </div>
+  <div class="coming-pill">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4941A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Webbshop <strong>kommer snart</strong> – kontakta oss för beställning
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
 <footer>
-  <span class="f-logo">Afrohörnan</span>
+  <span class="fl">Afrohörnan</span>
   Stockholm Fittja &nbsp;·&nbsp; Uppsala Gottsunda<br>
   <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
   © 2025 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 
 <script>
-  // scroll-triggered reveal for below-fold sections
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.style.animation = 'fadeUp .65s ease forwards';
-        io.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.product-card, .loc-card, .about-section > *').forEach(el => {
-    el.style.opacity = '0';
-    io.observe(el);
-  });
-
-  // Köp nu feedback
-  document.querySelectorAll('.btn-buy').forEach(btn => {
+  // cart count
+  let n = 0;
+  const badge = document.getElementById('cartCount');
+  document.querySelectorAll('.pcard-buy').forEach(btn => {
     btn.addEventListener('click', () => {
-      const orig = btn.textContent;
+      n++;
+      badge.textContent = n;
+      const t = btn.textContent;
       btn.textContent = '✓ Lagt till';
       btn.style.background = '#2C5A38';
-      setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1600);
+      setTimeout(() => { btn.textContent = t; btn.style.background = ''; }, 1500);
     });
+  });
+
+  // scroll reveal
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.animation = 'fadeUp .5s ease forwards';
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.pcard, .loc-card').forEach(el => {
+    el.style.opacity = '0';
+    obs.observe(el);
   });
 </script>
 </body>
