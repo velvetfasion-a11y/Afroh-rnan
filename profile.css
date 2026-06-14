@@ -264,7 +264,7 @@
 .pnav-item.logout:hover { background: #fbece9; }
 
 .bottom-nav { margin-top: 6px; }
-.bottom-nav #bn-toggle { cursor: pointer; justify-content: flex-start; }
+.bottom-nav .bn-header { cursor: pointer; justify-content: flex-start; width: 100%; }
 
 .bn-chevron {
   margin-left: auto;
@@ -272,14 +272,31 @@
   height: 18px;
   color: #9b8c78;
   transition: transform 0.25s;
+  flex-shrink: 0;
 }
 
-.bn-chevron.rotated { transform: rotate(180deg); }
+.bottom-nav.is-open .bn-chevron { transform: rotate(180deg); }
 
 .bn-collapse {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height 0.35s ease;
+}
+
+.bottom-nav.is-open .bn-header { display: none; }
+
+.bottom-nav.is-open .bn-collapse {
+  max-height: 520px;
+  overflow: visible;
+}
+
+@media (min-width: 901px) {
+  .bottom-nav .bn-header { display: none; }
+
+  .bottom-nav .bn-collapse {
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 .chip-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }

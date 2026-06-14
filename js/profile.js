@@ -138,23 +138,28 @@ function goTab(tab) {
   document.querySelectorAll('.tab-panel').forEach((panel) => {
     panel.classList.toggle('active', panel.id === 'tab-' + tab);
   });
+
+  const header = document.getElementById('bn-toggle');
+  if (header) {
+    header.classList.toggle('active', tab === 'overview');
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function toggleBottomNav() {
-  const collapse = document.getElementById('bn-collapse');
-  const chevron = document.getElementById('bn-chevron');
-  const isOpen = collapse.classList.contains('open');
+function setBottomNavOpen(open) {
+  const nav = document.getElementById('profile-nav');
+  const toggle = document.getElementById('bn-toggle');
+  if (!nav || !toggle) return;
 
-  if (isOpen) {
-    collapse.style.maxHeight = null;
-    collapse.classList.remove('open');
-    chevron.classList.remove('rotated');
-  } else {
-    collapse.classList.add('open');
-    collapse.style.maxHeight = collapse.scrollHeight + 'px';
-    chevron.classList.add('rotated');
-  }
+  nav.classList.toggle('is-open', open);
+  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function toggleBottomNav() {
+  const nav = document.getElementById('profile-nav');
+  if (!nav) return;
+  setBottomNavOpen(!nav.classList.contains('is-open'));
 }
 
 function populateUser(user) {
@@ -202,7 +207,12 @@ requireAuth(async (user) => {
 document.getElementById('bn-toggle').addEventListener('click', toggleBottomNav);
 
 document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
-  btn.addEventListener('click', () => goTab(btn.dataset.tab));
+  btn.addEventListener('click', () => {
+    goTab(btn.dataset.tab);
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      setBottomNavOpen(true);
+    }
+  });
 });
 
 document.querySelectorAll('[data-go-tab]').forEach((btn) => {
