@@ -3,7 +3,9 @@ import {
   signOut,
   getFirebaseAuth,
   updateProfile,
+  wireNavProfile,
 } from './firebase-auth.js';
+import { isAdminUser } from './admin-check.js';
 import {
   getFavoriteProducts,
   removeFavorite,
@@ -179,7 +181,14 @@ function populateUser(user) {
   renderFavoritesGrid();
 }
 
-requireAuth((user) => {
+wireNavProfile();
+
+requireAuth(async (user) => {
+  if (await isAdminUser(user)) {
+    window.location.replace('admin.html');
+    return;
+  }
+
   document.getElementById('profileLoading').hidden = true;
   document.getElementById('profileContent').hidden = false;
   populateUser(user);

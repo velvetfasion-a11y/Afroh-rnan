@@ -79,18 +79,40 @@ function safeNextPath(next) {
 
 export async function redirectAfterAuth(user) {
   const authUser = user || getFirebaseAuth().currentUser;
-  const params = new URLSearchParams(window.location.search);
-  let next = safeNextPath(params.get('next'));
-
-  if (!next) {
-    if (authUser && (await isAdminUser(authUser))) {
-      next = 'admin.html';
-    } else {
-      next = 'profile.html';
-    }
+  if (authUser && (await isAdminUser(authUser))) {
+    window.location.href = 'admin.html';
+    return;
   }
 
+  const params = new URLSearchParams(window.location.search);
+  const next = safeNextPath(params.get('next')) || 'profile.html';
   window.location.href = next;
+}
+
+export function wireNavProfile(options = {}) {
+  const { basePath = '' } = options;
+  if (!isFirebaseConfigured()) return;
+
+  ensureAuthPersistence().then(() => {
+    onAuthStateChanged(getFirebaseAuth(), async (user) => {
+      let href;
+      let label;
+      if (!user) {
+        href = `${basePath}login.html`;
+        label = 'Logga in';
+      } else if (await isAdminUser(user)) {
+        href = `${basePath}admin.html`;
+        label = 'Admin';
+      } else {
+        href = `${basePath}profile.html`;
+        label = 'Mitt konto';
+      }
+      document.querySelectorAll('.nav-profile').forEach((link) => {
+        link.href = href;
+        link.setAttribute('aria-label', label);
+      });
+    });
+  });
 }
 
 export function showAuthError(message) {

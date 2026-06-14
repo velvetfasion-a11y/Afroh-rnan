@@ -237,6 +237,9 @@ function page(p) {
 </footer>
 
 <script src="../js/cart.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/admin-gate.js"></script>
+<script type="module" src="../js/nav-auth.js"></script>
 <script>
   const price = ${p.price};
   let qty = 1;
