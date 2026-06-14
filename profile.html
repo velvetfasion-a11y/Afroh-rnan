@@ -43,46 +43,6 @@
         <div class="sidebar-email" id="sidebarEmail"></div>
         <div class="tier-badge" id="sidebarTier">Medlem</div>
       </div>
-
-      <nav class="profile-nav" id="profile-nav" aria-label="Profilmeny">
-        <button type="button" class="pnav-item active pnav-toggle" id="bn-toggle" aria-expanded="false" aria-controls="bn-collapse">
-          <i class="ti ti-layout-dashboard"></i>
-          Översikt
-          <i class="ti ti-chevron-down bn-chevron" id="bn-chevron"></i>
-        </button>
-        <div class="pnav-menu" id="bn-collapse">
-          <button type="button" class="pnav-item pnav-overview-desktop active" data-tab="overview">
-            <i class="ti ti-layout-dashboard"></i>
-            Översikt
-          </button>
-          <button type="button" class="pnav-item" data-tab="orders">
-            <i class="ti ti-package"></i>
-            Mina beställningar
-          </button>
-          <button type="button" class="pnav-item" data-tab="favorites">
-            <i class="ti ti-heart"></i>
-            Sparade produkter
-            <span class="count-badge" id="fav-count-nav">0</span>
-          </button>
-          <button type="button" class="pnav-item" data-tab="addresses">
-            <i class="ti ti-map-pin"></i>
-            Adresser
-          </button>
-          <button type="button" class="pnav-item" data-tab="settings">
-            <i class="ti ti-settings"></i>
-            Inställningar
-          </button>
-          <button type="button" class="pnav-item" data-tab="membership">
-            <i class="ti ti-star"></i>
-            Medlemskap
-          </button>
-          <div class="pnav-divider"></div>
-          <button type="button" class="pnav-item logout" id="logoutBtn">
-            <i class="ti ti-logout"></i>
-            Logga ut
-          </button>
-        </div>
-      </nav>
     </aside>
 
     <main class="profile-main">
@@ -235,6 +195,42 @@
           </div>
         </div>
       </section>
+
+      <nav class="profile-nav" id="profile-nav" aria-label="Profilmeny">
+        <button type="button" class="pnav-item pnav-toggle" id="bn-toggle" aria-expanded="false" aria-controls="bn-collapse">
+          <i class="ti ti-layout-dashboard"></i>
+          <span class="pnav-toggle-label" id="bn-toggle-label">Översikt</span>
+          <i class="ti ti-chevron-down bn-chevron"></i>
+        </button>
+        <div class="pnav-menu" id="bn-collapse">
+          <button type="button" class="pnav-item" data-tab="orders">
+            <i class="ti ti-package"></i>
+            Mina beställningar
+          </button>
+          <button type="button" class="pnav-item" data-tab="favorites">
+            <i class="ti ti-heart"></i>
+            Sparade produkter
+            <span class="count-badge" id="fav-count-nav">0</span>
+          </button>
+          <button type="button" class="pnav-item" data-tab="addresses">
+            <i class="ti ti-map-pin"></i>
+            Adresser
+          </button>
+          <button type="button" class="pnav-item" data-tab="settings">
+            <i class="ti ti-settings"></i>
+            Inställningar
+          </button>
+          <button type="button" class="pnav-item" data-tab="membership">
+            <i class="ti ti-star"></i>
+            Medlemskap
+          </button>
+          <div class="pnav-divider"></div>
+          <button type="button" class="pnav-item logout" id="logoutBtn">
+            <i class="ti ti-logout"></i>
+            Logga ut
+          </button>
+        </div>
+      </nav>
 
     </main>
   </div>

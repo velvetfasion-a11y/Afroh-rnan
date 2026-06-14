@@ -132,6 +132,15 @@ function renderFavoritesGrid() {
   });
 }
 
+const TAB_LABELS = {
+  overview: 'Översikt',
+  orders: 'Mina beställningar',
+  favorites: 'Sparade produkter',
+  addresses: 'Adresser',
+  settings: 'Inställningar',
+  membership: 'Medlemskap',
+};
+
 function goTab(tab) {
   document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -140,10 +149,13 @@ function goTab(tab) {
     panel.classList.toggle('active', panel.id === 'tab-' + tab);
   });
 
-  const header = document.getElementById('bn-toggle');
-  if (header) {
-    header.classList.toggle('active', tab === 'overview');
-  }
+  const label = document.getElementById('bn-toggle-label');
+  if (label) label.textContent = TAB_LABELS[tab] || 'Översikt';
+
+  const nav = document.getElementById('profile-nav');
+  const toggle = document.getElementById('bn-toggle');
+  if (nav) nav.classList.remove('is-open');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
