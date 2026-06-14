@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suya Spice – Afrohörnan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<link rel="stylesheet" href="product.css">
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="logo">Afro<em>hörnan</em></a>
+  <ul class="nav-links">
+    <li><a href="../index.html#kosmetika-products">Kosmetika</a></li>
+    <li><a href="../index.html#mat-products">Mat &amp; Kryddor</a></li>
+    <li><a href="../index.html#butiker">Butiker</a></li>
+    <li><a href="../index.html#kontakt">Kontakt</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="../login.html" class="nav-profile" aria-label="Logga in">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <button class="nav-cart-btn" type="button" aria-label="Varukorg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </button>
+  </div>
+</nav>
+
+<main class="product-main">
+  <nav class="breadcrumb" aria-label="Brödsmulor">
+    <a href="../index.html">Hem</a> /
+    <a href="../index.html#mat-products">Mat & Kryddor</a> /
+    <span>Suya Spice</span>
+  </nav>
+
+  <div class="product-layout">
+    <div class="product-gallery">
+      <div class="product-gallery-img">
+        <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&auto=format&fit=crop&q=80" alt="Suya krydda">
+        
+      </div>
+    </div>
+
+    <div class="product-details">
+      <p class="product-brand">Grillkrydda</p>
+      <h1>Suya Spice – Nigeriansk Grillkrydda</h1>
+      <p class="product-size">150 g</p>
+      <p class="product-price">75 kr</p>
+
+      <hr class="product-divider">
+
+      <p class="product-desc">Den klassiska nigerianska grillkryddan med jordnötter, chili och aromatiska kryddor. Strö över kött, kyckling eller grönsaker innan grilling.</p>
+      <div class="product-tags">
+        <span class="product-tag">Glutenfri</span>
+        <span class="product-tag">Grill</span>
+        <span class="product-tag">Ursprung: Nigeria</span>
+      </div>
+
+      <hr class="product-divider">
+
+      <p class="product-qty-label">Antal</p>
+      <div class="product-qty-row">
+        <button type="button" class="qty-btn" id="qtyMinus" aria-label="Minska antal">−</button>
+        <span id="qty">1</span>
+        <button type="button" class="qty-btn" id="qtyPlus" aria-label="Öka antal">+</button>
+        <span id="total">75 kr totalt</span>
+      </div>
+
+      <button type="button" class="btn-buy-product" id="buyBtn">Köp nu</button>
+    </div>
+  </div>
+
+  <a href="../index.html#mat-products" class="back-shop">← Tillbaka till sortimentet</a>
+</main>
+
+<footer>
+  <span class="fl">Afrohörnan</span>
+  Stockholm Fittja &nbsp;·&nbsp; Uppsala Gottsunda<br>
+  <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
+  © 2026 Afrohörnan. Alla rättigheter förbehållna.
+</footer>
+
+<script src="../js/cart.js"></script>
+<script>
+  const price = 75;
+  let qty = 1;
+  const qtyEl = document.getElementById('qty');
+  const totalEl = document.getElementById('total');
+  const buyBtn = document.getElementById('buyBtn');
+
+  function updateTotal() {
+    qtyEl.textContent = qty;
+    totalEl.textContent = (qty * price) + ' kr totalt';
+  }
+
+  document.getElementById('qtyMinus').addEventListener('click', () => {
+    qty = Math.max(1, qty - 1);
+    updateTotal();
+  });
+  document.getElementById('qtyPlus').addEventListener('click', () => {
+    qty += 1;
+    updateTotal();
+  });
+
+  buyBtn.addEventListener('click', () => {
+    AfroCart.add(qty);
+    buyBtn.textContent = '✓ Lagt till';
+    buyBtn.classList.add('added');
+    setTimeout(() => {
+      buyBtn.textContent = 'Köp nu';
+      buyBtn.classList.remove('added');
+    }, 1800);
+  });
+</script>
+</body>
+</html>

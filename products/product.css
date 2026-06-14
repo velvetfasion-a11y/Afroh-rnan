@@ -1,0 +1,198 @@
+/* Product pages – matches Afrohörnan site */
+.product-main {
+  background: var(--bg2);
+  padding: 2rem 1.5rem 4rem;
+  min-height: calc(100vh - 58px - 120px);
+}
+
+.breadcrumb {
+  max-width: 1000px;
+  margin: 0 auto 1.5rem;
+  font-size: .75rem;
+  color: var(--muted);
+}
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.breadcrumb a:hover { color: var(--rust); }
+.breadcrumb span { color: var(--text); }
+
+.product-layout {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.product-gallery {
+  background: #fff;
+  border: 1px solid #E8E0D5;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.product-gallery-img {
+  position: relative;
+  aspect-ratio: 1;
+  background: #F3EDE5;
+}
+.product-gallery-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--rust);
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: .22rem .6rem;
+  border-radius: 3px;
+}
+.product-badge.gold { background: var(--gold); color: #1A0D00; }
+
+.product-details {
+  background: #fff;
+  border: 1px solid #E8E0D5;
+  border-radius: 14px;
+  padding: 1.75rem 2rem;
+}
+.product-brand {
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: .35rem;
+}
+.product-details h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+  margin-bottom: .25rem;
+}
+.product-size {
+  font-size: .85rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+.product-price {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--rust);
+  margin-bottom: 1.25rem;
+}
+.product-divider {
+  border: none;
+  border-top: 1px solid #E8E0D5;
+  margin: 1.25rem 0;
+}
+.product-desc {
+  font-size: .9rem;
+  color: var(--muted);
+  line-height: 1.75;
+  font-weight: 300;
+  margin-bottom: 1rem;
+}
+.product-tags { margin-bottom: 1rem; }
+.product-tag {
+  display: inline-block;
+  font-size: .68rem;
+  padding: .28rem .65rem;
+  border-radius: 20px;
+  background: var(--bg2);
+  border: 1px solid #E8E0D5;
+  color: var(--muted);
+  margin: 0 .35rem .35rem 0;
+}
+.product-qty-label {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: .65rem;
+}
+.product-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.qty-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #E8E0D5;
+  background: var(--bg2);
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  transition: background .15s;
+}
+.qty-btn:hover { background: #EDE8E0; }
+#qty {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-width: 1.5rem;
+  text-align: center;
+}
+#total {
+  font-size: .85rem;
+  color: var(--muted);
+}
+.btn-buy-product {
+  width: 100%;
+  padding: .95rem;
+  background: linear-gradient(135deg, var(--gold) 0%, #B87D10 100%);
+  color: #1A0D00;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(212,148,26,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-buy-product:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px rgba(212,148,26,.45);
+}
+.btn-buy-product.added { background: var(--green); color: #fff; }
+
+.back-shop {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  margin-top: 2rem;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: .04em;
+}
+.back-shop:hover { color: var(--rust); }
+
+nav .logo { text-decoration: none; color: inherit; }
+
+@media (max-width: 768px) {
+  .product-layout { grid-template-columns: 1fr; gap: 1.25rem; }
+  .product-details { padding: 1.25rem 1.25rem; }
+  .product-details h1 { font-size: 1.5rem; }
+}

@@ -48,8 +48,13 @@ nav {
 }
 .nav-links a:hover { color: var(--text); }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
-.nav-icon { background: none; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; }
-.nav-icon svg { width: 20px; height: 20px; }
+.nav-profile {
+  background: none; border: none; cursor: pointer;
+  color: var(--text); display: flex; align-items: center;
+  text-decoration: none; transition: color .2s;
+}
+.nav-profile:hover { color: var(--rust); }
+.nav-profile svg { width: 20px; height: 20px; }
 .nav-cart-btn {
   position: relative;
   background: var(--gold); color: #1A0D00;
@@ -212,8 +217,17 @@ nav {
   cursor: pointer;
   transition: background .15s;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .pcard:hover { background: var(--bg2); }
+.pcard-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  flex: 1;
+}
+.pcard-link:hover .pcard-name { color: var(--rust); }
 .pcard-img {
   width: 100%; aspect-ratio: 1;
   overflow: hidden; position: relative;
@@ -245,6 +259,7 @@ nav {
   padding: .5rem; font-family: 'Outfit', sans-serif;
   font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
   cursor: pointer; transition: background .2s;
+  text-decoration: none; text-align: center;
 }
 .pcard-buy:hover { background: var(--rust); }
 
@@ -402,7 +417,7 @@ footer a { color: var(--gold); text-decoration: none; }
 
 <!-- ===== NAV ===== -->
 <nav>
-  <div class="logo">Afro<em>hörnan</em></div>
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
   <ul class="nav-links">
     <li><a href="#kosmetika">Kosmetika</a></li>
     <li><a href="#mat">Mat & Kryddor</a></li>
@@ -410,9 +425,9 @@ footer a { color: var(--gold); text-decoration: none; }
     <li><a href="#kontakt">Kontakt</a></li>
   </ul>
   <div class="nav-right">
-    <button class="nav-icon" aria-label="Sök">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    </button>
+    <a href="login.html" class="nav-profile" aria-label="Logga in">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
     <button class="nav-cart-btn" id="cartBtn" aria-label="Varukorg">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       <span class="cart-badge" id="cartCount">0</span>
@@ -472,54 +487,62 @@ footer a { color: var(--gold); text-decoration: none; }
   <div class="product-grid">
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=500&auto=format&fit=crop&q=80" alt="Shea Butter">
-        <span class="pcard-badge">Populär</span>
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Sheabutter</div>
-        <div class="pcard-name">Oraffinerad Shea Butter 100% naturell 200 g</div>
-        <div class="pcard-price">129 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/shea-butter.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=500&auto=format&fit=crop&q=80" alt="Shea Butter">
+          <span class="pcard-badge">Populär</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Sheabutter</div>
+          <div class="pcard-name">Oraffinerad Shea Butter 100% naturell 200 g</div>
+          <div class="pcard-price">129 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1612817288484-6f916006741a?w=500&auto=format&fit=crop&q=80" alt="Black Soap">
-        <span class="pcard-badge gold">Nyhet</span>
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Tvål</div>
-        <div class="pcard-name">Afrikansk Svart Tvål – Rå & Naturlig 150 g</div>
-        <div class="pcard-price">89 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/svart-tval.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1612817288484-6f916006741a?w=500&auto=format&fit=crop&q=80" alt="Black Soap">
+          <span class="pcard-badge gold">Nyhet</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Tvål</div>
+          <div class="pcard-name">Afrikansk Svart Tvål – Rå & Naturlig 150 g</div>
+          <div class="pcard-price">89 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1590439471364-192aa70c0b53?w=500&auto=format&fit=crop&q=80" alt="Argan Oil">
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Hårolja</div>
-        <div class="pcard-name">Marockansk Arganolja Kall­pressad 100 ml</div>
-        <div class="pcard-price">149 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/arganolja.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1590439471364-192aa70c0b53?w=500&auto=format&fit=crop&q=80" alt="Argan Oil">
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Hårolja</div>
+          <div class="pcard-name">Marockansk Arganolja Kall­pressad 100 ml</div>
+          <div class="pcard-price">149 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1631730486784-74757a1e7f24?w=500&auto=format&fit=crop&q=80" alt="Coconut Oil">
-        <span class="pcard-badge">Ekologisk</span>
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Kokosolja</div>
-        <div class="pcard-name">Virgin Kokosolja Hudvård & Hår 250 ml</div>
-        <div class="pcard-price">99 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/kokosolja.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1631730486784-74757a1e7f24?w=500&auto=format&fit=crop&q=80" alt="Coconut Oil">
+          <span class="pcard-badge">Ekologisk</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Kokosolja</div>
+          <div class="pcard-name">Virgin Kokosolja Hudvård & Hår 250 ml</div>
+          <div class="pcard-price">99 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
   </div>
@@ -550,54 +573,62 @@ footer a { color: var(--gold); text-decoration: none; }
   <div class="product-grid">
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=500&auto=format&fit=crop&q=80" alt="Berbere krydda">
-        <span class="pcard-badge">Bästsäljare</span>
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Kryddblandning</div>
-        <div class="pcard-name">Berbere – Etiopisk Kryddblandning 200 g</div>
-        <div class="pcard-price">89 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/berbere.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=500&auto=format&fit=crop&q=80" alt="Berbere krydda">
+          <span class="pcard-badge">Bästsäljare</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Kryddblandning</div>
+          <div class="pcard-name">Berbere – Etiopisk Kryddblandning 200 g</div>
+          <div class="pcard-price">89 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80" alt="Rooibos te">
-        <span class="pcard-badge gold">Nyhet</span>
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Te</div>
-        <div class="pcard-name">Rooibos Chai – Sydafrikanskt Te 100 g</div>
-        <div class="pcard-price">65 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/rooibos-chai.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80" alt="Rooibos te">
+          <span class="pcard-badge gold">Nyhet</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Te</div>
+          <div class="pcard-name">Rooibos Chai – Sydafrikanskt Te 100 g</div>
+          <div class="pcard-price">65 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80" alt="Suya Spice">
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Grillkrydda</div>
-        <div class="pcard-name">Suya Spice – Nigeriansk Grillkrydda 150 g</div>
-        <div class="pcard-price">75 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/suya-spice.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80" alt="Suya Spice">
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Grillkrydda</div>
+          <div class="pcard-name">Suya Spice – Nigeriansk Grillkrydda 150 g</div>
+          <div class="pcard-price">75 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
     <div class="pcard">
-      <div class="pcard-img">
-        <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&auto=format&fit=crop&q=80" alt="Baobab">
-        <span class="pcard-badge">Ekologisk</span>
-      </div>
-      <div class="pcard-body">
-        <div class="pcard-brand">Superfood</div>
-        <div class="pcard-name">Baobab Snacks – Superfrukt Chips 80 g</div>
-        <div class="pcard-price">55 kr</div>
-        <button class="pcard-buy">Köp nu</button>
-      </div>
+      <a href="products/baobab-snacks.html" class="pcard-link">
+        <div class="pcard-img">
+          <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&auto=format&fit=crop&q=80" alt="Baobab">
+          <span class="pcard-badge">Ekologisk</span>
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-brand">Superfood</div>
+          <div class="pcard-name">Baobab Snacks – Superfrukt Chips 80 g</div>
+          <div class="pcard-price">55 kr</div>
+        </div>
+      </a>
+      <a href="#butiker" class="pcard-buy">Hitta butik</a>
     </div>
 
   </div>
@@ -690,21 +721,8 @@ footer a { color: var(--gold); text-decoration: none; }
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 
+<script src="js/cart.js"></script>
 <script>
-  // cart count
-  let n = 0;
-  const badge = document.getElementById('cartCount');
-  document.querySelectorAll('.pcard-buy').forEach(btn => {
-    btn.addEventListener('click', () => {
-      n++;
-      badge.textContent = n;
-      const t = btn.textContent;
-      btn.textContent = '✓ Lagt till';
-      btn.style.background = '#2C5A38';
-      setTimeout(() => { btn.textContent = t; btn.style.background = ''; }, 1500);
-    });
-  });
-
   // scroll reveal
   const obs = new IntersectionObserver(entries => {
     entries.forEach(e => {

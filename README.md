@@ -2,10 +2,24 @@
 
 Afrikansk skönhet, mat och kryddor – webbplats för butikerna i Stockholm Fittja och Uppsala Gottsunda.
 
+## Firebase (login)
+
+1. Copy `.env.example` to `.env`
+2. Paste your Firebase web app config from **Firebase Console → Project settings → Your apps**
+3. Generate the config file:
+
+```bash
+node scripts/generate-firebase-config.mjs
+```
+
+This writes `js/firebase-config.js` (safe to commit — Firebase web keys are public and restricted by domain).
+
+`.env` is gitignored and never pushed to GitHub.
+
 ## Lokal förhandsvisning
 
 ```bash
-cd Afrohörnan
+node scripts/generate-firebase-config.mjs   # if you changed .env
 python3 -m http.server 8000
 ```
 

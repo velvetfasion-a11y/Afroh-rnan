@@ -1,0 +1,79 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --rust:   #C8541C;
+  --gold:   #D4941A;
+  --gold-lt:#F0C060;
+  --brown:  #1C1610;
+  --dark:   #0E0B07;
+  --text:   #1A1208;
+  --muted:  #6B5A3E;
+  --green:  #2C5A38;
+  --bg:     #FFFFFF;
+  --bg2:    #F7F4EF;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+nav {
+  position: sticky; top: 0; z-index: 200;
+  background: #fff;
+  border-bottom: 1px solid #E8E0D5;
+  padding: 0 2.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px;
+}
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 700;
+  color: var(--brown); letter-spacing: .02em;
+  text-decoration: none;
+}
+.logo em { font-style: italic; color: var(--rust); }
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  text-decoration: none; font-size: .8rem; font-weight: 500;
+  color: var(--muted); letter-spacing: .05em; text-transform: uppercase;
+  transition: color .2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-profile {
+  background: none; border: none; cursor: pointer;
+  color: var(--text); display: flex; align-items: center;
+  text-decoration: none; transition: color .2s;
+}
+.nav-profile:hover { color: var(--rust); }
+.nav-profile svg { width: 20px; height: 20px; }
+.nav-cart-btn {
+  position: relative;
+  background: var(--gold); color: #1A0D00;
+  border: none; border-radius: 4px;
+  padding: .42rem .6rem; cursor: pointer;
+  display: flex; align-items: center;
+  transition: background .2s;
+}
+.nav-cart-btn:hover { background: var(--gold-lt); }
+.nav-cart-btn svg { width: 19px; height: 19px; }
+.cart-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--brown); color: var(--gold);
+  font-size: .55rem; font-weight: 700;
+  width: 15px; height: 15px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+footer {
+  background: var(--dark);
+  border-top: 1px solid rgba(212,148,26,.1);
+  text-align: center; padding: 2.5rem 2rem;
+  font-size: .75rem; color: rgba(255,255,255,.3); line-height: 2;
+}
+footer .fl { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: rgba(255,255,255,.6); display: block; margin-bottom: .2rem; }
+footer a { color: var(--gold); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  nav { padding: 0 1.2rem; }
+}
