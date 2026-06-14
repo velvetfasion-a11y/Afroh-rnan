@@ -33,6 +33,7 @@
   padding: 26px 22px;
   color: #f3ead9;
   text-align: center;
+  margin-bottom: 18px;
 }
 
 .avatar {
@@ -224,9 +225,18 @@
   position: relative;
 }
 
-.pnav-item svg { width: 18px; height: 18px; flex-shrink: 0; color: #a8987f; }
+.pnav-item i.ti {
+  font-size: 17px;
+  width: 18px;
+  text-align: center;
+  color: #a8987f;
+  flex-shrink: 0;
+  line-height: 1;
+}
 
 .pnav-item:hover { background: #f7f1e6; color: #2b2014; }
+
+.pnav-item:hover i.ti { color: #6b5d4a; }
 
 .pnav-item.active {
   background: #f7f1e6;
@@ -234,7 +244,7 @@
   font-weight: 600;
 }
 
-.pnav-item.active svg { color: #c8892a; }
+.pnav-item.active i.ti { color: #c8892a; }
 
 .pnav-item.active::before {
   content: '';
@@ -260,40 +270,51 @@
 .pnav-divider { height: 1px; background: #ece1d2; margin: 8px 6px; }
 
 .pnav-item.logout { color: #c0524a; }
-.pnav-item.logout svg { color: #c0524a; }
+.pnav-item.logout i.ti { color: #c0524a; }
 .pnav-item.logout:hover { background: #fbece9; }
 
-.bottom-nav { margin-top: 6px; }
-.bottom-nav .bn-header { cursor: pointer; justify-content: flex-start; width: 100%; }
+.pnav-toggle {
+  cursor: pointer;
+  justify-content: flex-start;
+}
 
-.bn-chevron {
+.pnav-toggle .bn-chevron {
   margin-left: auto;
-  width: 18px;
-  height: 18px;
+  font-size: 18px;
   color: #9b8c78;
   transition: transform 0.25s;
-  flex-shrink: 0;
 }
 
-.bottom-nav.is-open .bn-chevron { transform: rotate(180deg); }
-
-.bn-collapse {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.35s ease;
+.pnav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.bottom-nav.is-open .bn-header { display: none; }
+.pnav-overview-desktop { display: none; }
 
-.bottom-nav.is-open .bn-collapse {
-  max-height: 520px;
-  overflow: visible;
+@media (max-width: 900px) {
+  .pnav-menu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  #profile-nav.is-open .pnav-menu {
+    max-height: 420px;
+  }
+
+  #profile-nav.is-open .bn-chevron {
+    transform: rotate(180deg);
+  }
 }
 
 @media (min-width: 901px) {
-  .bottom-nav .bn-header { display: none; }
+  .pnav-toggle { display: none; }
 
-  .bottom-nav .bn-collapse {
+  .pnav-overview-desktop { display: flex; }
+
+  .pnav-menu {
     max-height: none;
     overflow: visible;
   }

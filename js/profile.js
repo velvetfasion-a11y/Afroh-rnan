@@ -79,7 +79,8 @@ function favCardHtml(product, options = {}) {
 
 function updateFavCounts() {
   const count = getFavoriteProducts().length;
-  document.getElementById('fav-count-bottom').textContent = String(count);
+  const badge = document.getElementById('fav-count-nav');
+  if (badge) badge.textContent = String(count);
   document.getElementById('pointsVal').textContent = String(count * 10);
 }
 
@@ -147,19 +148,13 @@ function goTab(tab) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function setBottomNavOpen(open) {
+function toggleBottomNav() {
   const nav = document.getElementById('profile-nav');
   const toggle = document.getElementById('bn-toggle');
   if (!nav || !toggle) return;
 
-  nav.classList.toggle('is-open', open);
-  toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-
-function toggleBottomNav() {
-  const nav = document.getElementById('profile-nav');
-  if (!nav) return;
-  setBottomNavOpen(!nav.classList.contains('is-open'));
+  const isOpen = nav.classList.toggle('is-open');
+  toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 }
 
 function populateUser(user) {
@@ -207,12 +202,7 @@ requireAuth(async (user) => {
 document.getElementById('bn-toggle').addEventListener('click', toggleBottomNav);
 
 document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    goTab(btn.dataset.tab);
-    if (window.matchMedia('(max-width: 900px)').matches) {
-      setBottomNavOpen(true);
-    }
-  });
+  btn.addEventListener('click', () => goTab(btn.dataset.tab));
 });
 
 document.querySelectorAll('[data-go-tab]').forEach((btn) => {
