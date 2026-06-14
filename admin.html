@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin – Afrohörnan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+<header class="admin-nav">
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <div class="admin-nav-right">
+    <span class="admin-email" id="adminEmail"></span>
+    <button type="button" class="admin-logout" id="adminLogout">Logga ut</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <p class="admin-loading" id="adminLoading">Verifierar behörighet…</p>
+
+  <div id="adminContent" hidden>
+    <h1>Adminpanel</h1>
+    <p class="admin-sub">Hantera butiken och sortimentet</p>
+
+    <div class="admin-grid">
+      <div class="admin-stat">
+        <div class="admin-stat-label">Produkter på sidan</div>
+        <div class="admin-stat-value">8</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-label">Butiker</div>
+        <div class="admin-stat-value">2</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-label">Status</div>
+        <div class="admin-stat-value" style="font-size:1.2rem">Live</div>
+      </div>
+    </div>
+
+    <div class="admin-panel">
+      <h2>Snabblänkar</h2>
+      <ul class="admin-list">
+        <li><a href="https://console.firebase.google.com/project/afrohornan/firestore" target="_blank" rel="noopener">Firestore databas <span>→</span></a></li>
+        <li><a href="https://console.firebase.google.com/project/afrohornan/storage" target="_blank" rel="noopener">Produktbilder (Storage) <span>→</span></a></li>
+        <li><a href="https://console.firebase.google.com/project/afrohornan/authentication/users" target="_blank" rel="noopener">Användare &amp; inloggning <span>→</span></a></li>
+        <li><a href="index.html" target="_blank">Visa webbplatsen <span>→</span></a></li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/admin-gate.js"></script>
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>

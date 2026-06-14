@@ -7,7 +7,11 @@ import {
   GoogleAuthProvider,
   updateProfile,
   onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+  signOut,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+import { isAdminUser } from './admin-check.js';
 
 const config = window.firebaseConfig;
 
@@ -16,6 +20,7 @@ export function isFirebaseConfigured() {
 }
 
 let auth = null;
+let persistenceReady = false;
 
 export function getFirebaseAuth() {
   if (!isFirebaseConfigured()) {
@@ -28,6 +33,14 @@ export function getFirebaseAuth() {
   return auth;
 }
 
+export async function ensureAuthPersistence() {
+  if (persistenceReady) return getFirebaseAuth();
+  const a = getFirebaseAuth();
+  await setPersistence(a, browserLocalPersistence);
+  persistenceReady = true;
+  return a;
+}
+
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -37,6 +50,7 @@ export {
   signInWithPopup,
   updateProfile,
   onAuthStateChanged,
+  signOut,
 };
 
 export function authErrorMessage(code) {
@@ -58,10 +72,25 @@ export function authErrorMessage(code) {
   return messages[code] || 'Något gick fel. Försök igen.';
 }
 
-export function redirectAfterAuth() {
+function safeNextPath(next) {
+  if (!next || next.startsWith('http') || next.includes('..')) return null;
+  return next;
+}
+
+export async function redirectAfterAuth(user) {
+  const authUser = user || getFirebaseAuth().currentUser;
   const params = new URLSearchParams(window.location.search);
-  const next = params.get('next');
-  window.location.href = next && !next.startsWith('http') ? next : 'index.html';
+  let next = safeNextPath(params.get('next'));
+
+  if (!next) {
+    if (authUser && (await isAdminUser(authUser))) {
+      next = 'admin.html';
+    } else {
+      next = 'profile.html';
+    }
+  }
+
+  window.location.href = next;
 }
 
 export function showAuthError(message) {
@@ -106,11 +135,46 @@ export function setGoogleLoading(button, loading) {
 
 export function guardAuthPage() {
   if (!isFirebaseConfigured()) {
-    showAuthError('Firebase är inte konfigurerat ännu. Klistra in dina uppgifter i js/firebase-config.js.');
+    showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
-  onAuthStateChanged(getFirebaseAuth(), (user) => {
-    if (user) redirectAfterAuth();
+  ensureAuthPersistence().then(() => {
+    onAuthStateChanged(getFirebaseAuth(), async (user) => {
+      if (user) await redirectAfterAuth(user);
+    });
+  });
+}
+
+export function requireAuth(onUser) {
+  if (!isFirebaseConfigured()) return;
+
+  ensureAuthPersistence().then(() => {
+    onAuthStateChanged(getFirebaseAuth(), async (user) => {
+      if (!user) {
+        const page = window.location.pathname.split('/').pop() || 'profile.html';
+        window.location.href = `login.html?next=${encodeURIComponent(page)}`;
+        return;
+      }
+      if (onUser) await onUser(user);
+    });
+  });
+}
+
+export function requireAdmin(onUser) {
+  if (!isFirebaseConfigured()) return;
+
+  ensureAuthPersistence().then(() => {
+    onAuthStateChanged(getFirebaseAuth(), async (user) => {
+      if (!user) {
+        window.location.href = 'login.html?next=admin.html';
+        return;
+      }
+      if (!(await isAdminUser(user))) {
+        window.location.href = 'profile.html';
+        return;
+      }
+      if (onUser) await onUser(user);
+    });
   });
 }

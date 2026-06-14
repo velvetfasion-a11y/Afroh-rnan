@@ -11,6 +11,7 @@ import {
   setGoogleLoading,
   guardAuthPage,
   isFirebaseConfigured,
+  ensureAuthPersistence,
 } from './firebase-auth.js';
 
 guardAuthPage();
@@ -19,14 +20,15 @@ document.getElementById('googleLogin').addEventListener('click', async () => {
   clearAuthError();
   const button = document.getElementById('googleLogin');
   if (!isFirebaseConfigured()) {
-    showAuthError('Firebase är inte konfigurerat ännu. Klistra in dina uppgifter i js/firebase-config.js.');
+    showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
   setGoogleLoading(button, true);
   try {
-    await signInWithPopup(getFirebaseAuth(), googleProvider);
-    redirectAfterAuth();
+    await ensureAuthPersistence();
+    const result = await signInWithPopup(getFirebaseAuth(), googleProvider);
+    await redirectAfterAuth(result.user);
   } catch (error) {
     if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
       showAuthError(authErrorMessage(error.code));
@@ -41,7 +43,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   clearAuthError();
 
   if (!isFirebaseConfigured()) {
-    showAuthError('Firebase är inte konfigurerat ännu. Klistra in dina uppgifter i js/firebase-config.js.');
+    showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
@@ -51,8 +53,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   setButtonLoading(button, true, 'Loggar in…');
   try {
-    await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
-    redirectAfterAuth();
+    await ensureAuthPersistence();
+    const result = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    await redirectAfterAuth(result.user);
   } catch (error) {
     showAuthError(authErrorMessage(error.code));
   } finally {

@@ -12,6 +12,7 @@ import {
   setGoogleLoading,
   guardAuthPage,
   isFirebaseConfigured,
+  ensureAuthPersistence,
 } from './firebase-auth.js';
 
 guardAuthPage();
@@ -20,14 +21,15 @@ document.getElementById('googleSignup').addEventListener('click', async () => {
   clearAuthError();
   const button = document.getElementById('googleSignup');
   if (!isFirebaseConfigured()) {
-    showAuthError('Firebase är inte konfigurerat ännu. Klistra in dina uppgifter i js/firebase-config.js.');
+    showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
   setGoogleLoading(button, true);
   try {
-    await signInWithPopup(getFirebaseAuth(), googleProvider);
-    redirectAfterAuth();
+    await ensureAuthPersistence();
+    const result = await signInWithPopup(getFirebaseAuth(), googleProvider);
+    await redirectAfterAuth(result.user);
   } catch (error) {
     if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
       showAuthError(authErrorMessage(error.code));
@@ -42,7 +44,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
   clearAuthError();
 
   if (!isFirebaseConfigured()) {
-    showAuthError('Firebase är inte konfigurerat ännu. Klistra in dina uppgifter i js/firebase-config.js.');
+    showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
@@ -53,11 +55,12 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
 
   setButtonLoading(button, true, 'Skapar konto…');
   try {
+    await ensureAuthPersistence();
     const credential = await createUserWithEmailAndPassword(getFirebaseAuth(), email, password);
     if (name) {
       await updateProfile(credential.user, { displayName: name });
     }
-    redirectAfterAuth();
+    await redirectAfterAuth(credential.user);
   } catch (error) {
     showAuthError(authErrorMessage(error.code));
   } finally {

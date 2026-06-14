@@ -5,21 +5,32 @@ Afrikansk skönhet, mat och kryddor – webbplats för butikerna i Stockholm Fit
 ## Firebase (login)
 
 1. Copy `.env.example` to `.env`
-2. Paste your Firebase web app config from **Firebase Console → Project settings → Your apps**
-3. Generate the config file:
+2. Paste your Firebase web app config and admin email (`VITE_ADMIN_EMAIL`)
+3. Generate config files:
 
 ```bash
-node scripts/generate-firebase-config.mjs
+node scripts/generate-env.mjs
 ```
 
-This writes `js/firebase-config.js` (safe to commit — Firebase web keys are public and restricted by domain).
+This writes:
+- `js/firebase-config.js` — Firebase connection (safe to commit)
+- `js/admin-gate.js` — admin access hash only, **gitignored** (no plaintext email)
 
 `.env` is gitignored and never pushed to GitHub.
+
+### Login flow
+
+| Account | After login |
+|---------|-------------|
+| Customer | [profile.html](profile.html) — stays logged in |
+| Admin (`VITE_ADMIN_EMAIL` in `.env`) | `admin.html` — not linked from the public site |
+
+Admin works with **Google or email/password** as long as the Firebase account uses the admin email.
 
 ## Lokal förhandsvisning
 
 ```bash
-node scripts/generate-firebase-config.mjs   # if you changed .env
+node scripts/generate-env.mjs   # if you changed .env
 python3 -m http.server 8000
 ```
 

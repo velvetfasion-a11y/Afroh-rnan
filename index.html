@@ -247,6 +247,25 @@ nav {
   padding: .22rem .55rem; border-radius: 2px;
 }
 .pcard-badge.gold { background: var(--gold); color: #1A0D00; }
+.pcard-fav {
+  position: absolute; top: 10px; right: 10px; z-index: 3;
+  width: 32px; height: 32px;
+  border: none; background: none; padding: 0;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pcard-fav svg {
+  width: 20px; height: 20px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
+  transition: fill .15s, stroke .15s;
+}
+.pcard-fav.active svg {
+  fill: #fff;
+  stroke: #fff;
+}
 .pcard-body { padding: .9rem 1rem 1.1rem; }
 .pcard-brand { font-size: .68rem; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: .15rem; }
 .pcard-name { font-size: .82rem; font-weight: 400; color: var(--text); line-height: 1.4; margin-bottom: .55rem; }
@@ -425,7 +444,7 @@ footer a { color: var(--gold); text-decoration: none; }
     <li><a href="#kontakt">Kontakt</a></li>
   </ul>
   <div class="nav-right">
-    <a href="login.html" class="nav-profile" aria-label="Logga in">
+    <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </a>
     <button class="nav-cart-btn" id="cartBtn" aria-label="Varukorg">
@@ -722,6 +741,7 @@ footer a { color: var(--gold); text-decoration: none; }
 </footer>
 
 <script src="js/cart.js"></script>
+<script src="js/favorites.js"></script>
 <script>
   // scroll reveal
   const obs = new IntersectionObserver(entries => {

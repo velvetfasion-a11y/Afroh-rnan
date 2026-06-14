@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Min profil – Afrohörnan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body class="profile-body">
+
+<nav>
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <ul class="nav-links">
+    <li><a href="index.html#kosmetika-products">Kosmetika</a></li>
+    <li><a href="index.html#mat-products">Mat &amp; Kryddor</a></li>
+    <li><a href="index.html#butiker">Butiker</a></li>
+    <li><a href="index.html#kontakt">Kontakt</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <button class="nav-cart-btn" type="button" aria-label="Varukorg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </button>
+  </div>
+</nav>
+
+<div class="profile-page">
+  <p class="profile-loading" id="profileLoading">Laddar ditt konto…</p>
+
+  <div class="profile-wrap" id="profileContent" hidden>
+
+    <aside class="profile-sidebar">
+      <div class="profile-sidebar-card">
+        <div class="avatar" id="sidebarAvatar">AH</div>
+        <div class="sidebar-name" id="sidebarName">Mitt konto</div>
+        <div class="sidebar-email" id="sidebarEmail"></div>
+        <div class="tier-badge" id="sidebarTier">Medlem</div>
+      </div>
+    </aside>
+
+    <main class="profile-main">
+
+      <!-- ÖVERSIKT -->
+      <section class="tab-panel active" id="tab-overview">
+        <div class="page-head">
+          <h1 id="greeting">Hej! 👋</h1>
+          <p>Välkommen tillbaka till ditt konto på Afrohörnan</p>
+        </div>
+
+        <div class="card" id="overviewOrdersCard">
+          <div class="card-head">
+            <h2>Senaste beställning</h2>
+            <button type="button" class="link-btn" data-go-tab="orders">Visa alla →</button>
+          </div>
+          <div class="order-empty" id="overviewOrderEmpty">
+            Inga beställningar ännu — webbshoppen öppnar snart.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Dina sparade produkter</h2>
+            <button type="button" class="link-btn" data-go-tab="favorites">Visa alla →</button>
+          </div>
+          <div class="fav-grid preview" id="overviewFavGrid"></div>
+          <div class="empty-state hidden" id="overviewFavEmpty">
+            <h3>Inga sparade produkter</h3>
+            <p>Klicka på hjärtat på en produkt i butiken.</p>
+            <a href="index.html#kosmetika-products">Utforska sortimentet</a>
+          </div>
+        </div>
+
+        <div class="card points-card">
+          <div class="points-left">
+            <div class="stat-icon">★</div>
+            <div>
+              <div class="stat-val" id="pointsVal">0</div>
+              <div class="stat-label">Medlemspoäng</div>
+            </div>
+          </div>
+          <button type="button" class="link-btn" data-go-tab="membership">Se medlemskap →</button>
+        </div>
+
+        <nav class="profile-nav bottom-nav">
+          <button type="button" class="pnav-item active" id="bn-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Översikt
+            <svg class="bn-chevron" id="bn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="bn-collapse" id="bn-collapse">
+            <button type="button" class="pnav-item" data-tab="orders">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              Mina beställningar
+            </button>
+            <button type="button" class="pnav-item" data-tab="favorites">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              Sparade produkter
+              <span class="count-badge" id="fav-count-bottom">0</span>
+            </button>
+            <button type="button" class="pnav-item" data-tab="addresses">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Adresser
+            </button>
+            <button type="button" class="pnav-item" data-tab="settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Inställningar
+            </button>
+            <button type="button" class="pnav-item" data-tab="membership">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Medlemskap
+            </button>
+            <div class="pnav-divider"></div>
+            <button type="button" class="pnav-item logout" id="logoutBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Logga ut
+            </button>
+          </div>
+        </nav>
+      </section>
+
+      <!-- BESTÄLLNINGAR -->
+      <section class="tab-panel" id="tab-orders">
+        <div class="page-head">
+          <h1>Mina beställningar</h1>
+          <p>Följ dina ordrar och se din köphistorik</p>
+        </div>
+        <div class="card">
+          <div class="order-empty">
+            Webbshoppen öppnar snart. Dina beställningar visas här när du handlat online.<br><br>
+            <a href="index.html#butiker" style="color:#c8892a">Besök våra butiker</a> under tiden.
+          </div>
+        </div>
+      </section>
+
+      <!-- FAVORITER -->
+      <section class="tab-panel" id="tab-favorites">
+        <div class="page-head">
+          <h1>Sparade produkter</h1>
+          <p>Produkter du har gillat — spara dem för senare eller besök i butik</p>
+        </div>
+        <div class="fav-toolbar">
+          <div class="chip-row" style="margin-bottom:0" id="favFilterChips">
+            <button type="button" class="chip active" data-fav-filter="alla">Alla</button>
+            <button type="button" class="chip" data-fav-filter="kosmetika">Hudvård</button>
+            <button type="button" class="chip" data-fav-filter="mat">Mat &amp; Kryddor</button>
+          </div>
+        </div>
+        <div class="fav-grid" id="fav-grid"></div>
+        <div class="empty-state hidden" id="fav-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <h3>Inga sparade produkter</h3>
+          <p>Klicka på hjärtat på en produkt för att spara den här.</p>
+          <a href="index.html#kosmetika-products">Utforska sortimentet</a>
+        </div>
+      </section>
+
+      <!-- ADRESSER -->
+      <section class="tab-panel" id="tab-addresses">
+        <div class="page-head">
+          <h1>Adresser</h1>
+          <p>Hantera dina leverans- och faktureringsadresser</p>
+        </div>
+        <div class="addr-grid">
+          <div class="addr-card add-new">
+            <div>Leveransadresser sparas här när webbshoppen öppnar</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INSTÄLLNINGAR -->
+      <section class="tab-panel" id="tab-settings">
+        <div class="page-head">
+          <h1>Inställningar</h1>
+          <p>Hantera dina kontouppgifter och preferenser</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Personuppgifter</h2></div>
+          <div class="form-grid">
+            <div class="fg">
+              <label for="settingsFirst">Förnamn</label>
+              <input type="text" id="settingsFirst" autocomplete="given-name">
+            </div>
+            <div class="fg">
+              <label for="settingsLast">Efternamn</label>
+              <input type="text" id="settingsLast" autocomplete="family-name">
+            </div>
+            <div class="fg full">
+              <label for="settingsEmail">E-post</label>
+              <input type="email" id="settingsEmail" disabled>
+            </div>
+          </div>
+          <button type="button" class="save-btn" id="saveProfileBtn">Spara ändringar</button>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Aviseringar</h2></div>
+          <div class="toggle-row">
+            <div class="toggle-text"><strong>Nyhetsbrev</strong><span>Erbjudanden och nyheter från Afrohörnan</span></div>
+            <label class="switch"><input type="checkbox" id="newsletterToggle"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-text"><strong>Orderuppdateringar</strong><span>E-post när din order skickas eller levereras</span></div>
+            <label class="switch"><input type="checkbox" id="orderToggle" checked disabled><span class="slider"></span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- MEDLEMSKAP -->
+      <section class="tab-panel" id="tab-membership">
+        <div class="page-head">
+          <h1>Medlemskap</h1>
+          <p>Din medlemsstatus och förmåner</p>
+        </div>
+        <div class="tier-card">
+          <div class="tier-name" id="membershipTier">Medlem</div>
+          <div class="tier-desc" id="membershipDesc">Tack för att du är en del av Afrohörnan. Medlemspoäng och rabatter aktiveras när webbshoppen öppnar.</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Dina förmåner</h2></div>
+          <div class="benefits-grid">
+            <div class="benefit-item"><div class="benefit-icon">🛍</div><div class="benefit-text"><strong>Butiksrabatter</strong><span>Exklusiva erbjudanden i våra butiker</span></div></div>
+            <div class="benefit-item"><div class="benefit-icon">★</div><div class="benefit-text"><strong>Medlemspoäng</strong><span>Samla poäng vid varje köp</span></div></div>
+            <div class="benefit-item"><div class="benefit-icon">🎁</div><div class="benefit-text"><strong>Tidig tillgång</strong><span>Nya produkter och kampanjer</span></div></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<footer>
+  <span class="fl">Afrohörnan</span>
+  Stockholm Fittja &nbsp;·&nbsp; Uppsala Gottsunda<br>
+  <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
+  © 2026 Afrohörnan. Alla rättigheter förbehållna.
+</footer>
+
+<script src="js/cart.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/admin-gate.js"></script>
+<script type="module" src="js/profile.js"></script>
+</body>
+</html>
