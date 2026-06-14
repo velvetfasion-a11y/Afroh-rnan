@@ -129,24 +129,33 @@ function renderTable(products) {
     .join('');
 }
 
+function productCategories(p) {
+  if (Array.isArray(p.categories)) return p.categories;
+  if (p.category) return [p.category];
+  return [];
+}
+
 function filterProducts(query) {
   const q = query.trim().toLowerCase();
   if (!q) return allProducts;
 
   return allProducts.filter((p) => {
-    const haystack = [
-      p.id,
+    const categories = productCategories(p);
+    const categoryLabels = categories.map((cat) => CATEGORY_LABELS[cat] || cat);
+
+    const fields = [
+      productTitle(p),
+      p.name,
       p.sku,
       p.barcode,
-      productTitle(p),
-      productSubtitle(p),
       p.description,
-      ...(Array.isArray(p.categories) ? p.categories : []),
+      ...categories,
+      ...categoryLabels,
     ]
       .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(q);
+      .map((value) => String(value).toLowerCase());
+
+    return fields.some((value) => value.includes(q));
   });
 }
 
@@ -207,4 +216,9 @@ document.getElementById('adminLogout').addEventListener('click', async () => {
 });
 
 document.getElementById('productSearch').addEventListener('input', applyFilters);
+document.getElementById('productSearch').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  applyFilters();
+});
 document.getElementById('refreshProducts').addEventListener('click', loadProducts);

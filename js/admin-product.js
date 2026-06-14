@@ -149,6 +149,12 @@ document.getElementById('adminLogout').addEventListener('click', async () => {
   window.location.href = 'index.html';
 });
 
+document.getElementById('fieldBarcode').addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  document.getElementById('fieldPrice').focus();
+});
+
 document.getElementById('productForm').addEventListener('submit', handleSubmit);
 
 document.getElementById('fieldImage').addEventListener('change', (event) => {
