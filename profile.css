@@ -279,6 +279,21 @@
 
 .pnav-toggle::before { display: none; }
 
+.pnav-toggle.is-current {
+  background: #f7f1e6;
+}
+
+.pnav-toggle.is-current::before {
+  display: block;
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #c8892a;
+}
+
 .pnav-toggle .bn-chevron {
   margin-left: auto;
   font-size: 17px;

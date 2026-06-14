@@ -23,14 +23,19 @@
   <p class="admin-loading" id="adminLoading">Verifierar behörighet…</p>
 
   <div id="adminContent" hidden>
+    <nav class="admin-tabs" aria-label="Admin-navigation">
+      <a href="admin.html" class="active">Översikt</a>
+      <a href="admin-products.html">Produkter</a>
+    </nav>
+
     <h1>Adminpanel</h1>
     <p class="admin-sub">Hantera butiken och sortimentet</p>
 
     <div class="admin-grid">
-      <div class="admin-stat">
-        <div class="admin-stat-label">Produkter på sidan</div>
-        <div class="admin-stat-value">8</div>
-      </div>
+      <a href="admin-products.html" class="admin-stat admin-stat-link">
+        <div class="admin-stat-label">Produkter i Firestore</div>
+        <div class="admin-stat-value">Visa →</div>
+      </a>
       <div class="admin-stat">
         <div class="admin-stat-label">Butiker</div>
         <div class="admin-stat-value">2</div>
@@ -44,6 +49,7 @@
     <div class="admin-panel">
       <h2>Snabblänkar</h2>
       <ul class="admin-list">
+        <li><a href="admin-products.html">Produkter (tabellvy) <span>→</span></a></li>
         <li><a href="https://console.firebase.google.com/project/afrohornan/firestore" target="_blank" rel="noopener">Firestore databas <span>→</span></a></li>
         <li><a href="https://console.firebase.google.com/project/afrohornan/storage" target="_blank" rel="noopener">Produktbilder (Storage) <span>→</span></a></li>
         <li><a href="https://console.firebase.google.com/project/afrohornan/authentication/users" target="_blank" rel="noopener">Användare &amp; inloggning <span>→</span></a></li>

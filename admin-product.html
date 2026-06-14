@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Produkt – Admin – Afrohörnan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+<header class="admin-nav">
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <div class="admin-nav-right">
+    <span class="admin-email" id="adminEmail"></span>
+    <button type="button" class="admin-logout" id="adminLogout">Logga ut</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <p class="admin-loading" id="adminLoading">Verifierar behörighet…</p>
+
+  <div id="adminContent" hidden>
+    <nav class="admin-tabs" aria-label="Admin-navigation">
+      <a href="admin.html">Översikt</a>
+      <a href="admin-products.html" class="active">Produkter</a>
+    </nav>
+
+    <a href="admin-products.html" class="admin-back">← Tillbaka till produkter</a>
+
+    <h1 id="pageTitle">Ny produkt</h1>
+    <p class="admin-sub" id="pageSub">Fyll i uppgifterna och ladda upp en bild</p>
+
+    <p class="admin-loading" id="formLoading" hidden>Laddar produkt…</p>
+    <p class="admin-error" id="formError" hidden></p>
+
+    <form class="admin-form" id="productForm">
+      <div class="admin-form-card">
+        <h2>Produktbild</h2>
+        <div class="admin-image-upload" id="imageUploadArea" role="button" tabindex="0" aria-label="Välj produktbild">
+          <img id="imagePreview" class="admin-image-preview" alt="" hidden>
+          <div class="admin-image-placeholder" id="imagePlaceholder">
+            <span class="admin-image-icon">📷</span>
+            <span>Klicka för att välja bild</span>
+            <span class="admin-image-hint">JPG, PNG eller WebP</span>
+          </div>
+        </div>
+        <input type="file" id="fieldImage" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      </div>
+
+      <div class="admin-form-card">
+        <h2>Produktuppgifter</h2>
+        <div class="admin-form-grid">
+          <div class="admin-field full">
+            <label for="fieldTitle">Namn</label>
+            <input type="text" id="fieldTitle" required autocomplete="off" placeholder="t.ex. Oraffinerad Shea Butter 200 g">
+          </div>
+          <div class="admin-field">
+            <label for="fieldSku">SKU</label>
+            <input type="text" id="fieldSku" required autocomplete="off" placeholder="t.ex. SHEA-200">
+          </div>
+          <div class="admin-field">
+            <label for="fieldBarcode">Streckkod</label>
+            <input type="text" id="fieldBarcode" autocomplete="off" placeholder="EAN / streckkod">
+          </div>
+          <div class="admin-field">
+            <label for="fieldPrice">Pris (kr)</label>
+            <input type="number" id="fieldPrice" required min="0" step="1" placeholder="129">
+          </div>
+          <div class="admin-field">
+            <label for="fieldInventory">Lagersaldo</label>
+            <input type="number" id="fieldInventory" required min="0" step="1" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-form-actions">
+        <button type="submit" class="admin-btn" id="saveBtn">Spara</button>
+        <a href="admin-products.html" class="admin-btn-outline">Avbryt</a>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/admin-gate.js"></script>
+<script type="module" src="js/admin-product.js"></script>
+</body>
+</html>

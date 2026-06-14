@@ -132,16 +132,9 @@ function renderFavoritesGrid() {
   });
 }
 
-const TAB_LABELS = {
-  overview: 'Översikt',
-  orders: 'Mina beställningar',
-  favorites: 'Sparade produkter',
-  addresses: 'Adresser',
-  settings: 'Inställningar',
-  membership: 'Medlemskap',
-};
+function goTab(tab, options = {}) {
+  const { keepNavOpen = false } = options;
 
-function goTab(tab) {
   document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
@@ -149,15 +142,16 @@ function goTab(tab) {
     panel.classList.toggle('active', panel.id === 'tab-' + tab);
   });
 
-  const label = document.getElementById('bn-toggle-label');
-  if (label) label.textContent = TAB_LABELS[tab] || 'Översikt';
+  const toggle = document.getElementById('bn-toggle');
+  if (toggle) toggle.classList.toggle('is-current', tab === 'overview');
 
   const nav = document.getElementById('profile-nav');
-  const toggle = document.getElementById('bn-toggle');
-  if (nav) nav.classList.remove('is-open');
-  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  if (!keepNavOpen && nav) nav.classList.remove('is-open');
+  if (!keepNavOpen && toggle) toggle.setAttribute('aria-expanded', 'false');
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (tab !== 'overview' || !keepNavOpen) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 function toggleBottomNav() {
@@ -165,8 +159,15 @@ function toggleBottomNav() {
   const toggle = document.getElementById('bn-toggle');
   if (!nav || !toggle) return;
 
-  const isOpen = nav.classList.toggle('is-open');
-  toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  if (nav.classList.contains('is-open')) {
+    nav.classList.remove('is-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    return;
+  }
+
+  goTab('overview', { keepNavOpen: true });
+  nav.classList.add('is-open');
+  toggle.setAttribute('aria-expanded', 'true');
 }
 
 function populateUser(user) {
