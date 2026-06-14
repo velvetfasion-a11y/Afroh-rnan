@@ -13,6 +13,7 @@ import {
 
 let currentUser = null;
 let favFilter = 'alla';
+let currentTab = 'overview';
 
 const HEART_FILLED =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -132,8 +133,48 @@ function renderFavoritesGrid() {
   });
 }
 
+function isDesktopNav() {
+  return window.matchMedia('(min-width: 901px)').matches;
+}
+
+function placeNav(tab) {
+  const nav = document.getElementById('profile-nav');
+  if (!nav) return;
+
+  let anchor;
+  if (isDesktopNav()) {
+    anchor = document.getElementById('nav-anchor-sidebar');
+  } else if (tab === 'overview') {
+    anchor = document.getElementById('nav-anchor-overview');
+  } else {
+    anchor = document.getElementById('nav-anchor-main');
+  }
+
+  if (anchor && nav.parentElement !== anchor) {
+    anchor.appendChild(nav);
+  }
+
+  nav.classList.add('is-placed');
+
+  const menu = document.getElementById('bn-collapse');
+  const toggle = document.getElementById('bn-toggle');
+
+  if (isDesktopNav()) {
+    nav.classList.remove('is-open');
+    if (menu) menu.hidden = false;
+    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+  }
+}
+
+function updateNavToggle(tab) {
+  const toggle = document.getElementById('bn-toggle');
+  if (!toggle) return;
+  toggle.classList.toggle('on-overview', tab === 'overview' && !document.getElementById('profile-nav')?.classList.contains('is-open'));
+}
+
 function goTab(tab, options = {}) {
   const { keepNavOpen = false } = options;
+  currentTab = tab;
 
   document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -142,32 +183,36 @@ function goTab(tab, options = {}) {
     panel.classList.toggle('active', panel.id === 'tab-' + tab);
   });
 
-  const toggle = document.getElementById('bn-toggle');
-  if (toggle) toggle.classList.toggle('is-current', tab === 'overview');
+  placeNav(tab);
+  updateNavToggle(tab);
 
   const nav = document.getElementById('profile-nav');
-  if (!keepNavOpen && nav) nav.classList.remove('is-open');
-  if (!keepNavOpen && toggle) toggle.setAttribute('aria-expanded', 'false');
+  const menu = document.getElementById('bn-collapse');
+  const toggle = document.getElementById('bn-toggle');
 
-  if (tab !== 'overview' || !keepNavOpen) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (!keepNavOpen && !isDesktopNav()) {
+    nav?.classList.remove('is-open');
+    if (menu) menu.hidden = true;
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    updateNavToggle(tab);
   }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function toggleBottomNav() {
+  if (isDesktopNav()) return;
+
   const nav = document.getElementById('profile-nav');
+  const menu = document.getElementById('bn-collapse');
   const toggle = document.getElementById('bn-toggle');
-  if (!nav || !toggle) return;
+  if (!nav || !menu || !toggle) return;
 
-  if (nav.classList.contains('is-open')) {
-    nav.classList.remove('is-open');
-    toggle.setAttribute('aria-expanded', 'false');
-    return;
-  }
-
-  goTab('overview', { keepNavOpen: true });
-  nav.classList.add('is-open');
-  toggle.setAttribute('aria-expanded', 'true');
+  const willOpen = !nav.classList.contains('is-open');
+  nav.classList.toggle('is-open', willOpen);
+  menu.hidden = !willOpen;
+  toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  updateNavToggle(currentTab);
 }
 
 function populateUser(user) {
@@ -209,14 +254,37 @@ requireAuth(async (user) => {
   const hash = window.location.hash.replace('#', '');
   if (hash && document.getElementById('tab-' + hash)) {
     goTab(hash);
+  } else {
+    placeNav('overview');
+    updateNavToggle('overview');
   }
 });
 
-document.getElementById('bn-toggle').addEventListener('click', toggleBottomNav);
-
-document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
-  btn.addEventListener('click', () => goTab(btn.dataset.tab));
+window.addEventListener('resize', () => {
+  placeNav(currentTab);
+  if (isDesktopNav()) {
+    const menu = document.getElementById('bn-collapse');
+    if (menu) menu.hidden = false;
+  }
 });
+
+function bindNavEvents() {
+  document.getElementById('bn-toggle')?.addEventListener('click', toggleBottomNav);
+
+  document.querySelectorAll('.pnav-item[data-tab]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      goTab(btn.dataset.tab);
+    });
+  });
+
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await signOut(getFirebaseAuth());
+    window.location.href = 'index.html';
+  });
+}
+
+bindNavEvents();
 
 document.querySelectorAll('[data-go-tab]').forEach((btn) => {
   btn.addEventListener('click', () => goTab(btn.dataset.goTab));
@@ -252,9 +320,4 @@ document.getElementById('saveProfileBtn').addEventListener('click', async () => 
     btn.textContent = 'Kunde inte spara';
     setTimeout(() => { btn.textContent = 'Spara ändringar'; }, 2000);
   }
-});
-
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await signOut(getFirebaseAuth());
-  window.location.href = 'index.html';
 });
