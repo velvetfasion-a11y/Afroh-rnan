@@ -53,7 +53,6 @@ function page(c) {
     <li><a href="har.html">Hår &amp; Extensions</a></li>
     <li><a href="kosmetika.html">Kosmetika</a></li>
     <li><a href="mat.html">Mat &amp; Kryddor</a></li>
-    <li><a href="index.html#butiker">Hitta hit</a></li>
   </ul>
   <div class="nav-right">
     <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
@@ -70,7 +69,6 @@ function page(c) {
   <a href="har.html" class="cat-nav-link" data-cat="har">Hår &amp; Extensions</a>
   <a href="kosmetika.html" class="cat-nav-link" data-cat="kosmetika">Kosmetika</a>
   <a href="mat.html" class="cat-nav-link" data-cat="mat">Mat &amp; Kryddor</a>
-  <a href="index.html#butiker">Hitta hit</a>
 </nav>
 
 <header class="shop-intro">
@@ -89,7 +87,7 @@ function page(c) {
 <footer>
   <span class="fl">Afrohörnan</span>
   Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
-  <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
+  <a href="mailto:info@afrohornan.com">info@afrohornan.com</a><br><br>
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 

@@ -261,23 +261,14 @@ function populateUser(user) {
   renderFavoritesGrid();
 }
 
-wireNavProfile();
+function showProfileError(message) {
+  const loading = document.getElementById('profileLoading');
+  if (!loading) return;
+  loading.textContent = message;
+  loading.classList.add('profile-loading-error');
+}
 
-requireAuth(async (user) => {
-  if (await isAdminUser(user)) {
-    window.location.replace('admin.html');
-    return;
-  }
-
-  subscribeMergedProducts((products) => {
-    mergedProducts = products;
-    if (currentUser) {
-      updateFavCounts();
-      renderOverviewFavorites();
-      renderFavoritesGrid();
-    }
-  });
-
+function revealProfile(user) {
   document.getElementById('profileLoading').hidden = true;
   document.getElementById('profileContent').hidden = false;
   populateUser(user);
@@ -289,6 +280,45 @@ requireAuth(async (user) => {
     placeNav('overview');
     updateNavToggle('overview');
   }
+}
+
+wireNavProfile();
+
+const profileBootTimer = window.setTimeout(() => {
+  showProfileError('Kunde inte ladda kontot. Kontrollera internet och öppna sidan via http://localhost:8000');
+}, 12000);
+
+requireAuth(async (user) => {
+  window.clearTimeout(profileBootTimer);
+
+  try {
+    if (await isAdminUser(user)) {
+      window.location.replace('admin.html');
+      return;
+    }
+  } catch (err) {
+    console.warn('Admin check failed on profile:', err);
+  }
+
+  revealProfile(user);
+
+  try {
+    subscribeMergedProducts((products) => {
+      mergedProducts = products;
+      if (currentUser) {
+        updateFavCounts();
+        renderOverviewFavorites();
+        renderFavoritesGrid();
+      }
+    });
+  } catch (err) {
+    console.error('Could not subscribe to products on profile:', err);
+  }
+}, {
+  onError: (err) => {
+    window.clearTimeout(profileBootTimer);
+    showProfileError(err?.message || 'Kunde inte starta inloggningen. Ladda om sidan.');
+  },
 });
 
 window.addEventListener('resize', () => {
@@ -330,7 +360,7 @@ document.querySelectorAll('[data-fav-filter]').forEach((chip) => {
   });
 });
 
-document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
   if (!currentUser) return;
   const first = document.getElementById('settingsFirst').value.trim();
   const last = document.getElementById('settingsLast').value.trim();

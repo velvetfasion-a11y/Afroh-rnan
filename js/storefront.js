@@ -45,6 +45,9 @@ function createProductCard(product) {
   card.dataset.image = product.image || '';
   card.dataset.url = product.url;
   card.dataset.emoji = product.emoji || '📦';
+  if (Number.isFinite(product.inventory)) {
+    card.dataset.inventory = String(product.inventory);
+  }
 
   const link = document.createElement('a');
   link.href = product.url;
@@ -94,7 +97,6 @@ function afterGridRender(grid) {
   if (window.initProductFavorites) window.initProductFavorites(grid);
 }
 
-const HOME_PREVIEW_LIMIT = 4;
 const CATEGORY_GRIDS = [
   { gridId: 'har-grid', cat: 'har' },
   { gridId: 'kosmetika-grid', cat: 'kosmetika' },
@@ -108,14 +110,12 @@ function renderGrids(products) {
     return;
   }
 
-  const previewOnly = !document.body.classList.contains('page-produkter') &&
-    !document.body.classList.contains('page-kategori');
   const activeGrids = CATEGORY_GRIDS.filter(({ gridId }) => document.getElementById(gridId));
   if (!activeGrids.length) return;
 
   activeGrids.forEach(({ gridId, cat }) => {
     const grid = document.getElementById(gridId);
-    const shown = productsForCategory(products, cat, previewOnly, HOME_PREVIEW_LIMIT);
+    const shown = productsForCategory(products, cat);
     renderProductGrid(grid, shown);
     if (window.initProductFavorites) window.initProductFavorites(grid);
     afterGridRender(grid);
@@ -129,7 +129,7 @@ function renderCategoryPage(products, cat) {
   const grid = document.getElementById('category-grid');
   if (!grid) return;
 
-  const list = productsForCategory(products, cat, false);
+  const list = productsForCategory(products, cat);
   renderProductGrid(grid, list);
 
   if (window.initProductFavorites) window.initProductFavorites(grid);

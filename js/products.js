@@ -56,6 +56,11 @@ function productSortKey(raw) {
   return 0;
 }
 
+export function isProductInStock(raw) {
+  const inventory = Number(raw?.inventory);
+  return Number.isFinite(inventory) && inventory > 0;
+}
+
 export function normalizeProduct(raw) {
   const firestoreId = raw.id || '';
   const slug = firestoreId;
@@ -85,7 +90,9 @@ export function normalizeProduct(raw) {
 }
 
 export function mergeProducts(firestoreProducts) {
-  return (firestoreProducts ?? []).map((raw) => normalizeProduct(raw));
+  return (firestoreProducts ?? [])
+    .filter((raw) => isProductInStock(raw))
+    .map((raw) => normalizeProduct(raw));
 }
 
 export function getProductBySlug(products, slug) {
@@ -109,10 +116,8 @@ export function sortProductsForDisplay(products) {
   return [...products].sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
 }
 
-export function productsForCategory(products, cat, previewOnly, previewLimit = 4) {
-  const inCat = sortProductsForDisplay(products.filter((p) => p.cat === cat));
-  if (!previewOnly) return inCat;
-  return inCat.slice(0, previewLimit);
+export function productsForCategory(products, cat) {
+  return sortProductsForDisplay(products.filter((p) => p.cat === cat));
 }
 
 /**
@@ -125,34 +130,38 @@ export function subscribeMergedProducts(onUpdate) {
     onUpdate(mergedCache);
   };
 
-  publish([]);
-
   if (!isFirebaseConfigured()) {
+    publish([]);
     return () => {};
   }
 
   let active = true;
   let unsubscribe = () => {};
+  let published = false;
+
+  const safePublish = (products) => {
+    if (!active) return;
+    published = true;
+    publish(products);
+  };
 
   fetchAllProducts()
-    .then((products) => {
-      if (active) publish(products);
-    })
-    .catch(() => {
-      if (active) publish([]);
+    .then((products) => safePublish(products))
+    .catch((err) => {
+      console.error('Kunde inte hämta produkter:', err);
+      safePublish([]);
     });
 
   try {
     unsubscribe = subscribeAllProducts(
-      (products) => publish(products),
-      () => {
-        fetchAllProducts()
-          .then((products) => {
-            if (active) publish(products);
-          })
-          .catch(() => {
-            if (active) publish([]);
-          });
+      (products) => safePublish(products),
+      (err) => {
+        console.error('Firestore products subscription error:', err);
+        if (!published) {
+          fetchAllProducts()
+            .then((products) => safePublish(products))
+            .catch(() => safePublish([]));
+        }
       },
     );
   } catch (err) {

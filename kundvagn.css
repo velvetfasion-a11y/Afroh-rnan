@@ -276,6 +276,122 @@
   border: none;
 }
 
+.checkout-panel {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #E8E0D5;
+  border-radius: 4px;
+}
+
+.checkout-panel h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  margin-bottom: .35rem;
+}
+
+.checkout-lead {
+  font-size: .88rem;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .85rem 1rem;
+}
+
+.checkout-field {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.checkout-field.full {
+  grid-column: 1 / -1;
+}
+
+.checkout-field span {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.checkout-field input {
+  width: 100%;
+  border: 1px solid #E8E0D5;
+  border-radius: 3px;
+  padding: .65rem .75rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: .9rem;
+  color: var(--text);
+  background: #fff;
+}
+
+.checkout-field input:focus {
+  outline: none;
+  border-color: var(--rust);
+  box-shadow: 0 0 0 2px rgba(200, 84, 28, .12);
+}
+
+.checkout-payment {
+  margin-top: .5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #E8E0D5;
+}
+
+.checkout-payment-label {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .75rem;
+}
+
+.checkout-express {
+  margin-bottom: .75rem;
+  min-height: 48px;
+}
+
+.checkout-stripe-element {
+  margin-bottom: .5rem;
+}
+
+.checkout-error {
+  font-size: .85rem;
+  color: #b42318;
+  background: rgba(180, 35, 24, .08);
+  border: 1px solid rgba(180, 35, 24, .2);
+  padding: .75rem .85rem;
+  border-radius: 3px;
+}
+
+.checkout-pay,
+.checkout-continue {
+  width: 100%;
+  margin-top: .25rem;
+}
+
+.checkout-success {
+  margin-bottom: 1rem;
+  padding: .85rem 1rem;
+  background: rgba(44, 90, 56, .1);
+  border: 1px solid rgba(44, 90, 56, .25);
+  color: var(--green);
+  border-radius: 3px;
+  font-size: .88rem;
+}
+
 @media (max-width: 640px) {
   .cart-main { padding: 1.5rem 1rem 3rem; }
   .cart-row {
@@ -293,4 +409,5 @@
   }
   .cart-qty { margin-bottom: 0; }
   .cart-row-total { margin-bottom: 0; }
+  .checkout-grid { grid-template-columns: 1fr; }
 }

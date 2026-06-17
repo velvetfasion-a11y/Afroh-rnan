@@ -18,7 +18,6 @@
     <li><a href="har.html">Hår &amp; Extensions</a></li>
     <li><a href="kosmetika.html">Kosmetika</a></li>
     <li><a href="mat.html">Mat &amp; Kryddor</a></li>
-    <li><a href="index.html#butiker">Hitta hit</a></li>
   </ul>
   <div class="nav-right">
     <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
@@ -35,7 +34,6 @@
   <a href="har.html">Hår &amp; Extensions</a>
   <a href="kosmetika.html">Kosmetika</a>
   <a href="mat.html">Mat &amp; Kryddor</a>
-  <a href="index.html#butiker">Hitta hit</a>
 </nav>
 
 <main class="cart-main">
@@ -62,26 +60,72 @@
         <span>Totalt</span>
         <strong id="cart-total">0 kr</strong>
       </div>
-      <p class="cart-note">Webbshop kommer snart – kontakta oss för att slutföra din beställning eller besök oss i butik.</p>
       <div class="cart-actions">
-        <a href="index.html#kontakt" class="cart-btn-primary">Kontakta för beställning</a>
+        <button type="button" class="cart-btn-primary" id="checkout-btn">Gå till kassa</button>
         <a href="har.html" class="cart-btn-secondary cart-btn-dark">Fortsätt handla</a>
         <button type="button" class="cart-btn-secondary" id="cart-clear">Töm kundvagn</button>
       </div>
     </aside>
+
+    <section id="checkout-panel" class="checkout-panel" hidden>
+      <h2>Kassa</h2>
+      <p class="checkout-lead">Fyll i dina uppgifter och betala med Apple Pay eller kort.</p>
+
+      <form id="checkout-form" class="checkout-form" novalidate>
+        <div class="checkout-grid">
+          <label class="checkout-field full">
+            <span>Namn</span>
+            <input type="text" id="checkout-name" name="name" autocomplete="name" placeholder="För- och efternamn">
+          </label>
+          <label class="checkout-field">
+            <span>E-post</span>
+            <input type="email" id="checkout-email" name="email" autocomplete="email" required placeholder="din@epost.se">
+          </label>
+          <label class="checkout-field">
+            <span>Telefon</span>
+            <input type="tel" id="checkout-phone" name="phone" autocomplete="tel" required placeholder="07X XXX XX XX">
+          </label>
+          <label class="checkout-field full">
+            <span>Adress</span>
+            <input type="text" id="checkout-address" name="address" autocomplete="street-address" required placeholder="Gatuadress">
+          </label>
+          <label class="checkout-field">
+            <span>Postnummer</span>
+            <input type="text" id="checkout-postal" name="postal" autocomplete="postal-code" required placeholder="123 45">
+          </label>
+          <label class="checkout-field">
+            <span>Ort</span>
+            <input type="text" id="checkout-city" name="city" autocomplete="address-level2" required placeholder="Stockholm">
+          </label>
+        </div>
+
+        <div id="checkout-payment" class="checkout-payment" hidden>
+          <p class="checkout-payment-label">Betalning</p>
+          <div id="express-checkout-element" class="checkout-express"></div>
+          <div id="payment-element" class="checkout-stripe-element"></div>
+        </div>
+
+        <p id="checkout-error" class="checkout-error" hidden></p>
+
+        <button type="button" class="cart-btn-secondary cart-btn-dark checkout-continue" id="checkout-continue">Fortsätt till betalning</button>
+        <button type="submit" class="cart-btn-primary checkout-pay" id="checkout-pay" hidden>Betala</button>
+      </form>
+    </section>
   </div>
 </main>
 
 <footer>
   <span class="fl">Afrohörnan</span>
   Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
-  <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
+  <a href="mailto:info@afrohornan.com">info@afrohornan.com</a><br><br>
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 
 <script src="js/cart.js"></script>
 <script src="js/cart-page.js"></script>
 <script src="js/firebase-config.js"></script>
+<script src="js/stripe-config.js"></script>
+<script src="js/checkout.js"></script>
 <script src="js/admin-gate.js"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>

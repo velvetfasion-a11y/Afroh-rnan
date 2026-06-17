@@ -129,6 +129,9 @@ function wireBuyButton(product) {
   const qtyEl = document.getElementById('qty');
   const totalEl = document.getElementById('total');
   let price = Number(product.price) || 0;
+  let maxStock = Number.isFinite(Number(product.inventory)) && Number(product.inventory) > 0
+    ? Number(product.inventory)
+    : Infinity;
 
   function updateTotal() {
     if (qtyEl) qtyEl.textContent = qty;
@@ -137,6 +140,9 @@ function wireBuyButton(product) {
 
   function refreshPrice(nextProduct) {
     price = Number(nextProduct?.price) || 0;
+    const inv = Number(nextProduct?.inventory);
+    maxStock = Number.isFinite(inv) && inv > 0 ? inv : Infinity;
+    qty = Math.min(qty, maxStock);
     updateTotal();
   }
 
@@ -149,7 +155,7 @@ function wireBuyButton(product) {
   });
 
   document.getElementById('qtyPlus')?.addEventListener('click', () => {
-    qty += 1;
+    qty = Math.min(maxStock, qty + 1);
     updateTotal();
   });
 
@@ -161,6 +167,7 @@ function wireBuyButton(product) {
       price,
       image: product.image,
       url: product.url,
+      inventory: maxStock !== Infinity ? maxStock : undefined,
       qty,
     };
     window.AfroCart?.addItem(payload);

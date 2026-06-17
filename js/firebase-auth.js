@@ -83,9 +83,13 @@ function safeNextPath(next) {
 
 export async function redirectAfterAuth(user) {
   const authUser = user || getFirebaseAuth().currentUser;
-  if (authUser && (await isAdminUser(authUser))) {
-    window.location.href = 'admin.html';
-    return;
+  try {
+    if (authUser && (await isAdminUser(authUser))) {
+      window.location.href = 'admin.html';
+      return;
+    }
+  } catch (err) {
+    console.warn('Admin check failed after login:', err);
   }
 
   const params = new URLSearchParams(window.location.search);
@@ -97,26 +101,35 @@ export function wireNavProfile(options = {}) {
   const { basePath = '' } = options;
   if (!isFirebaseConfigured()) return;
 
-  ensureAuthPersistence().then(() => {
-    onAuthStateChanged(getFirebaseAuth(), async (user) => {
-      let href;
-      let label;
-      if (!user) {
-        href = `${basePath}login.html`;
-        label = 'Logga in';
-      } else if (await isAdminUser(user)) {
-        href = `${basePath}admin.html`;
-        label = 'Admin';
-      } else {
-        href = `${basePath}profile.html`;
-        label = 'Mitt konto';
-      }
-      document.querySelectorAll('.nav-profile').forEach((link) => {
-        link.href = href;
-        link.setAttribute('aria-label', label);
+  ensureAuthPersistence()
+    .then(() => {
+      onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        let href;
+        let label;
+        try {
+          if (!user) {
+            href = `${basePath}login.html`;
+            label = 'Logga in';
+          } else if (await isAdminUser(user)) {
+            href = `${basePath}admin.html`;
+            label = 'Admin';
+          } else {
+            href = `${basePath}profile.html`;
+            label = 'Mitt konto';
+          }
+        } catch {
+          href = user ? `${basePath}profile.html` : `${basePath}login.html`;
+          label = user ? 'Mitt konto' : 'Logga in';
+        }
+        document.querySelectorAll('.nav-profile').forEach((link) => {
+          link.href = href;
+          link.setAttribute('aria-label', label);
+        });
       });
+    })
+    .catch((err) => {
+      console.error('Nav profile auth init failed:', err);
     });
-  });
 }
 
 export function showAuthError(message) {
@@ -169,22 +182,41 @@ export function guardAuthPage() {
     onAuthStateChanged(getFirebaseAuth(), async (user) => {
       if (user) await redirectAfterAuth(user);
     });
+  }).catch((err) => {
+    console.error('Firebase auth init failed:', err);
+    showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan.');
   });
 }
 
-export function requireAuth(onUser) {
-  if (!isFirebaseConfigured()) return;
+export function requireAuth(onUser, options = {}) {
+  const { onError } = options;
 
-  ensureAuthPersistence().then(() => {
-    onAuthStateChanged(getFirebaseAuth(), async (user) => {
-      if (!user) {
-        const page = window.location.pathname.split('/').pop() || 'profile.html';
-        window.location.href = `login.html?next=${encodeURIComponent(page)}`;
-        return;
-      }
-      if (onUser) await onUser(user);
+  if (!isFirebaseConfigured()) {
+    if (onError) onError(new Error('Firebase är inte konfigurerat.'));
+    return;
+  }
+
+  ensureAuthPersistence()
+    .then(() => {
+      onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        if (!user) {
+          const page = window.location.pathname.split('/').pop() || 'profile.html';
+          window.location.href = `login.html?next=${encodeURIComponent(page)}`;
+          return;
+        }
+        if (!onUser) return;
+        try {
+          await onUser(user);
+        } catch (err) {
+          console.error('requireAuth callback failed:', err);
+          if (onError) onError(err);
+        }
+      });
+    })
+    .catch((err) => {
+      console.error('Firebase auth init failed:', err);
+      if (onError) onError(err);
     });
-  });
 }
 
 export function requireAdmin(onUser) {

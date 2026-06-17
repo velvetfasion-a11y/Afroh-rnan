@@ -33,6 +33,10 @@ function loadEnv(file) {
 
 const env = loadEnv(envPath);
 const publishableKey = env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+const projectId = env.VITE_FIREBASE_PROJECT_ID || 'afrohornan';
+const checkoutApiUrl =
+  env.VITE_STRIPE_CHECKOUT_URL ||
+  `https://europe-west1-${projectId}.cloudfunctions.net/createPaymentIntent`;
 const configured =
   publishableKey &&
   !publishableKey.includes('your_publishable_key') &&
@@ -43,6 +47,7 @@ const output = `// Auto-generated from .env — do not edit manually.
 window.stripeConfig = {
   publishableKey: ${JSON.stringify(configured ? publishableKey : '')},
   configured: ${configured},
+  checkoutApiUrl: ${JSON.stringify(checkoutApiUrl)},
 };
 `;
 

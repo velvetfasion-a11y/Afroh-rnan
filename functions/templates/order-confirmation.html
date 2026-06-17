@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tack för din beställning</title>
+</head>
+<body style="margin:0;padding:0;background:#1a0e08;">
+<div style="background: #1a0e08; padding: 2rem; border-radius: 12px; font-family: Georgia, serif;">
+
+  <div style="max-width: 560px; margin: 0 auto; background: #f9f3eb; border-radius: 12px; overflow: hidden; border: 1px solid #c9a84c;">
+
+    <!-- Header -->
+    <div style="background: #2b1810; padding: 2rem 2rem 1.5rem; text-align: center; border-bottom: 2px solid #c9a84c;">
+      <p style="color: #c9a84c; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 8px;">Afrohörnan</p>
+      <h1 style="color: #f9f3eb; font-size: 22px; font-weight: 400; margin: 0; letter-spacing: 1px;">Tack för din beställning!</h1>
+      <p style="color: #c9a84c; font-size: 13px; margin: 10px 0 0; font-style: italic;">Thank you for your order</p>
+    </div>
+
+    <!-- Greeting -->
+    <div style="padding: 1.5rem 2rem 0;">
+      <p style="color: #2b1810; font-size: 15px; margin: 0 0 6px;">Hej <strong>{{customer_name}}</strong>,</p>
+      <p style="color: #4a3428; font-size: 14px; line-height: 1.7; margin: 0;">Vi har tagit emot din beställning och bekräftar att allt ser bra ut. Nedan hittar du en sammanfattning av din order.</p>
+    </div>
+
+    <!-- Order meta -->
+    <div style="margin: 1.25rem 2rem; background: #2b1810; border-radius: 8px; padding: 0.75rem 1rem;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="vertical-align:top;">
+            <p style="color: #c9a84c; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 2px;">Ordernummer</p>
+            <p style="color: #f9f3eb; font-size: 14px; font-weight: 500; margin: 0;">{{order_number}}</p>
+          </td>
+          <td style="vertical-align:top;text-align:right;">
+            <p style="color: #c9a84c; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 2px;">Datum</p>
+            <p style="color: #f9f3eb; font-size: 14px; margin: 0;">{{order_date}}</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Divider label -->
+    <div style="padding: 0 2rem;">
+      <p style="color: #8a6a3e; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px; border-bottom: 1px solid #d4b483; padding-bottom: 6px;">Dina produkter</p>
+
+      {{product_rows}}
+
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e8dcc8;">
+        <div>
+          <p style="color: #2b1810; font-size: 14px; margin: 0; font-weight: 500;">Frakt</p>
+          <p style="color: #8a6a3e; font-size: 12px; margin: 2px 0 0;">Standard leverans</p>
+        </div>
+        <p style="color: #2b1810; font-size: 14px; margin: 0;">{{shipping_price}} kr</p>
+      </div>
+
+      <!-- Total -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-top: 2px;">
+        <p style="color: #2b1810; font-size: 15px; font-weight: 600; margin: 0; letter-spacing: 0.5px;">Totalt</p>
+        <p style="color: #c9a84c; font-size: 18px; font-weight: 600; margin: 0;">{{total_price}} kr</p>
+      </div>
+    </div>
+
+    <!-- Shipping notice -->
+    <div style="margin: 1rem 2rem 1.5rem; background: #2b1810; border-left: 3px solid #c9a84c; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem;">
+      <p style="color: #c9a84c; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 4px;">Leveransstatus</p>
+      <p style="color: #f9f3eb; font-size: 13px; line-height: 1.6; margin: 0;">Vi meddelar dig så snart din order har skickats. Du får ett nytt email med spårningsinformation.</p>
+    </div>
+
+    <!-- Delivery address -->
+    <div style="padding: 0 2rem 1.5rem;">
+      <p style="color: #8a6a3e; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 6px; border-bottom: 1px solid #d4b483; padding-bottom: 6px;">Leveransadress</p>
+      <p style="color: #2b1810; font-size: 13px; line-height: 1.7; margin: 0;">{{customer_name}}<br>{{customer_address}}<br>{{customer_postal}} {{customer_city}}</p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #2b1810; padding: 1.25rem 2rem; text-align: center; border-top: 1px solid #c9a84c;">
+      <p style="color: #c9a84c; font-size: 12px; margin: 0 0 4px;">Frågor? Kontakta oss på <span style="text-decoration: underline;">info@afrohornan.com</span></p>
+      <p style="color: #7a5a3a; font-size: 11px; margin: 0;">Afrohörnan — Fittja &amp; Uppsala</p>
+    </div>
+
+  </div>
+
+  <p style="text-align: center; color: #c9a84c; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 1rem 0 0; opacity: 0.6;">Email 1 — Kundkvitto</p>
+</div>
+</body>
+</html>

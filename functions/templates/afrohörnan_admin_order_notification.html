@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ny beställning – Admin</title>
+</head>
+<body style="margin:0;padding:0;background:#1a0e08;">
+<div style="background: #1a0e08; padding: 2rem; border-radius: 12px; font-family: Georgia, serif;">
+
+  <div style="max-width: 560px; margin: 0 auto; background: #f9f3eb; border-radius: 12px; overflow: hidden; border: 1px solid #c9a84c;">
+
+    <div style="background: #1a0e08; padding: 1.5rem 2rem; border-bottom: 2px solid #c9a84c;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="vertical-align:middle;">
+            <p style="color: #c9a84c; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 3px;">Afrohörnan</p>
+            <h1 style="color: #f9f3eb; font-size: 18px; font-weight: 400; margin: 0; letter-spacing: 0.5px;">Ny beställning inkom</h1>
+          </td>
+          <td style="vertical-align:middle;text-align:right;">
+            <span style="display:inline-block;background: #c9a84c; border-radius: 8px; padding: 4px 10px;">
+              <span style="color: #1a0e08; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Admin</span>
+            </span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="padding: 1.5rem 2rem 0;">
+      <p style="color: #4a3428; font-size: 14px; line-height: 1.6; margin: 0;">En ny order har lagts och behöver packas och skickas. Kontrollera informationen nedan och förbered paketet.</p>
+    </div>
+
+    <div style="margin: 1.25rem 2rem;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:10px 0;">
+        <tr>
+          <td width="50%" style="background: #2b1810; border-radius: 8px; padding: 0.75rem 1rem; vertical-align:top;">
+            <p style="color: #c9a84c; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Ordernummer</p>
+            <p style="color: #f9f3eb; font-size: 14px; font-weight: 500; margin: 0;">{{order_number}}</p>
+          </td>
+          <td width="50%" style="background: #2b1810; border-radius: 8px; padding: 0.75rem 1rem; vertical-align:top;">
+            <p style="color: #c9a84c; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 3px;">Datum &amp; tid</p>
+            <p style="color: #f9f3eb; font-size: 14px; font-weight: 500; margin: 0;">{{order_datetime}}</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="padding: 0 2rem;">
+      <p style="color: #8a6a3e; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px; border-bottom: 1px solid #d4b483; padding-bottom: 5px;">Kundinformation</p>
+
+      <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0; width: 38%;">Namn</td>
+          <td style="color: #2b1810; font-weight: 500; padding: 5px 0;">{{customer_name}}</td>
+        </tr>
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0;">Email</td>
+          <td style="color: #2b1810; padding: 5px 0;">{{customer_email}}</td>
+        </tr>
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0;">Telefon</td>
+          <td style="color: #2b1810; padding: 5px 0;">{{customer_phone}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="padding: 1rem 2rem 0;">
+      <p style="color: #8a6a3e; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px; border-bottom: 1px solid #d4b483; padding-bottom: 5px;">Leveransadress</p>
+
+      <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0; width: 38%;">Gatuadress</td>
+          <td style="color: #2b1810; font-weight: 500; padding: 5px 0;">{{customer_address}}</td>
+        </tr>
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0;">Postnummer</td>
+          <td style="color: #2b1810; padding: 5px 0;">{{customer_postal}}</td>
+        </tr>
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0;">Stad</td>
+          <td style="color: #2b1810; padding: 5px 0;">{{customer_city}}</td>
+        </tr>
+        <tr>
+          <td style="color: #8a6a3e; padding: 5px 0;">Land</td>
+          <td style="color: #2b1810; padding: 5px 0;">{{customer_country}}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="padding: 1rem 2rem 0;">
+      <p style="color: #8a6a3e; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px; border-bottom: 1px solid #d4b483; padding-bottom: 5px;">Produkter att packa</p>
+
+      {{product_rows}}
+
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+        <p style="color: #2b1810; font-size: 14px; font-weight: 500; margin: 0;">Ordertotal inkl. frakt</p>
+        <p style="color: #c9a84c; font-size: 17px; font-weight: 600; margin: 0;">{{total_price}} kr</p>
+      </div>
+    </div>
+
+    <div style="padding: 0 2rem;">
+      <p style="color: #8a6a3e; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px; border-bottom: 1px solid #d4b483; padding-bottom: 5px;">Betalning</p>
+      <p style="color: #2b1810; font-size: 13px; margin: 0 0 1rem;">Betalningsmetod: <strong>{{payment_method}}</strong> — Status: <span style="color: #3B6D11; font-weight: 500;">Bekräftad ✓</span></p>
+    </div>
+
+    <div style="margin: 0 2rem 1.5rem; background: #2b1810; border-left: 3px solid #c9a84c; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem;">
+      <p style="color: #c9a84c; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 4px;">Nästa steg</p>
+      <p style="color: #f9f3eb; font-size: 13px; line-height: 1.6; margin: 0;">Plocka &amp; packa produkterna ovan → märk paketet med leveransadressen → skicka via valt fraktalternativ → markera ordern som Skickad i systemet.</p>
+    </div>
+
+    <div style="background: #1a0e08; padding: 1.25rem 2rem; text-align: center; border-top: 1px solid #c9a84c;">
+      <p style="color: #c9a84c; font-size: 11px; margin: 0 0 3px; letter-spacing: 0.5px;">Internt meddelande — vidarebefordra ej</p>
+      <p style="color: #7a5a3a; font-size: 11px; margin: 0;">Afrohörnan Admin · Fittja &amp; Uppsala</p>
+    </div>
+
+  </div>
+
+  <p style="text-align: center; color: #c9a84c; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 1rem 0 0; opacity: 0.6;">Email 2 — Admin ordernotis</p>
+</div>
+</body>
+</html>

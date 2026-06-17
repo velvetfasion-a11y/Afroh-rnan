@@ -32,13 +32,20 @@
     return readItems().reduce((sum, item) => sum + item.price * item.qty, 0);
   }
 
+  function maxQty(item) {
+    const n = Number(item?.inventory);
+    if (Number.isFinite(n) && n > 0) return n;
+    return Infinity;
+  }
+
   function addItem(item) {
     if (!item?.slug) return;
     const items = readItems();
     const qty = item.qty || 1;
     const existing = items.find((i) => i.slug === item.slug);
     if (existing) {
-      existing.qty += qty;
+      if (Number.isFinite(Number(item.inventory))) existing.inventory = Number(item.inventory);
+      existing.qty = Math.min(existing.qty + qty, maxQty(existing));
     } else {
       items.push({
         slug: item.slug,
@@ -47,7 +54,8 @@
         price: Number(item.price) || 0,
         image: item.image || '',
         url: item.url || '#',
-        qty,
+        inventory: Number.isFinite(Number(item.inventory)) ? Number(item.inventory) : undefined,
+        qty: Math.min(qty, maxQty(item)),
       });
     }
     writeItems(items);
@@ -55,7 +63,9 @@
 
   function setQty(slug, qty) {
     const items = readItems();
-    const next = qty <= 0 ? items.filter((i) => i.slug !== slug) : items.map((i) => (i.slug === slug ? { ...i, qty } : i));
+    const next = qty <= 0
+      ? items.filter((i) => i.slug !== slug)
+      : items.map((i) => (i.slug === slug ? { ...i, qty: Math.min(qty, maxQty(i)) } : i));
     writeItems(next);
   }
 
@@ -99,6 +109,7 @@
       price: Number(card.dataset.price) || 0,
       image: card.dataset.image || '',
       url: card.dataset.url || '#',
+      inventory: card.dataset.inventory ? Number(card.dataset.inventory) : undefined,
     };
   }
 
