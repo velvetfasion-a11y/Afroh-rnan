@@ -163,7 +163,7 @@ function page(p) {
 <link rel="stylesheet" href="../shared.css">
 <link rel="stylesheet" href="product.css">
 </head>
-<body>
+<body data-product-slug="${p.slug}">
 
 <nav>
   <a href="../index.html" class="logo">Afro<em>hörnan</em></a>
@@ -231,46 +231,24 @@ function page(p) {
 
 <footer>
   <span class="fl">Afrohörnan</span>
-  Stockholm Fittja &nbsp;·&nbsp; Uppsala Gottsunda<br>
+  Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
   <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 
-<script src="../js/cart.js"></script>
+<script type="application/json" id="product-data">${JSON.stringify({
+    slug: p.slug,
+    name: `${p.fullTitle} ${p.size}`,
+    brand: p.brand,
+    price: p.price,
+    image: p.image.replace('w=800', 'w=400'),
+    url: `products/${p.slug}.html`,
+  })}</script>
 <script src="../js/firebase-config.js"></script>
 <script src="../js/admin-gate.js"></script>
+<script src="../js/cart.js"></script>
+<script type="module" src="../js/product-detail.js"></script>
 <script type="module" src="../js/nav-auth.js"></script>
-<script>
-  const price = ${p.price};
-  let qty = 1;
-  const qtyEl = document.getElementById('qty');
-  const totalEl = document.getElementById('total');
-  const buyBtn = document.getElementById('buyBtn');
-
-  function updateTotal() {
-    qtyEl.textContent = qty;
-    totalEl.textContent = (qty * price) + ' kr totalt';
-  }
-
-  document.getElementById('qtyMinus').addEventListener('click', () => {
-    qty = Math.max(1, qty - 1);
-    updateTotal();
-  });
-  document.getElementById('qtyPlus').addEventListener('click', () => {
-    qty += 1;
-    updateTotal();
-  });
-
-  buyBtn.addEventListener('click', () => {
-    AfroCart.add(qty);
-    buyBtn.textContent = '✓ Lagt till';
-    buyBtn.classList.add('added');
-    setTimeout(() => {
-      buyBtn.textContent = 'Köp nu';
-      buyBtn.classList.remove('added');
-    }, 1800);
-  });
-</script>
 </body>
 </html>
 `;

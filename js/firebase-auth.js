@@ -1,4 +1,4 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -13,9 +13,12 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { isAdminUser } from './admin-check.js';
 
-const config = window.firebaseConfig;
+function getFirebaseConfig() {
+  return window.firebaseConfig;
+}
 
 export function isFirebaseConfigured() {
+  const config = getFirebaseConfig();
   return config && config.apiKey && !config.apiKey.includes('YOUR_');
 }
 
@@ -27,7 +30,8 @@ export function getFirebaseAuth() {
     throw new Error('Firebase is not configured. Update js/firebase-config.js with your project settings.');
   }
   if (!auth) {
-    const app = initializeApp(config);
+    const config = getFirebaseConfig();
+    const app = getApps().length ? getApps()[0] : initializeApp(config);
     auth = getAuth(app);
   }
   return auth;

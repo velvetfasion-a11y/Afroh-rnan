@@ -30,6 +30,7 @@ nav {
   color: var(--brown); letter-spacing: .02em;
   text-decoration: none;
 }
+a.logo { text-decoration: none; color: inherit; }
 .logo em { font-style: italic; color: var(--rust); }
 .nav-links { display: flex; gap: 2rem; list-style: none; }
 .nav-links a {
@@ -38,6 +39,43 @@ nav {
   transition: color .2s;
 }
 .nav-links a:hover { color: var(--text); }
+.nav-links a.active { color: var(--text); }
+
+.has-cat-nav nav:not(.cat-nav) .nav-links {
+  display: none;
+}
+
+.cat-nav {
+  position: sticky;
+  top: 58px;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  background: #fff;
+  border-top: 1px solid #E8E0D5;
+  border-bottom: 1px solid #E8E0D5;
+  padding: 0 2.5rem;
+  height: 48px;
+}
+.cat-nav a {
+  text-decoration: none;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  transition: color .2s;
+  padding: .25rem 0;
+  border-bottom: 2px solid transparent;
+}
+.cat-nav a:hover { color: var(--text); }
+.cat-nav a.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 .nav-profile {
   background: none; border: none; cursor: pointer;
@@ -55,6 +93,7 @@ nav {
   transition: background .2s;
 }
 .nav-cart-btn:hover { background: var(--gold-lt); }
+a.nav-cart-btn { text-decoration: none; }
 .nav-cart-btn svg { width: 19px; height: 19px; }
 .cart-badge {
   position: absolute; top: -5px; right: -5px;
@@ -73,7 +112,42 @@ footer {
 footer .fl { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 700; color: rgba(255,255,255,.6); display: block; margin-bottom: .2rem; }
 footer a { color: var(--gold); text-decoration: none; }
 
+#cart-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  z-index: 500;
+  background: var(--brown);
+  color: #fff;
+  padding: .85rem 1.25rem;
+  border-radius: 4px;
+  font-size: .85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  transition: transform .3s ease;
+  pointer-events: none;
+}
+
+#cart-toast.show {
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+#cart-toast a {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: .35rem;
+}
+
 @media (max-width: 768px) {
   .nav-links { display: none; }
+  .cat-nav {
+    gap: 1.5rem;
+    padding: 0 1.2rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
   nav { padding: 0 1.2rem; }
 }

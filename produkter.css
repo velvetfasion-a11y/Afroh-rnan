@@ -1,0 +1,202 @@
+/* ===== PAGE INTRO ===== */
+.shop-intro {
+  text-align: center;
+  padding: 3rem 2rem 1.5rem;
+  background: var(--bg2);
+  border-bottom: 1px solid #E8E0D5;
+}
+.shop-intro h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: .5rem;
+}
+.shop-intro p {
+  font-size: .9rem;
+  color: var(--muted);
+  max-width: 36rem;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ===== SECTION HEADER ===== */
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2.8rem 2.5rem 1.2rem;
+}
+.sec-head h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.sec-head a {
+  font-size: .75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+.sec-head a:hover { color: var(--rust); text-decoration: underline; }
+
+/* ===== PRODUCT GRID ===== */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1px;
+  background: #E8E0D5;
+  border-top: 1px solid #E8E0D5;
+  border-bottom: 1px solid #E8E0D5;
+}
+.pcard {
+  background: #fff;
+  cursor: pointer;
+  transition: background .15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.pcard:hover { background: var(--bg2); }
+.pcard-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  flex: 1;
+}
+.pcard-link:hover .pcard-name { color: var(--rust); }
+.pcard-img {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  position: relative;
+  background: #F3EDE5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pcard-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .5s ease;
+}
+.pcard-emoji {
+  font-size: 3rem;
+  line-height: 1;
+}
+.pcard:hover .pcard-img img { transform: scale(1.05); }
+.pcard-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--rust);
+  color: #fff;
+  font-size: .6rem;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: .22rem .55rem;
+  border-radius: 2px;
+}
+.pcard-badge.gold { background: var(--gold); color: #1A0D00; }
+.pcard-fav {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pcard-fav svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
+  transition: fill .15s, stroke .15s;
+}
+.pcard-fav.active svg {
+  fill: #fff;
+  stroke: #fff;
+}
+.pcard-body { padding: .9rem 1rem 1.1rem; }
+.pcard-brand {
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  margin-bottom: .15rem;
+}
+.pcard-name {
+  font-size: .82rem;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: .55rem;
+}
+.pcard-price {
+  font-size: .98rem;
+  font-weight: 600;
+  color: var(--rust);
+}
+.pcard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 0 .75rem .75rem;
+}
+.pcard-cart {
+  display: block;
+  width: 100%;
+  background: var(--brown);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: .5rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .2s;
+}
+.pcard-cart:hover,
+.pcard-cart.added { background: var(--rust); }
+
+.shop-empty {
+  grid-column: 1 / -1;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #fff;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .cat-nav {
+    gap: 1.5rem;
+    padding: 0 1.2rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  .sec-head { padding: 2rem 1.2rem 1rem; }
+  .product-grid { grid-template-columns: 1fr 1fr; }
+}

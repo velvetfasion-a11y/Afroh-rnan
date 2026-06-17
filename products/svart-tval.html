@@ -9,13 +9,13 @@
 <link rel="stylesheet" href="../shared.css">
 <link rel="stylesheet" href="product.css">
 </head>
-<body>
+<body data-product-slug="svart-tval">
 
 <nav>
   <a href="../index.html" class="logo">Afro<em>hörnan</em></a>
   <ul class="nav-links">
-    <li><a href="../index.html#kosmetika-products">Kosmetika</a></li>
-    <li><a href="../index.html#mat-products">Mat &amp; Kryddor</a></li>
+    <li><a href="../kosmetika.html">Kosmetika</a></li>
+    <li><a href="../mat.html">Mat &amp; Kryddor</a></li>
     <li><a href="../index.html#butiker">Butiker</a></li>
     <li><a href="../index.html#kontakt">Kontakt</a></li>
   </ul>
@@ -33,7 +33,7 @@
 <main class="product-main">
   <nav class="breadcrumb" aria-label="Brödsmulor">
     <a href="../index.html">Hem</a> /
-    <a href="../index.html#kosmetika-products">Kosmetika & Hudvård</a> /
+    <a href="../kosmetika.html">Kosmetika & Hudvård</a> /
     <span>Afrikansk Svart Tvål</span>
   </nav>
 
@@ -74,50 +74,21 @@
     </div>
   </div>
 
-  <a href="../index.html#kosmetika-products" class="back-shop">← Tillbaka till sortimentet</a>
+  <a href="../kosmetika.html" class="back-shop">← Tillbaka till sortimentet</a>
 </main>
 
 <footer>
   <span class="fl">Afrohörnan</span>
-  Stockholm Fittja &nbsp;·&nbsp; Uppsala Gottsunda<br>
+  Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
   <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 
-<script src="../js/cart.js"></script>
+<script type="application/json" id="product-data">{"slug":"svart-tval","name":"Afrikansk Svart Tvål – Rå & Naturlig 150 g","brand":"Tvål","price":89,"image":"https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&auto=format&fit=crop&q=80","url":"products/svart-tval.html"}</script>
 <script src="../js/firebase-config.js"></script>
 <script src="../js/admin-gate.js"></script>
+<script src="../js/cart.js"></script>
+<script type="module" src="../js/product-detail.js"></script>
 <script type="module" src="../js/nav-auth.js"></script>
-<script>
-  const price = 89;
-  let qty = 1;
-  const qtyEl = document.getElementById('qty');
-  const totalEl = document.getElementById('total');
-  const buyBtn = document.getElementById('buyBtn');
-
-  function updateTotal() {
-    qtyEl.textContent = qty;
-    totalEl.textContent = (qty * price) + ' kr totalt';
-  }
-
-  document.getElementById('qtyMinus').addEventListener('click', () => {
-    qty = Math.max(1, qty - 1);
-    updateTotal();
-  });
-  document.getElementById('qtyPlus').addEventListener('click', () => {
-    qty += 1;
-    updateTotal();
-  });
-
-  buyBtn.addEventListener('click', () => {
-    AfroCart.add(qty);
-    buyBtn.textContent = '✓ Lagt till';
-    buyBtn.classList.add('added');
-    setTimeout(() => {
-      buyBtn.textContent = 'Köp nu';
-      buyBtn.classList.remove('added');
-    }, 1800);
-  });
-</script>
 </body>
 </html>

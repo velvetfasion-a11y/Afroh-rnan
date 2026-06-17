@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kundvagn – Afrohörnan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="produkter.css">
+<link rel="stylesheet" href="kundvagn.css">
+</head>
+<body class="has-cat-nav">
+
+<nav>
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <ul class="nav-links">
+    <li><a href="har.html">Hår &amp; Extensions</a></li>
+    <li><a href="kosmetika.html">Kosmetika</a></li>
+    <li><a href="mat.html">Mat &amp; Kryddor</a></li>
+    <li><a href="index.html#butiker">Hitta hit</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <a href="kundvagn.html" class="nav-cart-btn" id="cartBtn" aria-label="Varukorg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </a>
+  </div>
+</nav>
+
+<nav class="cat-nav" aria-label="Sidnavigering">
+  <a href="har.html">Hår &amp; Extensions</a>
+  <a href="kosmetika.html">Kosmetika</a>
+  <a href="mat.html">Mat &amp; Kryddor</a>
+  <a href="index.html#butiker">Hitta hit</a>
+</nav>
+
+<main class="cart-main">
+  <header class="cart-header">
+    <h1>Kundvagn</h1>
+    <p id="cart-item-count">0 produkter</p>
+  </header>
+
+  <div id="cart-empty" class="cart-empty">
+    <h2>Din kundvagn är tom</h2>
+    <p>Lägg till produkter från vårt sortiment.</p>
+    <a href="har.html">Utforska produkter</a>
+  </div>
+
+  <div id="cart-content" hidden>
+    <div id="cart-items" class="cart-list"></div>
+
+    <aside class="cart-summary">
+      <div class="cart-summary-row">
+        <span>Delsumma</span>
+        <span id="cart-subtotal">0 kr</span>
+      </div>
+      <div class="cart-summary-row total">
+        <span>Totalt</span>
+        <strong id="cart-total">0 kr</strong>
+      </div>
+      <p class="cart-note">Webbshop kommer snart – kontakta oss för att slutföra din beställning eller besök oss i butik.</p>
+      <div class="cart-actions">
+        <a href="index.html#kontakt" class="cart-btn-primary">Kontakta för beställning</a>
+        <a href="har.html" class="cart-btn-secondary cart-btn-dark">Fortsätt handla</a>
+        <button type="button" class="cart-btn-secondary" id="cart-clear">Töm kundvagn</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <span class="fl">Afrohörnan</span>
+  Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
+  <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
+  © 2026 Afrohörnan. Alla rättigheter förbehållna.
+</footer>
+
+<script src="js/cart.js"></script>
+<script src="js/cart-page.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/admin-gate.js"></script>
+<script type="module" src="js/nav-auth.js"></script>
+</body>
+</html>

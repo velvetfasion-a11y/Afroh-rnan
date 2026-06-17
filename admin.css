@@ -17,6 +17,7 @@
 
 .admin-nav .logo {
   color: #F5EFE4;
+  text-decoration: none;
 }
 
 .admin-nav-right {
@@ -571,13 +572,150 @@
   color: rgba(245,239,228,.25);
 }
 
+.admin-field select {
+  padding: .7rem .9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(212,148,26,.2);
+  background: rgba(255,255,255,.05);
+  color: #F5EFE4;
+  font-family: 'Outfit', sans-serif;
+  font-size: .9rem;
+  outline: none;
+}
+
+.admin-field select:focus {
+  border-color: rgba(212,148,26,.5);
+}
+
+.admin-image-help {
+  font-size: .82rem;
+  color: rgba(245,239,228,.45);
+  margin: -.25rem 0 1rem;
+}
+
+.admin-image-card {
+  position: relative;
+  transition: border-color .15s, background .15s, outline-color .15s;
+}
+
+.admin-image-card.is-dragover {
+  border-color: rgba(212,148,26,.65);
+  background: rgba(212,148,26,.05);
+  outline: 2px dashed rgba(212,148,26,.5);
+  outline-offset: -2px;
+}
+
+.admin-image-card.is-dragover::after {
+  content: 'Släpp bilderna här';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: rgba(20, 14, 8, .78);
+  color: var(--gold);
+  font-size: 1rem;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.admin-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: .75rem;
+}
+
+.admin-image-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(212,148,26,.22);
+  background: rgba(255,255,255,.03);
+}
+
+.admin-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-image-primary {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  background: rgba(28, 22, 16, .82);
+  color: var(--gold);
+  font-size: .58rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: .2rem .4rem;
+  border-radius: 3px;
+}
+
+.admin-image-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(28, 22, 16, .78);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+
+.admin-image-remove:hover {
+  background: var(--rust);
+}
+
+.admin-image-add {
+  aspect-ratio: 1;
+  border: 2px dashed rgba(212,148,26,.28);
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(245,239,228,.5);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  padding: .75rem;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: .78rem;
+  transition: border-color .15s, background .15s, color .15s;
+}
+
+.admin-image-add:hover,
+.admin-image-add:focus-visible {
+  border-color: rgba(212,148,26,.55);
+  background: rgba(255,255,255,.03);
+  color: rgba(245,239,228,.75);
+  outline: none;
+}
+
 .admin-image-upload {
   border: 2px dashed rgba(212,148,26,.25);
   border-radius: 12px;
   min-height: 200px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   cursor: pointer;
   overflow: hidden;
   transition: border-color .15s, background .15s;
@@ -595,17 +733,23 @@
   max-height: 280px;
   object-fit: contain;
   display: block;
+  margin: 0 auto;
 }
 
 .admin-image-placeholder {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: .35rem;
   color: rgba(245,239,228,.45);
   font-size: .88rem;
   padding: 2rem;
   text-align: center;
+  width: 100%;
+  pointer-events: none;
 }
 
 .admin-image-icon {

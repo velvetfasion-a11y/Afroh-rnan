@@ -437,6 +437,11 @@
   object-fit: cover;
 }
 
+.fav-emoji {
+  font-size: 48px;
+  line-height: 1;
+}
+
 .fav-cat {
   position: absolute;
   top: 10px;

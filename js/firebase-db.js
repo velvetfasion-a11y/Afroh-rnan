@@ -7,6 +7,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  onSnapshot,
   Timestamp,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import {
@@ -45,6 +46,21 @@ export async function fetchAllProducts() {
     .sort((a, b) => productSortKey(b) - productSortKey(a));
 }
 
+export function subscribeAllProducts(onData, onError) {
+  return onSnapshot(
+    collection(getFirestoreDb(), 'products'),
+    (snap) => {
+      const products = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => productSortKey(b) - productSortKey(a));
+      onData(products);
+    },
+    (err) => {
+      if (onError) onError(err);
+    },
+  );
+}
+
 export async function getProduct(productId) {
   const snap = await getDoc(doc(getFirestoreDb(), 'products', productId));
   if (!snap.exists()) return null;
@@ -59,16 +75,17 @@ export async function uploadProductImage(file, productId) {
   return getDownloadURL(storageRef);
 }
 
-export async function saveProduct(productId, fields, imageFile) {
+export async function saveProduct(productId, fields, imageFiles = []) {
   const dbRef = getFirestoreDb();
   const isNew = !productId;
   const docRef = isNew ? doc(collection(dbRef, 'products')) : doc(dbRef, 'products', productId);
   const id = docRef.id;
 
-  let images = fields.existingImages || [];
-  if (imageFile) {
-    const url = await uploadProductImage(imageFile, id);
-    images = [url];
+  let images = [...(fields.existingImages || [])];
+  const files = Array.isArray(imageFiles) ? imageFiles : imageFiles ? [imageFiles] : [];
+  for (const file of files) {
+    const url = await uploadProductImage(file, id);
+    images.push(url);
   }
 
   const payload = {
@@ -78,18 +95,23 @@ export async function saveProduct(productId, fields, imageFile) {
     price: fields.price,
     inventory: fields.inventory,
     images,
+    category: fields.category,
+    subtitle: fields.brand || '',
   };
 
   if (isNew) {
     await setDoc(docRef, {
       ...payload,
+      categories: [fields.category],
       totalSold: 0,
       featured: false,
-      categories: [],
       createdAt: Timestamp.now(),
     });
   } else {
-    await updateDoc(docRef, payload);
+    await updateDoc(docRef, {
+      ...payload,
+      categories: [fields.category],
+    });
   }
 
   return id;

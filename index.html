@@ -38,7 +38,9 @@ nav {
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.5rem; font-weight: 700;
   color: var(--brown); letter-spacing: .02em;
+  text-decoration: none;
 }
+a.logo { text-decoration: none; color: inherit; }
 .logo em { font-style: italic; color: var(--rust); }
 .nav-links { display: flex; gap: 2rem; list-style: none; }
 .nav-links a {
@@ -47,6 +49,24 @@ nav {
   transition: color .2s;
 }
 .nav-links a:hover { color: var(--text); }
+
+.has-cat-nav nav:not(.cat-nav) .nav-links { display: none; }
+.cat-nav {
+  position: sticky; top: 58px; z-index: 150;
+  display: flex; align-items: center; justify-content: center;
+  gap: 2.5rem; background: #fff;
+  border-top: 1px solid #E8E0D5;
+  border-bottom: 1px solid #E8E0D5;
+  padding: 0 2.5rem; height: 48px;
+}
+.cat-nav a {
+  text-decoration: none; font-size: .8rem; font-weight: 500;
+  color: var(--muted); letter-spacing: .05em; text-transform: uppercase;
+  transition: color .2s; padding: .25rem 0;
+  border-bottom: 2px solid transparent;
+}
+.cat-nav a:hover { color: var(--text); }
+
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 .nav-profile {
   background: none; border: none; cursor: pointer;
@@ -65,12 +85,40 @@ nav {
 }
 .nav-cart-btn:hover { background: var(--gold-lt); }
 .nav-cart-btn svg { width: 19px; height: 19px; }
+a.nav-cart-btn { text-decoration: none; }
 .cart-badge {
   position: absolute; top: -5px; right: -5px;
   background: var(--brown); color: var(--gold);
   font-size: .55rem; font-weight: 700;
   width: 15px; height: 15px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
+}
+
+#cart-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  z-index: 500;
+  background: var(--brown);
+  color: #fff;
+  padding: .85rem 1.25rem;
+  border-radius: 4px;
+  font-size: .85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  transition: transform .3s ease;
+  pointer-events: none;
+}
+#cart-toast.show {
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+#cart-toast a {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: .35rem;
 }
 
 /* ===== HERO – fullbredd med bakgrundsbild ===== */
@@ -138,56 +186,6 @@ nav {
 .hloc span { font-size: .8rem; color: rgba(255,255,255,.55); }
 .hloc strong { color: #fff; font-weight: 600; }
 
-/* ===== CATEGORY PANELS ===== */
-.cat-panels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: #D8D0C5;
-  border-top: 3px solid #fff;
-}
-.cat-panel {
-  position: relative;
-  height: 220px;
-  background: linear-gradient(to bottom, #C8C0B4 0%, #2A2018 100%);
-  text-decoration: none;
-  overflow: hidden;
-  display: flex; flex-direction: column;
-  transition: opacity .2s;
-}
-.cat-panel:hover .cp-overlay { background: linear-gradient(to bottom, rgba(20,14,6,0) 0%, rgba(20,14,6,.92) 100%); }
-.cp-label {
-  padding: 1rem 1.3rem;
-  font-family: 'Outfit', sans-serif;
-  font-size: .9rem; font-weight: 400; color: var(--text);
-  background: #fff;
-  border-bottom: 1px solid #E8E0D5;
-}
-.cp-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(20,14,6,0) 0%, rgba(20,14,6,.88) 100%);
-  display: flex; flex-direction: column;
-  justify-content: flex-end;
-  padding: 1.8rem 1.5rem;
-  transition: background .3s;
-}
-.cp-tag {
-  font-size: .62rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--gold); margin-bottom: .5rem;
-}
-.cp-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 2.4rem; font-weight: 700; color: #fff; line-height: 1.05;
-  margin-bottom: .9rem;
-}
-.cp-cta {
-  display: inline-flex; align-items: center; gap: .4rem;
-  font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-  color: rgba(255,255,255,.75);
-  border-bottom: 1px solid rgba(255,255,255,.3);
-  padding-bottom: 2px; width: fit-content;
-}
-
 /* ===== SECTION HEADER ===== */
 .sec-head {
   display: flex; align-items: baseline; justify-content: space-between;
@@ -199,14 +197,14 @@ nav {
 }
 .sec-head a {
   font-size: .75rem; font-weight: 500; color: var(--muted);
-  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration: none; text-underline-offset: 3px;
 }
-.sec-head a:hover { color: var(--rust); }
+.sec-head a:hover { color: var(--rust); text-decoration: underline; }
 
 /* ===== PRODUCT GRID ===== */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1px;
   background: #E8E0D5;
   border-top: 1px solid #E8E0D5;
@@ -239,6 +237,10 @@ nav {
   object-fit: cover;
   transition: transform .5s ease;
 }
+.pcard-emoji {
+  font-size: 3rem;
+  line-height: 1;
+}
 .pcard:hover .pcard-img img { transform: scale(1.05); }
 .pcard-badge {
   position: absolute; top: 10px; left: 10px;
@@ -270,51 +272,30 @@ nav {
 .pcard-brand { font-size: .68rem; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: .15rem; }
 .pcard-name { font-size: .82rem; font-weight: 400; color: var(--text); line-height: 1.4; margin-bottom: .55rem; }
 .pcard-price { font-size: .98rem; font-weight: 600; color: var(--rust); }
-.pcard-buy {
-  display: block; width: 100%;
-  margin-top: .55rem;
-  background: var(--brown); color: #fff;
-  border: none; border-radius: 3px;
-  padding: .5rem; font-family: 'Outfit', sans-serif;
-  font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
-  cursor: pointer; transition: background .2s;
-  text-decoration: none; text-align: center;
+.pcard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 0 .75rem .75rem;
 }
-.pcard-buy:hover { background: var(--rust); }
-
-/* ===== FOOD SECTION (dark bg) ===== */
-.food-section { background: var(--brown); }
-.food-section .sec-head h2 { color: #fff; }
-.food-section .sec-head a { color: rgba(255,255,255,.4); }
-.food-section .sec-head a:hover { color: var(--gold); }
-.food-section .product-grid { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.06); }
-.food-section .pcard { background: var(--brown); }
-.food-section .pcard:hover { background: #2a1e10; }
-.food-section .pcard-img { background: #2a1e10; }
-.food-section .pcard-brand { color: rgba(255,255,255,.4); }
-.food-section .pcard-name { color: rgba(255,255,255,.85); }
-.food-section .pcard-buy { background: var(--gold); color: #1A0D00; }
-.food-section .pcard-buy:hover { background: var(--gold-lt); }
-
-/* ===== BANNER STRIP ===== */
-.banner-strip {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  height: 220px; gap: 1px; background: #E8E0D5;
+.pcard-cart {
+  display: block;
+  width: 100%;
+  background: var(--brown);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: .5rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .2s;
 }
-.bstrip {
-  position: relative; overflow: hidden; cursor: pointer;
-}
-.bstrip img { width:100%; height:100%; object-fit:cover; transition: transform .5s; }
-.bstrip:hover img { transform: scale(1.06); }
-.bstrip-label {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(14,11,7,.65) 0%, transparent 60%);
-  display: flex; align-items: flex-end; padding: 1rem 1.1rem;
-}
-.bstrip-label span {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.1rem; font-weight: 700; color: #fff;
-}
+.pcard-cart:hover,
+.pcard-cart.added { background: var(--rust); }
 
 /* ===== LOCATIONS ===== */
 .loc-section {
@@ -424,22 +405,21 @@ footer a { color: var(--gold); text-decoration: none; }
   .hero-wrap { height: clamp(280px, 38vh, 360px); }
   .hero-center h1 { font-size: clamp(1.75rem, 8vw, 2.5rem); }
   .product-grid { grid-template-columns: 1fr 1fr; }
-  .banner-strip { grid-template-columns: 1fr; height: auto; }
-  .bstrip { height: 140px; }
   .loc-grid { grid-template-columns: 1fr; }
   .nav-links { display: none; }
+  .cat-nav { gap: 1.5rem; padding: 0 1.2rem; justify-content: flex-start; overflow-x: auto; }
   nav { padding: 0 1.2rem; }
 }
 </style>
 </head>
-<body>
+<body class="has-cat-nav">
 
 <!-- ===== NAV ===== -->
 <nav>
   <a href="index.html" class="logo">Afro<em>hörnan</em></a>
   <ul class="nav-links">
-    <li><a href="#kosmetika">Kosmetika</a></li>
-    <li><a href="#mat">Mat & Kryddor</a></li>
+    <li><a href="kosmetika.html">Kosmetika</a></li>
+    <li><a href="mat.html">Mat & Kryddor</a></li>
     <li><a href="#butiker">Butiker</a></li>
     <li><a href="#kontakt">Kontakt</a></li>
   </ul>
@@ -452,6 +432,13 @@ footer a { color: var(--gold); text-decoration: none; }
       <span class="cart-badge" id="cartCount">0</span>
     </button>
   </div>
+</nav>
+
+<nav class="cat-nav" aria-label="Sidnavigering">
+  <a href="har.html">Hår &amp; Extensions</a>
+  <a href="kosmetika.html">Kosmetika</a>
+  <a href="mat.html">Mat &amp; Kryddor</a>
+  <a href="#butiker">Hitta hit</a>
 </nav>
 
 <!-- ===== HERO ===== -->
@@ -467,190 +454,36 @@ footer a { color: var(--gold); text-decoration: none; }
     <a href="#butiker" class="btn-hitta">Hitta butiken</a>
     <div class="hero-locs">
       <div class="hloc"><div class="hloc-dot"></div><span><strong>Stockholm</strong> · Fittja</span></div>
-      <div class="hloc"><div class="hloc-dot"></div><span><strong>Uppsala</strong> · Gottsunda</span></div>
+      <div class="hloc"><div class="hloc-dot"></div><span><strong>Stockholm</strong> · Märsta</span></div>
     </div>
   </div>
 </div>
 
-<!-- ===== CATEGORY PANELS ===== -->
-<div class="cat-panels">
-
-  <a href="#kosmetika-products" class="cat-panel">
-    <div class="cp-overlay">
-      <div class="cp-tag">Skönhet &amp; Hudvård</div>
-      <div class="cp-title">Afrikansk<br>Kosmetika</div>
-      <div class="cp-cta">Utforska
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </div>
-  </a>
-
-  <a href="#mat-products" class="cat-panel">
-    <div class="cp-overlay">
-      <div class="cp-tag">Mat &amp; Delikatesser</div>
-      <div class="cp-title">Afrikanska<br>Smaker</div>
-      <div class="cp-cta">Utforska
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </div>
-    </div>
-  </a>
-
-</div>
+<!-- ===== HÅR & EXTENSIONS ===== -->
+<section id="har-products">
+  <div class="sec-head">
+    <h2>Hår &amp; Extensions</h2>
+    <a href="har.html">Se alla produkter →</a>
+  </div>
+  <div class="product-grid" id="har-grid"></div>
+</section>
 
 <!-- ===== KOSMETIKA PRODUCTS (white section) ===== -->
 <section id="kosmetika-products">
   <div class="sec-head">
     <h2>Kosmetika &amp; Hudvård</h2>
-    <a href="#kontakt">Kontakta för mer →</a>
+    <a href="kosmetika.html">Se alla produkter →</a>
   </div>
-  <div class="product-grid">
-
-    <div class="pcard">
-      <a href="products/shea-butter.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=500&auto=format&fit=crop&q=80" alt="Shea Butter">
-          <span class="pcard-badge">Populär</span>
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Sheabutter</div>
-          <div class="pcard-name">Oraffinerad Shea Butter 100% naturell 200 g</div>
-          <div class="pcard-price">129 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-    <div class="pcard">
-      <a href="products/svart-tval.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1612817288484-6f916006741a?w=500&auto=format&fit=crop&q=80" alt="Black Soap">
-          <span class="pcard-badge gold">Nyhet</span>
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Tvål</div>
-          <div class="pcard-name">Afrikansk Svart Tvål – Rå & Naturlig 150 g</div>
-          <div class="pcard-price">89 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-    <div class="pcard">
-      <a href="products/arganolja.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1590439471364-192aa70c0b53?w=500&auto=format&fit=crop&q=80" alt="Argan Oil">
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Hårolja</div>
-          <div class="pcard-name">Marockansk Arganolja Kall­pressad 100 ml</div>
-          <div class="pcard-price">149 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-    <div class="pcard">
-      <a href="products/kokosolja.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1631730486784-74757a1e7f24?w=500&auto=format&fit=crop&q=80" alt="Coconut Oil">
-          <span class="pcard-badge">Ekologisk</span>
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Kokosolja</div>
-          <div class="pcard-name">Virgin Kokosolja Hudvård & Hår 250 ml</div>
-          <div class="pcard-price">99 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-  </div>
+  <div class="product-grid" id="kosmetika-grid"></div>
 </section>
 
-<!-- ===== BANNER STRIP ===== -->
-<div class="banner-strip">
-  <div class="bstrip">
-    <img src="https://images.unsplash.com/photo-1583241749184-2a4e14571ec5?w=600&auto=format&fit=crop&q=80" alt="Kryddor">
-    <div class="bstrip-label"><span>Kryddor</span></div>
-  </div>
-  <div class="bstrip">
-    <img src="https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=600&auto=format&fit=crop&q=80" alt="Naturlig hudvård">
-    <div class="bstrip-label"><span>Naturlig hudvård</span></div>
-  </div>
-  <div class="bstrip">
-    <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&auto=format&fit=crop&q=80" alt="Hantverk">
-    <div class="bstrip-label"><span>Hantverk & Kultur</span></div>
-  </div>
-</div>
-
-<!-- ===== MAT & KRYDDOR (dark section) ===== -->
-<section class="food-section" id="mat-products">
+<!-- ===== MAT & KRYDDOR ===== -->
+<section id="mat-products">
   <div class="sec-head">
     <h2>Mat &amp; Kryddor</h2>
-    <a href="#kontakt">Kontakta för mer →</a>
+    <a href="mat.html">Se alla produkter →</a>
   </div>
-  <div class="product-grid">
-
-    <div class="pcard">
-      <a href="products/berbere.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=500&auto=format&fit=crop&q=80" alt="Berbere krydda">
-          <span class="pcard-badge">Bästsäljare</span>
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Kryddblandning</div>
-          <div class="pcard-name">Berbere – Etiopisk Kryddblandning 200 g</div>
-          <div class="pcard-price">89 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-    <div class="pcard">
-      <a href="products/rooibos-chai.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80" alt="Rooibos te">
-          <span class="pcard-badge gold">Nyhet</span>
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Te</div>
-          <div class="pcard-name">Rooibos Chai – Sydafrikanskt Te 100 g</div>
-          <div class="pcard-price">65 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-    <div class="pcard">
-      <a href="products/suya-spice.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=500&auto=format&fit=crop&q=80" alt="Suya Spice">
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Grillkrydda</div>
-          <div class="pcard-name">Suya Spice – Nigeriansk Grillkrydda 150 g</div>
-          <div class="pcard-price">75 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-    <div class="pcard">
-      <a href="products/baobab-snacks.html" class="pcard-link">
-        <div class="pcard-img">
-          <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&auto=format&fit=crop&q=80" alt="Baobab">
-          <span class="pcard-badge">Ekologisk</span>
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-brand">Superfood</div>
-          <div class="pcard-name">Baobab Snacks – Superfrukt Chips 80 g</div>
-          <div class="pcard-price">55 kr</div>
-        </div>
-      </a>
-      <a href="#butiker" class="pcard-buy">Hitta butik</a>
-    </div>
-
-  </div>
+  <div class="product-grid" id="mat-grid"></div>
 </section>
 
 <!-- ===== LOCATIONS ===== -->
@@ -682,17 +515,17 @@ footer a { color: var(--gold); text-decoration: none; }
 
     <div class="loc-card">
       <div class="loc-num">02</div>
-      <h3>Uppsala Gottsunda</h3>
-      <div class="loc-area">Gottsunda · Uppsala</div>
+      <h3>Stockholm Märsta</h3>
+      <div class="loc-area">Märsta · Stockholms Län</div>
       <div class="loc-detail">
-        Gottsunda Centrum, Plan 1<br>756 45 Uppsala<br><br>
+        Valsta Centrum<br>195 30 Märsta<br><br>
         Mån–Fre &nbsp;10:00–18:30<br>
         Lördag &nbsp;&nbsp;&nbsp;10:00–16:00<br>
         Söndag &nbsp;&nbsp;Stängt
       </div>
       <div class="loc-footer">
         <span class="open-pill"><span class="open-dot"></span>Öppen nu</span>
-        <a href="https://www.google.com/maps/search/Gottsunda+Centrum+Uppsala" target="_blank" class="btn-maps">
+        <a href="https://www.google.com/maps/search/Valsta+Centrum+Märsta" target="_blank" class="btn-maps">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Hitta hit
         </a>
@@ -735,7 +568,7 @@ footer a { color: var(--gold); text-decoration: none; }
 <!-- ===== FOOTER ===== -->
 <footer>
   <span class="fl">Afrohörnan</span>
-  Stockholm Fittja &nbsp;·&nbsp; Uppsala Gottsunda<br>
+  Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
   <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
@@ -745,20 +578,6 @@ footer a { color: var(--gold); text-decoration: none; }
 <script src="js/firebase-config.js"></script>
 <script src="js/admin-gate.js"></script>
 <script type="module" src="js/nav-auth.js"></script>
-<script>
-  // scroll reveal
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.style.animation = 'fadeUp .5s ease forwards';
-        obs.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.08 });
-  document.querySelectorAll('.pcard, .loc-card').forEach(el => {
-    el.style.opacity = '0';
-    obs.observe(el);
-  });
-</script>
+<script type="module" src="js/storefront.js?v=2"></script>
 </body>
 </html>

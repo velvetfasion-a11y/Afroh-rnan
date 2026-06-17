@@ -4,6 +4,7 @@ import { fetchAllProducts } from './firebase-db.js';
 let allProducts = [];
 
 const CATEGORY_LABELS = {
+  har: 'Hår & Extensions',
   kosmetika: 'Kosmetika',
   mat: 'Mat & Kryddor',
 };
@@ -130,8 +131,8 @@ function renderTable(products) {
 }
 
 function productCategories(p) {
-  if (Array.isArray(p.categories)) return p.categories;
   if (p.category) return [p.category];
+  if (Array.isArray(p.categories)) return p.categories;
   return [];
 }
 

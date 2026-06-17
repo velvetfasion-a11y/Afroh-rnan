@@ -1,0 +1,110 @@
+import { writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+const categories = [
+  {
+    file: 'har.html',
+    cat: 'har',
+    title: 'Hår & Extensions – Afrohörnan',
+    heading: 'Hår &amp; Extensions',
+    intro: 'Utforska vårt sortiment av flätor, peruker, extensions och hårvård – handplockat med omsorg.',
+    dark: false,
+  },
+  {
+    file: 'kosmetika.html',
+    cat: 'kosmetika',
+    title: 'Kosmetika & Hudvård – Afrohörnan',
+    heading: 'Kosmetika &amp; Hudvård',
+    intro: 'Naturlig afrikansk hudvård, oljor och tvålar för kropp, hud och hår.',
+    dark: false,
+  },
+  {
+    file: 'mat.html',
+    cat: 'mat',
+    title: 'Mat & Kryddor – Afrohörnan',
+    heading: 'Mat &amp; Kryddor',
+    intro: 'Autentiska kryddor, teer och delikatesser från hela Afrika.',
+    dark: false,
+  },
+];
+
+function page(c) {
+  const sectionClass = c.dark ? 'shop-section food-section' : 'shop-section';
+
+  return `<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${c.title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="produkter.css">
+</head>
+<body class="page-kategori has-cat-nav" data-category="${c.cat}">
+
+<nav>
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <ul class="nav-links">
+    <li><a href="har.html">Hår &amp; Extensions</a></li>
+    <li><a href="kosmetika.html">Kosmetika</a></li>
+    <li><a href="mat.html">Mat &amp; Kryddor</a></li>
+    <li><a href="index.html#butiker">Hitta hit</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <button class="nav-cart-btn" id="cartBtn" aria-label="Varukorg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </button>
+  </div>
+</nav>
+
+<nav class="cat-nav" aria-label="Sidnavigering">
+  <a href="har.html" class="cat-nav-link" data-cat="har">Hår &amp; Extensions</a>
+  <a href="kosmetika.html" class="cat-nav-link" data-cat="kosmetika">Kosmetika</a>
+  <a href="mat.html" class="cat-nav-link" data-cat="mat">Mat &amp; Kryddor</a>
+  <a href="index.html#butiker">Hitta hit</a>
+</nav>
+
+<header class="shop-intro">
+  <h1>${c.heading}</h1>
+  <p>${c.intro}</p>
+</header>
+
+<section class="${sectionClass}">
+  <div class="sec-head">
+    <h2>${c.heading}</h2>
+    <a href="index.html#kontakt">Kontakta för mer →</a>
+  </div>
+  <div class="product-grid" id="category-grid"></div>
+</section>
+
+<footer>
+  <span class="fl">Afrohörnan</span>
+  Stockholm Fittja &nbsp;·&nbsp; Stockholm Märsta<br>
+  <a href="mailto:info@afrohörnan.se">info@afrohörnan.se</a><br><br>
+  © 2026 Afrohörnan. Alla rättigheter förbehållna.
+</footer>
+
+<script src="js/cart.js"></script>
+<script src="js/favorites.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/admin-gate.js"></script>
+<script type="module" src="js/nav-auth.js"></script>
+<script type="module" src="js/storefront.js"></script>
+</body>
+</html>
+`;
+}
+
+for (const c of categories) {
+  writeFileSync(join(root, c.file), page(c));
+  console.log('Wrote', c.file);
+}

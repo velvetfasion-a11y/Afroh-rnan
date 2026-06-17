@@ -6,13 +6,7 @@ const productId = params.get('id');
 const isEdit = Boolean(productId);
 
 let existingImages = [];
-let previewObjectUrl = null;
-
-function productImage(product) {
-  if (Array.isArray(product?.images) && product.images[0]) return product.images[0];
-  if (typeof product?.image === 'string' && product.image) return product.image;
-  return '';
-}
+let pendingImages = [];
 
 function setFormError(message) {
   const el = document.getElementById('formError');
@@ -25,38 +19,148 @@ function setFormError(message) {
   el.textContent = message;
 }
 
-function setPreview(url) {
-  const img = document.getElementById('imagePreview');
-  const placeholder = document.getElementById('imagePlaceholder');
-  if (url) {
-    img.src = url;
-    img.hidden = false;
-    placeholder.hidden = true;
-  } else {
-    img.hidden = true;
-    img.removeAttribute('src');
-    placeholder.hidden = false;
-  }
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function totalImageCount() {
+  return existingImages.length + pendingImages.length;
+}
+
+function addImageFiles(fileList) {
+  const files = [...(fileList || [])];
+  let added = 0;
+
+  files.forEach((file) => {
+    if (!file.type.startsWith('image/')) return;
+    pendingImages.push({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+    });
+    added += 1;
+  });
+
+  if (added) renderImageGallery();
+}
+
+function wireImageDropZone() {
+  const zone = document.getElementById('imageDropZone');
+  if (!zone || zone.dataset.dropWired === '1') return;
+  zone.dataset.dropWired = '1';
+
+  const prevent = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  zone.addEventListener('dragenter', (event) => {
+    prevent(event);
+    zone.classList.add('is-dragover');
+  });
+
+  zone.addEventListener('dragover', (event) => {
+    prevent(event);
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    zone.classList.add('is-dragover');
+  });
+
+  zone.addEventListener('dragleave', (event) => {
+    prevent(event);
+    if (zone.contains(event.relatedTarget)) return;
+    zone.classList.remove('is-dragover');
+  });
+
+  zone.addEventListener('drop', (event) => {
+    prevent(event);
+    zone.classList.remove('is-dragover');
+    addImageFiles(event.dataTransfer?.files);
+  });
+}
+
+function renderImageGallery() {
+  const gallery = document.getElementById('imageGallery');
+  if (!gallery) return;
+
+  const thumbs = [];
+
+  existingImages.forEach((url, index) => {
+    thumbs.push({ src: url, type: 'existing', index });
+  });
+
+  pendingImages.forEach((item, index) => {
+    thumbs.push({ src: item.previewUrl, type: 'pending', index });
+  });
+
+  const tiles = thumbs
+    .map((thumb, displayIndex) => {
+      const primary = displayIndex === 0;
+      return `
+        <div class="admin-image-thumb">
+          <img src="${escapeHtml(thumb.src)}" alt="Produktbild ${displayIndex + 1}" loading="lazy">
+          ${primary ? '<span class="admin-image-primary">Huvudbild</span>' : ''}
+          <button type="button" class="admin-image-remove" data-remove="${thumb.type}" data-index="${thumb.index}" aria-label="Ta bort bild">×</button>
+        </div>`;
+    })
+    .join('');
+
+  gallery.innerHTML =
+    tiles +
+    `
+    <button type="button" class="admin-image-add" id="imageAddBtn" aria-label="Lägg till bild">
+      <span class="admin-image-icon">📷</span>
+      <span>Lägg till bild</span>
+      <span class="admin-image-hint">eller dra hit</span>
+    </button>`;
+
+  gallery.querySelectorAll('[data-remove]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const type = btn.dataset.remove;
+      const index = Number(btn.dataset.index);
+      if (type === 'existing') {
+        existingImages.splice(index, 1);
+      } else {
+        const item = pendingImages[index];
+        if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        pendingImages.splice(index, 1);
+      }
+      renderImageGallery();
+    });
+  });
+
+  document.getElementById('imageAddBtn')?.addEventListener('click', () => {
+    document.getElementById('fieldImage').click();
+  });
 }
 
 function readForm() {
   const title = document.getElementById('fieldTitle').value.trim();
+  const category = document.getElementById('fieldCategory').value;
+  const brand = document.getElementById('fieldBrand').value.trim();
   const sku = document.getElementById('fieldSku').value.trim();
   const barcode = document.getElementById('fieldBarcode').value.trim();
   const price = Number(document.getElementById('fieldPrice').value);
   const inventory = Number.parseInt(document.getElementById('fieldInventory').value, 10);
-  const imageFile = document.getElementById('fieldImage').files[0] || null;
 
   if (!title) throw new Error('Ange ett produktnamn.');
+  if (!category) throw new Error('Välj en kategori.');
   if (!sku) throw new Error('Ange ett SKU.');
   if (Number.isNaN(price) || price < 0) throw new Error('Ange ett giltigt pris.');
   if (Number.isNaN(inventory) || inventory < 0) throw new Error('Ange ett giltigt lagersaldo.');
 
-  return { title, sku, barcode, price, inventory, imageFile };
+  return { title, category, brand, sku, barcode, price, inventory };
 }
 
 async function loadProduct() {
-  if (!isEdit) return;
+  if (!isEdit) {
+    renderImageGallery();
+    return;
+  }
 
   document.getElementById('formLoading').hidden = false;
   try {
@@ -75,10 +179,26 @@ async function loadProduct() {
     document.getElementById('fieldBarcode').value = product.barcode || '';
     document.getElementById('fieldPrice').value = product.price ?? '';
     document.getElementById('fieldInventory').value = product.inventory ?? 0;
+    document.getElementById('fieldBrand').value = product.subtitle || product.brand || '';
 
-    existingImages = Array.isArray(product.images) ? product.images : [];
-    const url = productImage(product);
-    if (url) setPreview(url);
+    const category =
+      product.category ||
+      (Array.isArray(product.categories) && product.categories[0]) ||
+      'kosmetika';
+    const normalized = String(category).toLowerCase();
+    const fieldCategory = document.getElementById('fieldCategory');
+    if (['har', 'kosmetika', 'mat'].includes(normalized)) {
+      fieldCategory.value = normalized;
+    } else if (normalized.includes('hår') || normalized.includes('har') || normalized.includes('hårvård')) {
+      fieldCategory.value = 'har';
+    } else if (normalized.includes('mat') || normalized.includes('krydd')) {
+      fieldCategory.value = 'mat';
+    } else {
+      fieldCategory.value = 'kosmetika';
+    }
+
+    existingImages = Array.isArray(product.images) ? [...product.images] : [];
+    renderImageGallery();
   } catch (err) {
     setFormError(`Kunde inte ladda produkten: ${err.message || 'Okänt fel'}`);
     document.getElementById('productForm').hidden = true;
@@ -101,8 +221,8 @@ async function handleSubmit(event) {
     return;
   }
 
-  if (!isEdit && !fields.imageFile && !existingImages.length) {
-    setFormError('Ladda upp en produktbild.');
+  if (!totalImageCount()) {
+    setFormError('Ladda upp minst en produktbild.');
     return;
   }
 
@@ -118,10 +238,17 @@ async function handleSubmit(event) {
         barcode: fields.barcode,
         price: fields.price,
         inventory: fields.inventory,
+        category: fields.category,
+        brand: fields.brand,
         existingImages,
       },
-      fields.imageFile,
+      pendingImages.map((item) => item.file),
     );
+
+    pendingImages.forEach((item) => {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+    pendingImages = [];
 
     window.location.href = `admin-products.html?saved=${encodeURIComponent(id)}`;
   } catch (err) {
@@ -141,6 +268,7 @@ requireAdmin((user) => {
   document.getElementById('adminLoading').hidden = true;
   document.getElementById('adminContent').hidden = false;
   document.getElementById('adminEmail').textContent = user.email || '';
+  wireImageDropZone();
   loadProduct();
 });
 
@@ -158,26 +286,12 @@ document.getElementById('fieldBarcode').addEventListener('keydown', (event) => {
 document.getElementById('productForm').addEventListener('submit', handleSubmit);
 
 document.getElementById('fieldImage').addEventListener('change', (event) => {
-  const file = event.target.files[0];
-  if (previewObjectUrl) {
-    URL.revokeObjectURL(previewObjectUrl);
-    previewObjectUrl = null;
-  }
-  if (!file) {
-    setPreview(productImage({ images: existingImages }) || '');
-    return;
-  }
-  previewObjectUrl = URL.createObjectURL(file);
-  setPreview(previewObjectUrl);
+  addImageFiles(event.target.files);
+  event.target.value = '';
 });
 
-document.getElementById('imageUploadArea').addEventListener('click', () => {
-  document.getElementById('fieldImage').click();
-});
-
-document.getElementById('imageUploadArea').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    document.getElementById('fieldImage').click();
-  }
+window.addEventListener('beforeunload', () => {
+  pendingImages.forEach((item) => {
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  });
 });

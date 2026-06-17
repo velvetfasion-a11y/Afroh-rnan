@@ -1,6 +1,6 @@
 # Afrohörnan
 
-Afrikansk skönhet, mat och kryddor – webbplats för butikerna i Stockholm Fittja och Uppsala Gottsunda.
+Afrikansk skönhet, mat och kryddor – webbplats för butikerna i Stockholm Fittja och Stockholm Märsta.
 
 ## Firebase (login)
 

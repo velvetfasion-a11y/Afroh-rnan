@@ -7,13 +7,15 @@ import {
 } from './firebase-auth.js';
 import { isAdminUser } from './admin-check.js';
 import {
-  getFavoriteProducts,
+  getStoredFavoriteSlugs,
   removeFavorite,
 } from './product-catalog.js';
+import { subscribeMergedProducts, getProductBySlug } from './products.js';
 
 let currentUser = null;
 let favFilter = 'alla';
 let currentTab = 'overview';
+let mergedProducts = [];
 
 const HEART_FILLED =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -40,17 +42,37 @@ function splitName(displayName) {
   };
 }
 
+function resolvedFavorites() {
+  return getStoredFavoriteSlugs()
+    .map((slug) => getProductBySlug(mergedProducts, slug))
+    .filter(Boolean);
+}
+
 function filteredFavorites() {
-  const all = getFavoriteProducts();
+  const all = resolvedFavorites();
   if (favFilter === 'alla') return all;
   return all.filter((p) => p.cat === favFilter);
 }
 
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function favImageHtml(product) {
+  const emoji = product.emoji || '📦';
+  if (!product.image) {
+    return `<span class="fav-emoji" aria-hidden="true">${emoji}</span>`;
+  }
+  return `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" loading="lazy" data-emoji="${escapeHtml(emoji)}" onerror="this.onerror=null;var s=document.createElement('span');s.className='fav-emoji';s.setAttribute('aria-hidden','true');s.textContent=this.dataset.emoji;this.replaceWith(s)">`;
+}
+
 function favCardHtml(product, options = {}) {
   const { compact = false, showRemove = true } = options;
-  const imgContent = product.image
-    ? `<img src="${product.image}" alt="">`
-    : product.emoji;
+  const imgContent = favImageHtml(product);
 
   const removeBtn = showRemove
     ? `<button type="button" class="fav-heart" data-remove-fav="${product.slug}" aria-label="Ta bort från sparade">${HEART_FILLED}</button>`
@@ -66,7 +88,7 @@ function favCardHtml(product, options = {}) {
   return `
     <div class="fav-card" id="fav-${product.slug}">
       <div class="fav-img">
-        <span class="fav-cat">${product.catLabel}</span>
+        <span class="fav-cat">${product.catLabel || ({ har: 'Hår & Extensions', kosmetika: 'Hudvård', mat: 'Mat & Kryddor' }[product.cat] || 'Produkt')}</span>
         ${removeBtn}
         ${imgContent}
       </div>
@@ -79,14 +101,14 @@ function favCardHtml(product, options = {}) {
 }
 
 function updateFavCounts() {
-  const count = getFavoriteProducts().length;
+  const count = resolvedFavorites().length;
   const badge = document.getElementById('fav-count-nav');
   if (badge) badge.textContent = String(count);
   document.getElementById('pointsVal').textContent = String(count * 10);
 }
 
 function renderOverviewFavorites() {
-  const items = getFavoriteProducts().slice(0, 3);
+  const items = resolvedFavorites().slice(0, 3);
   const grid = document.getElementById('overviewFavGrid');
   const empty = document.getElementById('overviewFavEmpty');
 
@@ -246,6 +268,15 @@ requireAuth(async (user) => {
     window.location.replace('admin.html');
     return;
   }
+
+  subscribeMergedProducts((products) => {
+    mergedProducts = products;
+    if (currentUser) {
+      updateFavCounts();
+      renderOverviewFavorites();
+      renderFavoritesGrid();
+    }
+  });
 
   document.getElementById('profileLoading').hidden = true;
   document.getElementById('profileContent').hidden = false;

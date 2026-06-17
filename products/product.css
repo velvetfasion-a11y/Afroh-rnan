@@ -58,6 +58,38 @@
 }
 .product-badge.gold { background: var(--gold); color: #1A0D00; }
 
+.product-thumbs {
+  display: flex;
+  gap: .5rem;
+  padding: .75rem;
+  overflow-x: auto;
+  border-top: 1px solid #E8E0D5;
+  background: #fff;
+}
+
+.product-thumb {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #F3EDE5;
+}
+
+.product-thumb.active {
+  border-color: var(--gold);
+}
+
+.product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .product-details {
   background: #fff;
   border: 1px solid #E8E0D5;
@@ -190,6 +222,16 @@
 .back-shop:hover { color: var(--rust); }
 
 nav .logo { text-decoration: none; color: inherit; }
+
+.product-sync-error {
+  background: #fff3e8;
+  border: 1px solid #e8c9a8;
+  color: var(--rust);
+  padding: .75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: .9rem;
+}
 
 @media (max-width: 768px) {
   .product-layout { grid-template-columns: 1fr; gap: 1.25rem; }

@@ -31,23 +31,17 @@
     <a href="admin-products.html" class="admin-back">← Tillbaka till produkter</a>
 
     <h1 id="pageTitle">Ny produkt</h1>
-    <p class="admin-sub" id="pageSub">Fyll i uppgifterna och ladda upp en bild</p>
+    <p class="admin-sub" id="pageSub">Fyll i uppgifterna och ladda upp bilder</p>
 
     <p class="admin-loading" id="formLoading" hidden>Laddar produkt…</p>
     <p class="admin-error" id="formError" hidden></p>
 
     <form class="admin-form" id="productForm">
-      <div class="admin-form-card">
-        <h2>Produktbild</h2>
-        <div class="admin-image-upload" id="imageUploadArea" role="button" tabindex="0" aria-label="Välj produktbild">
-          <img id="imagePreview" class="admin-image-preview" alt="" hidden>
-          <div class="admin-image-placeholder" id="imagePlaceholder">
-            <span class="admin-image-icon">📷</span>
-            <span>Klicka för att välja bild</span>
-            <span class="admin-image-hint">JPG, PNG eller WebP</span>
-          </div>
-        </div>
-        <input type="file" id="fieldImage" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      <div class="admin-form-card admin-image-card" id="imageDropZone">
+        <h2>Produktbilder</h2>
+        <p class="admin-image-help">Dra och släpp bilder här, eller klicka på «Lägg till bild». Första bilden visas först i butiken.</p>
+        <div class="admin-image-grid" id="imageGallery" aria-live="polite"></div>
+        <input type="file" id="fieldImage" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
       </div>
 
       <div class="admin-form-card">
@@ -56,6 +50,19 @@
           <div class="admin-field full">
             <label for="fieldTitle">Namn</label>
             <input type="text" id="fieldTitle" required autocomplete="off" placeholder="t.ex. Oraffinerad Shea Butter 200 g">
+          </div>
+          <div class="admin-field">
+            <label for="fieldCategory">Kategori</label>
+            <select id="fieldCategory" required>
+              <option value="">Välj kategori…</option>
+              <option value="har">Hår &amp; Extensions</option>
+              <option value="kosmetika">Kosmetika</option>
+              <option value="mat">Mat &amp; Kryddor</option>
+            </select>
+          </div>
+          <div class="admin-field">
+            <label for="fieldBrand">Märke / undertitel</label>
+            <input type="text" id="fieldBrand" autocomplete="off" placeholder="t.ex. Sheabutter">
           </div>
           <div class="admin-field">
             <label for="fieldSku">SKU</label>
