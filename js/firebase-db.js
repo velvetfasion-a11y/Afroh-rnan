@@ -68,7 +68,13 @@ export async function getProduct(productId) {
 }
 
 export async function uploadProductImage(file, productId) {
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  if (!file || !(file instanceof Blob)) {
+    throw new Error('Ogiltig bildfil.');
+  }
+  const rawName =
+    (typeof file.name === 'string' && file.name.trim()) ||
+    `image-${Date.now()}.jpg`;
+  const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `products/${productId}/${Date.now()}-${safeName}`;
   const storageRef = ref(getFirebaseStorage(), path);
   await uploadBytes(storageRef, file);
@@ -82,7 +88,8 @@ export async function saveProduct(productId, fields, imageFiles = []) {
   const id = docRef.id;
 
   let images = [...(fields.existingImages || [])];
-  const files = Array.isArray(imageFiles) ? imageFiles : imageFiles ? [imageFiles] : [];
+  const files = (Array.isArray(imageFiles) ? imageFiles : imageFiles ? [imageFiles] : [])
+    .filter((file) => file && file instanceof Blob);
   for (const file of files) {
     const url = await uploadProductImage(file, id);
     images.push(url);

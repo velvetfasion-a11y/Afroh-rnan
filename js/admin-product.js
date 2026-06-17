@@ -31,12 +31,25 @@ function totalImageCount() {
   return existingImages.length + pendingImages.length;
 }
 
+function normalizeImageFile(file, index = 0) {
+  if (!file || !(file instanceof Blob)) return null;
+  if (!file.type.startsWith('image/')) return null;
+
+  if (file instanceof File && file.name) return file;
+
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  return new File([file], `image-${Date.now()}-${index}.${ext}`, {
+    type: file.type || 'image/jpeg',
+  });
+}
+
 function addImageFiles(fileList) {
   const files = [...(fileList || [])];
   let added = 0;
 
-  files.forEach((file) => {
-    if (!file.type.startsWith('image/')) return;
+  files.forEach((rawFile, index) => {
+    const file = normalizeImageFile(rawFile, index);
+    if (!file) return;
     pendingImages.push({
       id: crypto.randomUUID(),
       file,
@@ -78,7 +91,18 @@ function wireImageDropZone() {
   zone.addEventListener('drop', (event) => {
     prevent(event);
     zone.classList.remove('is-dragover');
-    addImageFiles(event.dataTransfer?.files);
+
+    const fromList = [...(event.dataTransfer?.files || [])];
+    if (fromList.length) {
+      addImageFiles(fromList);
+      return;
+    }
+
+    const fromItems = [...(event.dataTransfer?.items || [])]
+      .filter((item) => item.kind === 'file')
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    addImageFiles(fromItems);
   });
 }
 
@@ -242,7 +266,9 @@ async function handleSubmit(event) {
         brand: fields.brand,
         existingImages,
       },
-      pendingImages.map((item) => item.file),
+      pendingImages
+        .map((item) => item.file)
+        .filter((file) => file && file instanceof Blob),
     );
 
     pendingImages.forEach((item) => {

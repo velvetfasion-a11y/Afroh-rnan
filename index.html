@@ -149,7 +149,7 @@ a.nav-cart-btn { text-decoration: none; }
 .h-eyebrow {
   display: flex; align-items: center; gap: .7rem;
   margin-bottom: .9rem; justify-content: center;
-  animation: fadeUp .5s .1s ease both;
+  opacity: 1;
 }
 .h-eyebrow-line { width: 28px; height: 1px; background: var(--gold); }
 .h-eyebrow span {
@@ -161,7 +161,7 @@ a.nav-cart-btn { text-decoration: none; }
   font-size: clamp(2rem, 5.5vw, 3.2rem);
   line-height: 1.05; font-weight: 700; color: #fff;
   margin-bottom: 1rem; text-shadow: 0 2px 20px rgba(0,0,0,.4);
-  animation: fadeUp .6s .2s ease both;
+  opacity: 1;
 }
 .hero-center h1 em { font-style: italic; color: var(--gold-lt); }
 .btn-hitta {
@@ -174,12 +174,12 @@ a.nav-cart-btn { text-decoration: none; }
   box-shadow: 0 4px 24px rgba(212,148,26,.45);
   transition: transform .2s, box-shadow .2s;
   display: inline-block;
-  animation: fadeUp .6s .35s ease both;
+  opacity: 1;
 }
 .btn-hitta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,148,26,.55); }
 .hero-locs {
   display: flex; gap: 1.5rem; margin-top: 1rem; justify-content: center;
-  animation: fadeUp .6s .5s ease both;
+  opacity: 1;
 }
 .hloc { display: flex; align-items: center; gap: .5rem; }
 .hloc-dot { width: 7px; height: 7px; border-radius: 50%; background: #4AE080; box-shadow: 0 0 0 3px rgba(74,224,128,.22); }
@@ -400,6 +400,14 @@ footer a { color: var(--gold); text-decoration: none; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .hero-wrap { height: clamp(280px, 38vh, 360px); }
@@ -413,6 +421,36 @@ footer a { color: var(--gold); text-decoration: none; }
 </style>
 </head>
 <body class="has-cat-nav">
+
+<script>
+(function () {
+  function showPageError(msg) {
+    if (document.getElementById('page-error')) return;
+    var el = document.createElement('div');
+    el.id = 'page-error';
+    el.style.cssText = 'position:fixed;inset:0 auto auto 0;right:0;z-index:9999;background:#1C1610;color:#fff;padding:1rem 1.25rem;font:500 .9rem/1.5 Outfit,sans-serif;text-align:center';
+    el.textContent = msg;
+    document.body.appendChild(el);
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.h-eyebrow, .hero-center h1, .btn-hitta, .hero-locs').forEach(function (node) {
+      node.style.opacity = '1';
+      node.style.transform = 'none';
+    });
+  });
+  window.addEventListener('error', function (e) {
+    if (e.filename && /\/js\//.test(e.filename)) {
+      showPageError('Sidan kunde inte laddas helt. Öppna http://localhost:8000 och tryck Cmd+Shift+R.');
+    }
+  }, true);
+  setTimeout(function () {
+    var grid = document.getElementById('har-grid');
+    if (grid && !grid.children.length) {
+      showPageError('Produkterna laddas inte. Öppna http://localhost:8000 (inte 8765) och ladda om sidan.');
+    }
+  }, 4000);
+})();
+</script>
 
 <!-- ===== NAV ===== -->
 <nav>
@@ -578,6 +616,7 @@ footer a { color: var(--gold); text-decoration: none; }
 <script src="js/firebase-config.js"></script>
 <script src="js/admin-gate.js"></script>
 <script type="module" src="js/nav-auth.js"></script>
-<script type="module" src="js/storefront.js?v=2"></script>
+<script src="js/storefront-standalone.js?v=1"></script>
+<script type="module" src="js/storefront.js?v=3"></script>
 </body>
 </html>
