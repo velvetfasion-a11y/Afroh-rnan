@@ -1,17 +1,9 @@
 import { fetchAllProducts, subscribeAllProducts } from './firebase-db.js';
-import { getCatalogProducts, getCatalogProduct, PRODUCT_CATALOG } from './product-catalog.js';
 import { isFirebaseConfigured } from './firebase-auth.js';
 
 const MAT_KEYS = ['mat', 'mat & kryddor', 'mat och kryddor', 'food', 'kryddor', 'te'];
 const HAIR_KEYS = ['hår', 'har', 'hårvård', 'extensions', 'extension', 'peruk', 'wig', 'braids', 'flätor'];
 const KOSMETIKA_KEYS = ['kosmetika', 'kosmet', 'hudvård', 'hud', 'skönhet'];
-
-const STATIC_PRODUCT_SLUGS = new Set(
-  Object.values(PRODUCT_CATALOG)
-    .map((p) => p.url)
-    .filter((url) => url?.startsWith('products/'))
-    .map((url) => url.replace('products/', '').replace('.html', '')),
-);
 
 const CAT_LABELS = {
   har: 'Hår & Extensions',
@@ -21,16 +13,7 @@ const CAT_LABELS = {
 
 let mergedCache = null;
 
-export function slugFromSku(sku) {
-  if (!sku) return '';
-  const key = sku.trim().toLowerCase();
-  if (PRODUCT_CATALOG[key]) return key;
-  return '';
-}
-
-export function resolveCategory(raw, catalogItem) {
-  if (catalogItem?.cat) return catalogItem.cat;
-
+export function resolveCategory(raw) {
   const direct = raw.category || (Array.isArray(raw.categories) && raw.categories[0]);
   if (direct) {
     const key = String(direct).toLowerCase();
@@ -45,13 +28,11 @@ export function resolveCategory(raw, catalogItem) {
   return 'kosmetika';
 }
 
-export function productPageUrl(slug, catalogItem) {
-  if (catalogItem?.url) return catalogItem.url;
-  if (STATIC_PRODUCT_SLUGS.has(slug)) return `products/${slug}.html`;
-  return `produkt.html?slug=${encodeURIComponent(slug)}`;
+export function productPageUrl(firestoreId) {
+  return `produkt.html?slug=${encodeURIComponent(firestoreId)}`;
 }
 
-export function extractProductImages(raw, catalogItem) {
+export function extractProductImages(raw) {
   const fromDb = [];
   if (Array.isArray(raw?.images)) {
     raw.images.forEach((item) => {
@@ -64,9 +45,7 @@ export function extractProductImages(raw, catalogItem) {
   if (!fromDb.length && typeof raw?.imageUrl === 'string' && raw.imageUrl.trim()) {
     fromDb.push(raw.imageUrl.trim());
   }
-  if (fromDb.length) return fromDb;
-  if (catalogItem?.image) return [catalogItem.image];
-  return [];
+  return fromDb;
 }
 
 function productSortKey(raw) {
@@ -77,54 +56,36 @@ function productSortKey(raw) {
   return 0;
 }
 
-export function normalizeProduct(raw, catalogItem, options = {}) {
-  const slug = catalogItem?.slug || slugFromSku(raw.sku) || raw.id;
-  const images = extractProductImages(raw, catalogItem);
+export function normalizeProduct(raw) {
+  const firestoreId = raw.id || '';
+  const slug = firestoreId;
+  const images = extractProductImages(raw);
   const image = images[0] || '';
-  const cat = resolveCategory(raw, catalogItem);
-  const fromFirestore = Boolean(options.fromFirestore);
+  const cat = resolveCategory(raw);
 
   return {
     slug,
-    name: raw.title || raw.name || catalogItem?.name || 'Produkt',
-    brand: raw.subtitle || raw.brand || catalogItem?.brand || '',
-    price: Number(raw.price ?? catalogItem?.price ?? 0),
+    name: raw.title || raw.name || 'Produkt',
+    brand: raw.subtitle || raw.brand || '',
+    price: Number(raw.price ?? 0),
     image,
     images,
-    emoji: catalogItem?.emoji || '📦',
-    url: productPageUrl(slug, catalogItem),
+    emoji: '📦',
+    url: productPageUrl(firestoreId),
     cat,
-    catLabel: catalogItem?.catLabel || CAT_LABELS[cat] || '',
-    badge: catalogItem?.badge || (raw.featured ? 'Utvald' : fromFirestore ? 'Ny' : ''),
-    badgeGold: Boolean(catalogItem?.badgeGold || (fromFirestore && !catalogItem?.badge)),
-    description: raw.description || catalogItem?.description || '',
-    inventory: Number(raw.inventory ?? catalogItem?.inventory ?? NaN),
-    fromFirestore,
-    firestoreId: raw.id || '',
+    catLabel: CAT_LABELS[cat] || '',
+    badge: raw.featured ? 'Utvald' : 'Ny',
+    badgeGold: !raw.featured,
+    description: raw.description || '',
+    inventory: Number(raw.inventory ?? NaN),
+    fromFirestore: true,
+    firestoreId,
     sortKey: productSortKey(raw),
   };
 }
 
 export function mergeProducts(firestoreProducts) {
-  const merged = new Map();
-
-  getCatalogProducts().forEach((item) => {
-    merged.set(item.slug, normalizeProduct({}, item));
-  });
-
-  firestoreProducts.forEach((raw) => {
-    const catalogItem =
-      getCatalogProduct(raw.id) ||
-      getCatalogProduct(slugFromSku(raw.sku)) ||
-      Object.values(PRODUCT_CATALOG).find((p) => p.name === raw.title);
-    const slug = catalogItem?.slug || slugFromSku(raw.sku) || raw.id;
-    const hasOwnImages = extractProductImages(raw, null).length > 0;
-    merged.set(slug, normalizeProduct(raw, catalogItem, {
-      fromFirestore: !catalogItem || hasOwnImages,
-    }));
-  });
-
-  return [...merged.values()];
+  return (firestoreProducts ?? []).map((raw) => normalizeProduct(raw));
 }
 
 export function getProductBySlug(products, slug) {
@@ -138,17 +99,14 @@ export async function getMergedProducts() {
     const fromDb = await fetchAllProducts();
     mergedCache = mergeProducts(fromDb);
   } catch {
-    mergedCache = mergeProducts([]);
+    mergedCache = [];
   }
 
   return mergedCache;
 }
 
 export function sortProductsForDisplay(products) {
-  return [...products].sort((a, b) => {
-    if (a.fromFirestore !== b.fromFirestore) return a.fromFirestore ? -1 : 1;
-    return (b.sortKey || 0) - (a.sortKey || 0);
-  });
+  return [...products].sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
 }
 
 export function productsForCategory(products, cat, previewOnly, previewLimit = 4) {
@@ -167,7 +125,6 @@ export function subscribeMergedProducts(onUpdate) {
     onUpdate(mergedCache);
   };
 
-  // Show catalog products immediately — do not wait for Firestore.
   publish([]);
 
   if (!isFirebaseConfigured()) {
