@@ -7,6 +7,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   Timestamp,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
@@ -122,6 +123,11 @@ export async function saveProduct(productId, fields, imageFiles = []) {
   }
 
   return id;
+}
+
+export async function deleteProduct(productId) {
+  if (!productId) throw new Error('Inget produkt-ID.');
+  await deleteDoc(doc(getFirestoreDb(), 'products', productId));
 }
 
 function productSortKey(product) {

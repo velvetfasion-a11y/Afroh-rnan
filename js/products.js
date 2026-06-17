@@ -154,10 +154,7 @@ export function sortProductsForDisplay(products) {
 export function productsForCategory(products, cat, previewOnly, previewLimit = 4) {
   const inCat = sortProductsForDisplay(products.filter((p) => p.cat === cat));
   if (!previewOnly) return inCat;
-
-  const fromStore = inCat.filter((p) => p.fromFirestore);
-  const fromCatalog = inCat.filter((p) => !p.fromFirestore).slice(0, previewLimit);
-  return [...fromStore, ...fromCatalog];
+  return inCat.slice(0, previewLimit);
 }
 
 /**

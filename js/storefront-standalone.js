@@ -9,20 +9,7 @@
     { id: 'mat-grid', cat: 'mat' },
   ];
 
-  const CATALOG = [
-    { slug: 'brazilian-braids', name: 'Brazilian Braids – Syntetiska flätor 60 cm', brand: 'Flätor', cat: 'har', price: 189, emoji: '💇🏾', url: '#kontakt', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&auto=format&fit=crop&q=80', badge: 'Populär' },
-    { slug: 'lace-front-wig', name: 'Lace Front Peruk – Naturlig hårlinje', brand: 'Peruk', cat: 'har', price: 1290, emoji: '✨', url: '#kontakt', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&auto=format&fit=crop&q=80', badge: 'Nyhet', badgeGold: true },
-    { slug: 'clip-in-extensions', name: 'Clip-in Extensions – 8 delar Remy 50 cm', brand: 'Extensions', cat: 'har', price: 899, emoji: '💫', url: '#kontakt', image: 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=400&auto=format&fit=crop&q=80' },
-    { slug: 'crochet-braids', name: 'Crochet Braids – Curly Passion Twist 45 cm', brand: 'Flätor', cat: 'har', price: 249, emoji: '🌀', url: '#kontakt', image: 'https://images.unsplash.com/photo-1595476108010-b4d1f102b1a1?w=400&auto=format&fit=crop&q=80' },
-    { slug: 'shea-butter', name: 'Oraffinerad Shea Butter 100% naturell 200 g', brand: 'Sheabutter', cat: 'kosmetika', price: 129, emoji: '🧴', url: 'products/shea-butter.html', image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&auto=format&fit=crop&q=80', badge: 'Populär' },
-    { slug: 'svart-tval', name: 'Afrikansk Svart Tvål – Rå & Naturlig 150 g', brand: 'Tvål', cat: 'kosmetika', price: 89, emoji: '🧼', url: 'products/svart-tval.html', image: 'https://images.unsplash.com/photo-1600856209845-8b1f9a8d2f6a?w=400&auto=format&fit=crop&q=80', badge: 'Nyhet', badgeGold: true },
-    { slug: 'arganolja', name: 'Marockansk Arganolja Kallpressad 100 ml', brand: 'Hårolja', cat: 'kosmetika', price: 149, emoji: '✨', url: 'products/arganolja.html', image: 'https://images.unsplash.com/photo-1608248543801-ba977fed0aeb?w=400&auto=format&fit=crop&q=80' },
-    { slug: 'kokosolja', name: 'Virgin Kokosolja Hudvård & Hår 250 ml', brand: 'Ekologisk', cat: 'kosmetika', price: 99, emoji: '🥥', url: 'products/kokosolja.html', image: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=400&auto=format&fit=crop&q=80' },
-    { slug: 'berbere', name: 'Berbere – Etiopisk Kryddblandning 200 g', brand: 'Kryddblandning', cat: 'mat', price: 89, emoji: '🌶️', url: 'products/berbere.html', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&auto=format&fit=crop&q=80', badge: 'Bästsäljare' },
-    { slug: 'rooibos-chai', name: 'Rooibos Chai – Sydafrikanskt Te 100 g', brand: 'Te', cat: 'mat', price: 65, emoji: '🍵', url: 'products/rooibos-chai.html', image: 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&auto=format&fit=crop&q=80', badge: 'Nyhet', badgeGold: true },
-    { slug: 'suya-spice', name: 'Suya Spice – Nigeriansk Grillkrydda 150 g', brand: 'Grillkrydda', cat: 'mat', price: 75, emoji: '🔥', url: 'products/suya-spice.html', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&auto=format&fit=crop&q=80' },
-    { slug: 'baobab-snacks', name: 'Baobab Snacks – Superfrukt Chips 80 g', brand: 'Ekologisk', cat: 'mat', price: 55, emoji: '🌿', url: 'products/baobab-snacks.html', image: 'https://images.unsplash.com/photo-1599599810764-bcde5a160d2b?w=400&auto=format&fit=crop&q=80' },
-  ];
+  const CATALOG = [];
 
   function esc(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -84,9 +71,7 @@
       var el = document.getElementById(grid.id);
       if (!el || el.children.length) return;
       var inCat = products.filter(function (p) { return p.cat === grid.cat; });
-      var store = inCat.filter(function (p) { return p.fromStore; });
-      var catalog = inCat.filter(function (p) { return !p.fromStore; }).slice(0, 4);
-      var shown = store.concat(catalog);
+      var shown = inCat;
       if (!shown.length) {
         el.innerHTML = '<p class="shop-empty">Inga produkter i denna kategori just nu.</p>';
         return;

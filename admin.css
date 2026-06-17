@@ -301,6 +301,36 @@
   color: var(--gold);
 }
 
+.admin-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .55rem 1rem;
+  border-radius: 6px;
+  font-family: 'Outfit', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+  margin-left: auto;
+  background: transparent;
+  color: #f0a8a2;
+  border: 1px solid rgba(192,82,74,.45);
+}
+
+.admin-btn-danger:hover:not(:disabled) {
+  background: rgba(192,82,74,.15);
+  border-color: rgba(192,82,74,.7);
+  color: #ffc4bf;
+}
+
+.admin-btn-danger:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 .admin-error {
   background: rgba(192,82,74,.12);
   border: 1px solid rgba(192,82,74,.35);

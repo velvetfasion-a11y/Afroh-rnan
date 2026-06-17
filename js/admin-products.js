@@ -200,11 +200,13 @@ requireAdmin((user) => {
   document.getElementById('adminContent').hidden = false;
   document.getElementById('adminEmail').textContent = user.email || '';
 
-  const savedId = new URLSearchParams(window.location.search).get('saved');
-  if (savedId) {
+  const params = new URLSearchParams(window.location.search);
+  const savedId = params.get('saved');
+  const deleted = params.get('deleted');
+  if (savedId || deleted) {
     const success = document.getElementById('productsSuccess');
     success.hidden = false;
-    success.textContent = 'Produkten sparades.';
+    success.textContent = deleted ? 'Produkten togs bort.' : 'Produkten sparades.';
     window.history.replaceState({}, '', 'admin-products.html');
   }
 

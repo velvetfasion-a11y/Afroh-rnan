@@ -1,5 +1,5 @@
 import { requireAdmin, signOut, getFirebaseAuth } from './firebase-auth.js';
-import { getProduct, saveProduct } from './firebase-db.js';
+import { getProduct, saveProduct, deleteProduct } from './firebase-db.js';
 
 const params = new URLSearchParams(window.location.search);
 const productId = params.get('id');
@@ -7,6 +7,7 @@ const isEdit = Boolean(productId);
 
 let existingImages = [];
 let pendingImages = [];
+let loadedProductTitle = '';
 
 function setFormError(message) {
   const el = document.getElementById('formError');
@@ -198,6 +199,9 @@ async function loadProduct() {
     document.getElementById('pageTitle').textContent = 'Redigera produkt';
     document.getElementById('pageSub').textContent = `ID: ${product.id}`;
 
+    loadedProductTitle = product.title || product.name || 'denna produkt';
+    document.getElementById('deleteBtn').hidden = false;
+
     document.getElementById('fieldTitle').value = product.title || product.name || '';
     document.getElementById('fieldSku').value = product.sku || '';
     document.getElementById('fieldBarcode').value = product.barcode || '';
@@ -290,6 +294,37 @@ async function handleSubmit(event) {
   }
 }
 
+async function handleDelete() {
+  if (!isEdit || !productId) return;
+  setFormError('');
+
+  const title = document.getElementById('fieldTitle').value.trim() || loadedProductTitle || 'denna produkt';
+  const confirmed = window.confirm(
+    `Vill du ta bort produkten «${title}»?\n\nDetta går inte att ångra.`,
+  );
+  if (!confirmed) return;
+
+  const deleteBtn = document.getElementById('deleteBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  deleteBtn.disabled = true;
+  saveBtn.disabled = true;
+  deleteBtn.textContent = 'Tar bort…';
+
+  try {
+    await deleteProduct(productId);
+    window.location.href = 'admin-products.html?deleted=1';
+  } catch (err) {
+    const msg =
+      err?.code === 'permission-denied'
+        ? 'Åtkomst nekad. Kontrollera att du är inloggad som admin.'
+        : `Kunde inte ta bort produkten: ${err.message || 'Okänt fel'}`;
+    setFormError(msg);
+    deleteBtn.disabled = false;
+    saveBtn.disabled = false;
+    deleteBtn.textContent = 'Ta bort produkt';
+  }
+}
+
 requireAdmin((user) => {
   document.getElementById('adminLoading').hidden = true;
   document.getElementById('adminContent').hidden = false;
@@ -310,6 +345,8 @@ document.getElementById('fieldBarcode').addEventListener('keydown', (event) => {
 });
 
 document.getElementById('productForm').addEventListener('submit', handleSubmit);
+
+document.getElementById('deleteBtn').addEventListener('click', handleDelete);
 
 document.getElementById('fieldImage').addEventListener('change', (event) => {
   addImageFiles(event.target.files);
