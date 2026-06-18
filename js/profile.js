@@ -5,7 +5,7 @@ import {
   updateProfile,
   wireNavProfile,
 } from './firebase-auth.js?v=10';
-import { isAdminUser } from './admin-check.js';
+import { isAdminUser } from './admin-check.js?v=11';
 import {
   getStoredFavoriteSlugs,
   removeFavorite,

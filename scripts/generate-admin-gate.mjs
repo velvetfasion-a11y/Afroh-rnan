@@ -30,18 +30,28 @@ function loadEnv(file) {
   return env;
 }
 
-const email = loadEnv(envPath).VITE_ADMIN_EMAIL;
+const raw = loadEnv(envPath).VITE_ADMIN_EMAIL;
+const emails = (raw || '')
+  .split(/[,;]/)
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
-if (!email || email.includes('your_') || email.includes('@example')) {
-  console.error('Missing VITE_ADMIN_EMAIL in .env');
+if (!emails.length || emails.some((e) => e.includes('your_') || e.includes('@example'))) {
+  console.error('Missing VITE_ADMIN_EMAIL in .env (comma-separated for multiple admins)');
   process.exit(1);
 }
 
-const hash = createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
-
-writeFileSync(
-  outPath,
-  `// Auto-generated from .env — do not edit. Contains no plaintext email.\nwindow.__adminEmailHash = "${hash}";\n`
+const hashes = emails.map((email) =>
+  createHash('sha256').update(email).digest('hex')
 );
 
-console.log('Generated js/admin-gate.js');
+const lines = [
+  '// Auto-generated from .env — do not edit. Contains no plaintext email.',
+  `window.__adminEmailHashes = ${JSON.stringify(hashes)};`,
+  `window.__adminEmailHash = ${JSON.stringify(hashes[0])};`,
+  '',
+];
+
+writeFileSync(outPath, `${lines.join('\n')}`);
+
+console.log(`Generated js/admin-gate.js (${hashes.length} admin email hash${hashes.length === 1 ? '' : 'es'})`);

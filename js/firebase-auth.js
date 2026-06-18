@@ -15,7 +15,7 @@ import {
   signOut,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-import { isAdminUser } from './admin-check.js';
+import { isAdminUser } from './admin-check.js?v=11';
 
 function getFirebaseConfig() {
   return window.firebaseConfig;
@@ -144,11 +144,22 @@ function loginUrl(nextPage) {
 }
 
 export async function redirectAfterAuth(user) {
-  const authUser = user || getFirebaseAuth().currentUser;
+  const auth = getFirebaseAuth();
+  let authUser = user || auth.currentUser;
   try {
-    if (authUser && (await isAdminUser(authUser))) {
-      window.location.href = 'admin.html';
-      return;
+    if (authUser) {
+      if (await isAdminUser(authUser)) {
+        window.location.replace('admin.html');
+        return;
+      }
+      // Google redirect can return before email is attached — retry once on currentUser.
+      const refreshed = auth.currentUser;
+      if (refreshed && refreshed.uid === authUser.uid && refreshed !== authUser) {
+        if (await isAdminUser(refreshed)) {
+          window.location.replace('admin.html');
+          return;
+        }
+      }
     }
   } catch (err) {
     console.warn('Admin check failed after login:', err);
