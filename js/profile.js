@@ -86,7 +86,7 @@ function favCardHtml(product, options = {}) {
   return `
     <div class="fav-card" id="fav-${product.slug}">
       <div class="fav-img">
-        <span class="fav-cat">${product.catLabel || ({ har: 'Hår & Extensions', kosmetika: 'Hudvård', mat: 'Mat & Kryddor' }[product.cat] || 'Produkt')}</span>
+        <span class="fav-cat">${product.catLabel || ({ har: 'Hårvård', kosmetika: 'Skönhet', mat: 'Mat', accessoarer: 'Accessoarer' }[product.cat] || 'Produkt')}</span>
         ${removeBtn}
         ${imgContent}
       </div>

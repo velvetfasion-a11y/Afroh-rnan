@@ -133,6 +133,7 @@ const CATEGORY_GRIDS = [
   { gridId: 'har-grid', cat: 'har' },
   { gridId: 'kosmetika-grid', cat: 'kosmetika' },
   { gridId: 'mat-grid', cat: 'mat' },
+  { gridId: 'accessoarer-grid', cat: 'accessoarer' },
 ];
 
 function renderGrids(products) {
@@ -186,6 +187,7 @@ function initCategoryNav() {
     { id: 'har-products', cat: 'har' },
     { id: 'kosmetika-products', cat: 'kosmetika' },
     { id: 'mat-products', cat: 'mat' },
+    { id: 'accessoarer-products', cat: 'accessoarer' },
   ];
   const sections = sectionCats
     .map(({ id, cat }) => {
@@ -202,7 +204,7 @@ function initCategoryNav() {
   }
 
   const hash = location.hash.replace('#', '');
-  const validCats = ['har', 'kosmetika', 'mat'];
+  const validCats = ['har', 'kosmetika', 'mat', 'accessoarer'];
   if (validCats.includes(hash)) setActive(hash);
   else setActive('har');
 

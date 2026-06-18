@@ -4,11 +4,13 @@ import { isFirebaseConfigured } from './firebase-auth.js';
 const MAT_KEYS = ['mat', 'mat & kryddor', 'mat och kryddor', 'food', 'kryddor', 'te'];
 const HAIR_KEYS = ['hår', 'har', 'hårvård', 'extensions', 'extension', 'peruk', 'wig', 'braids', 'flätor'];
 const KOSMETIKA_KEYS = ['kosmetika', 'kosmet', 'hudvård', 'hud', 'skönhet'];
+const ACCESSOARER_KEYS = ['accessoar', 'accessoarer', 'smycken', 'jewelry', 'jewellery', 'kläder', 'clothing', 'mode', 'väska', 'väskor'];
 
 const CAT_LABELS = {
-  har: 'Hår & Extensions',
-  kosmetika: 'Hudvård',
-  mat: 'Mat & Kryddor',
+  har: 'Hårvård',
+  kosmetika: 'Skönhet',
+  mat: 'Mat',
+  accessoarer: 'Accessoarer',
 };
 
 let mergedCache = null;
@@ -62,13 +64,14 @@ export function resolveCategory(raw) {
   const direct = raw.category || (Array.isArray(raw.categories) && raw.categories[0]);
   if (direct) {
     const key = String(direct).toLowerCase();
-    if (key === 'har' || key === 'kosmetika' || key === 'mat') return key;
+    if (key === 'har' || key === 'kosmetika' || key === 'mat' || key === 'accessoarer') return key;
   }
 
   const cats = Array.isArray(raw.categories) ? raw.categories : raw.category ? [raw.category] : [];
   const normalized = cats.map((c) => String(c).toLowerCase());
   if (normalized.some((c) => MAT_KEYS.some((k) => c.includes(k)))) return 'mat';
   if (normalized.some((c) => HAIR_KEYS.some((k) => c.includes(k)))) return 'har';
+  if (normalized.some((c) => ACCESSOARER_KEYS.some((k) => c.includes(k)))) return 'accessoarer';
   if (normalized.some((c) => KOSMETIKA_KEYS.some((k) => c.includes(k)))) return 'kosmetika';
   return 'kosmetika';
 }

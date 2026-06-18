@@ -4,9 +4,10 @@ import { fetchAllProducts } from './firebase-db.js';
 let allProducts = [];
 
 const CATEGORY_LABELS = {
-  har: 'Hår & Extensions',
-  kosmetika: 'Kosmetika',
-  mat: 'Mat & Kryddor',
+  har: 'Hårvård',
+  kosmetika: 'Skönhet',
+  mat: 'Mat',
+  accessoarer: 'Accessoarer',
 };
 
 function escapeHtml(str) {

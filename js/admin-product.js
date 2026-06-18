@@ -530,12 +530,14 @@ async function loadProduct() {
       'kosmetika';
     const normalized = String(category).toLowerCase();
     const fieldCategory = document.getElementById('fieldCategory');
-    if (['har', 'kosmetika', 'mat'].includes(normalized)) {
+    if (['har', 'kosmetika', 'mat', 'accessoarer'].includes(normalized)) {
       fieldCategory.value = normalized;
     } else if (normalized.includes('hår') || normalized.includes('har') || normalized.includes('hårvård')) {
       fieldCategory.value = 'har';
     } else if (normalized.includes('mat') || normalized.includes('krydd')) {
       fieldCategory.value = 'mat';
+    } else if (normalized.includes('accessoar') || normalized.includes('smyck') || normalized.includes('kläd') || normalized.includes('jewel')) {
+      fieldCategory.value = 'accessoarer';
     } else {
       fieldCategory.value = 'kosmetika';
     }

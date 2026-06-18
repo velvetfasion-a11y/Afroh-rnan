@@ -6,6 +6,7 @@
     { id: 'har-grid', cat: 'har' },
     { id: 'kosmetika-grid', cat: 'kosmetika' },
     { id: 'mat-grid', cat: 'mat' },
+    { id: 'accessoarer-grid', cat: 'accessoarer' },
     { id: 'category-grid', cat: document.body.dataset.category || '' },
   ];
 
@@ -17,12 +18,13 @@
     const direct = raw.category || (Array.isArray(raw.categories) && raw.categories[0]);
     if (direct) {
       const key = String(direct).toLowerCase();
-      if (key === 'har' || key === 'kosmetika' || key === 'mat') return key;
+      if (key === 'har' || key === 'kosmetika' || key === 'mat' || key === 'accessoarer') return key;
     }
     const cats = Array.isArray(raw.categories) ? raw.categories : [];
     const text = cats.join(' ').toLowerCase();
     if (/mat|krydd|food|te|chips|milk/.test(text)) return 'mat';
     if (/hår|har|extension|peruk|flät|hair|oil|wig/.test(text)) return 'har';
+    if (/accessoar|smyck|jewel|kläder|clothing|väsk|mode/.test(text)) return 'accessoarer';
     return 'kosmetika';
   }
 
