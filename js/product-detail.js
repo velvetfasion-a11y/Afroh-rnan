@@ -46,9 +46,9 @@ function buildProductDescription(product, color) {
   }
   if (product.catLabel) parts.push(product.catLabel + '.');
   if (color?.name) {
-    parts.push(`Färg: ${color.name}.`);
+    parts.push(`Variant: ${color.name}.`);
   } else if (product.hasMultipleColors) {
-    parts.push('Finns i flera färger – välj färg nedan.');
+    parts.push('Finns i flera varianter – välj nedan.');
   }
   if (Number(product.price) > 0) {
     parts.push(`Pris ${formatKr(product.price)}.`);
@@ -58,6 +58,17 @@ function buildProductDescription(product, color) {
 
 function updateProductDescription(product, color) {
   setText('.product-desc', buildProductDescription(product, color));
+}
+
+function resolveVariantImage(color, product) {
+  if (color?.image) return color.image;
+  if (product?.images?.length) return product.images[0];
+  if (product?.image) return product.image;
+  return '';
+}
+
+function escapeAttr(value) {
+  return String(value).replace(/"/g, '&quot;');
 }
 
 function getProductView(product, color) {
@@ -178,11 +189,14 @@ function renderColorPicker(product) {
     .map((color) => {
       const out = color.inventory <= 0;
       const active = color.id === activeColor?.id;
-      const style = color.hex ? ` style="--swatch-color:${color.hex}"` : '';
+      const imageUrl = resolveVariantImage(color, product);
+      const thumb = imageUrl
+        ? `<img class="product-color-swatch-img" src="${escapeAttr(imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+        : `<span class="product-color-swatch-fallback">${escapeAttr(color.name.charAt(0) || '?')}</span>`;
       return `<button type="button" class="product-color-swatch${active ? ' active' : ''}${out ? ' out-of-stock' : ''}"
-        role="radio" aria-checked="${active}" aria-label="${color.name}${out ? ' – slut i lager' : ''}"
-        data-color-id="${color.id}"${out ? ' disabled' : ''}${style}>
-        <span class="product-color-swatch-inner"></span>
+        role="radio" aria-checked="${active}" aria-label="${escapeAttr(color.name)}${out ? ' – slut i lager' : ''}"
+        data-color-id="${color.id}"${out ? ' disabled' : ''}>
+        <span class="product-color-swatch-inner">${thumb}</span>
       </button>`;
     })
     .join('');

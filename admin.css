@@ -875,11 +875,37 @@
   background: var(--bg2);
 }
 
-.admin-color-preview {
+.admin-color-preview,
+.admin-color-thumb {
   width: 52px;
   height: 52px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-color-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-color-thumb-empty {
+  font-size: .55rem;
+  color: #9a8b7a;
+  text-align: center;
+  line-height: 1.2;
+  padding: .2rem;
+}
+
+.admin-color-preview {
   border-radius: 50%;
-  border: 1px solid rgba(0,0,0,.08);
 }
 
 .admin-color-fields {
@@ -944,7 +970,7 @@
 
 @media (max-width: 768px) {
   .admin-color-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 52px 1fr auto;
   }
   .admin-color-fields {
     grid-template-columns: 1fr 1fr;
