@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {
   getAuth,
+  connectAuthEmulator,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
@@ -11,6 +12,7 @@ import {
   browserLocalPersistence,
   signOut,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { isAdminUser } from './admin-check.js';
 
 function getFirebaseConfig() {
@@ -22,19 +24,57 @@ export function isFirebaseConfigured() {
   return config && config.apiKey && !config.apiKey.includes('YOUR_');
 }
 
+export function isLocalDev() {
+  return window.AfroSite?.isLocalDev === true;
+}
+
+let app = null;
 let auth = null;
+let db = null;
+let emulatorsWired = false;
 let persistenceReady = false;
 
-export function getFirebaseAuth() {
+function shouldUseEmulators() {
+  return isLocalDev() && window.AfroSite?.useFirebaseEmulators === true;
+}
+
+function wireEmulatorsIfNeeded() {
+  if (emulatorsWired || !shouldUseEmulators() || !app) return;
+  connectAuthEmulator(getAuth(app), 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(getFirestore(app), '127.0.0.1', 8080);
+  emulatorsWired = true;
+}
+
+export function getFirebaseApp() {
   if (!isFirebaseConfigured()) {
     throw new Error('Firebase is not configured. Update js/firebase-config.js with your project settings.');
   }
-  if (!auth) {
+
+  if (!isLocalDev()) {
+    window.AfroSite?.clearEmulatorDefaults?.();
+  }
+
+  if (!app) {
     const config = getFirebaseConfig();
-    const app = getApps().length ? getApps()[0] : initializeApp(config);
-    auth = getAuth(app);
+    app = getApps().length ? getApps()[0] : initializeApp(config);
+    wireEmulatorsIfNeeded();
+  }
+
+  return app;
+}
+
+export function getFirebaseAuth() {
+  if (!auth) {
+    auth = getAuth(getFirebaseApp());
   }
   return auth;
+}
+
+export function getFirestoreDb() {
+  if (!db) {
+    db = getFirestore(getFirebaseApp());
+  }
+  return db;
 }
 
 export async function ensureAuthPersistence() {
@@ -87,7 +127,14 @@ export function authErrorMessage(code) {
 
 function safeNextPath(next) {
   if (!next || next.startsWith('http') || next.includes('..')) return null;
+  if (/localhost|127\.0\.0\.1/i.test(next)) return null;
   return next;
+}
+
+function loginUrl(nextPage) {
+  const url = new URL('login.html', window.location.href);
+  if (nextPage) url.searchParams.set('next', nextPage);
+  return url.toString();
 }
 
 export async function redirectAfterAuth(user) {
@@ -187,14 +234,16 @@ export function guardAuthPage() {
     return;
   }
 
-  ensureAuthPersistence().then(() => {
-    onAuthStateChanged(getFirebaseAuth(), async (user) => {
-      if (user) await redirectAfterAuth(user);
+  ensureAuthPersistence()
+    .then(() => {
+      onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        if (user) await redirectAfterAuth(user);
+      });
+    })
+    .catch((err) => {
+      console.error('Firebase auth init failed:', err);
+      showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan.');
     });
-  }).catch((err) => {
-    console.error('Firebase auth init failed:', err);
-    showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan.');
-  });
 }
 
 export function requireAuth(onUser, options = {}) {
@@ -211,7 +260,7 @@ export function requireAuth(onUser, options = {}) {
         if (onStateKnown) onStateKnown(user);
         if (!user) {
           const page = window.location.pathname.split('/').pop() || 'profile.html';
-          window.location.href = `login.html?next=${encodeURIComponent(page)}`;
+          window.location.assign(loginUrl(page));
           return;
         }
         if (!onUser) return;
@@ -232,17 +281,21 @@ export function requireAuth(onUser, options = {}) {
 export function requireAdmin(onUser) {
   if (!isFirebaseConfigured()) return;
 
-  ensureAuthPersistence().then(() => {
-    onAuthStateChanged(getFirebaseAuth(), async (user) => {
-      if (!user) {
-        window.location.href = 'login.html?next=admin.html';
-        return;
-      }
-      if (!(await isAdminUser(user))) {
-        window.location.href = 'profile.html';
-        return;
-      }
-      if (onUser) await onUser(user);
+  ensureAuthPersistence()
+    .then(() => {
+      onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        if (!user) {
+          window.location.assign(loginUrl('admin.html'));
+          return;
+        }
+        if (!(await isAdminUser(user))) {
+          window.location.href = 'profile.html';
+          return;
+        }
+        if (onUser) await onUser(user);
+      });
+    })
+    .catch((err) => {
+      console.error('Firebase admin auth init failed:', err);
     });
-  });
 }

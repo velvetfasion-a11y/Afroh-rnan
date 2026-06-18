@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 const Stripe = require('stripe');
 const { sendOrderConfirmationEmail, sendAdminOrderNotificationEmail } = require('./order-email');
 
-setGlobalOptions({ region: 'europe-west1' });
+setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -14,7 +14,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-const stripeSecret = defineSecret('STRIPE_SECRET_KEY');
+const stripeSecret = defineSecret('STRIPE_LIVE_SECRET_KEY');
 const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
 const smtpUser = defineSecret('SMTP_USER');
 const smtpPass = defineSecret('SMTP_PASS');
@@ -69,7 +69,7 @@ async function resolvePaymentMethodLabel(stripe, paymentIntent) {
 }
 
 exports.createPaymentIntent = onRequest(
-  { secrets: [stripeSecret] },
+  { secrets: [stripeSecret], invoker: 'public' },
   (req, res) => {
     cors(req, res, async () => {
       if (req.method === 'OPTIONS') {
@@ -83,7 +83,7 @@ exports.createPaymentIntent = onRequest(
       }
 
       try {
-        const stripe = new Stripe(stripeSecret.value());
+        const stripe = new Stripe(stripeSecret.value().trim());
         const { items, customer, amount } = req.body || {};
 
         if (!Array.isArray(items) || !items.length) {
@@ -209,6 +209,7 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
 exports.stripeWebhook = onRequest(
   {
     secrets: [stripeSecret, stripeWebhookSecret, smtpUser, smtpPass],
+    invoker: 'public',
   },
   async (req, res) => {
     if (req.method !== 'POST') {
@@ -216,7 +217,7 @@ exports.stripeWebhook = onRequest(
       return;
     }
 
-    const stripe = new Stripe(stripeSecret.value());
+    const stripe = new Stripe(stripeSecret.value().trim());
     const signature = req.headers['stripe-signature'];
 
     let event;

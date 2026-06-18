@@ -438,12 +438,9 @@ footer a { color: var(--gold); text-decoration: none; }
       node.style.transform = 'none';
     });
   });
-  function isLocalDev() {
-    return /localhost|127\.0\.0\.1/.test(window.location.hostname);
-  }
   function pageReloadHint() {
-    return isLocalDev()
-      ? 'Öppna http://localhost:8000 och tryck Cmd+Shift+R.'
+    return window.AfroSite?.isLocalDev
+      ? 'Kontrollera att servern körs lokalt och ladda om (Cmd+Shift+R).'
       : 'Ladda om sidan (Cmd+Shift+R).';
   }
   window.addEventListener('error', function (e) {

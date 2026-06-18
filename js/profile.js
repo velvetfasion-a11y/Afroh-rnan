@@ -4,7 +4,7 @@ import {
   getFirebaseAuth,
   updateProfile,
   wireNavProfile,
-} from './firebase-auth.js?v=2';
+} from './firebase-auth.js?v=5';
 import { isAdminUser } from './admin-check.js';
 import {
   getStoredFavoriteSlugs,
@@ -282,13 +282,9 @@ function revealProfile(user) {
   }
 }
 
-function isLocalDev() {
-  return /localhost|127\.0\.0\.1/.test(window.location.hostname);
-}
-
 function profileLoadErrorMessage() {
-  if (isLocalDev()) {
-    return 'Kunde inte ladda kontot. Kontrollera internet och öppna sidan via http://localhost:8000';
+  if (window.AfroSite?.isLocalDev) {
+    return 'Kunde inte ladda kontot lokalt. Kontrollera att servern körs på port 8000 och ladda om sidan.';
   }
   return 'Kunde inte ladda kontot. Kontrollera internet och ladda om sidan. Om problemet kvarstår, logga ut och in igen.';
 }
@@ -297,10 +293,11 @@ wireNavProfile();
 
 const profileBootTimer = window.setTimeout(() => {
   const loading = document.getElementById('profileLoading');
-  if (loading && !loading.hidden) {
-    showProfileError(profileLoadErrorMessage());
+  const content = document.getElementById('profileContent');
+  if (loading && !loading.hidden && content?.hidden) {
+    window.location.assign('login.html?next=profile.html');
   }
-}, 20000);
+}, 10000);
 
 requireAuth(async (user) => {
   window.clearTimeout(profileBootTimer);
@@ -329,12 +326,16 @@ requireAuth(async (user) => {
     console.error('Could not subscribe to products on profile:', err);
   }
 }, {
-  onStateKnown: () => {
+  onStateKnown: (user) => {
     window.clearTimeout(profileBootTimer);
+    if (!user) return;
   },
-  onError: (err) => {
+  onError: () => {
     window.clearTimeout(profileBootTimer);
-    showProfileError(err?.message || profileLoadErrorMessage());
+    showProfileError(profileLoadErrorMessage());
+    window.setTimeout(() => {
+      window.location.assign('login.html?next=profile.html');
+    }, 2500);
   },
 });
 

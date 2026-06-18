@@ -1,6 +1,4 @@
-import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {
-  getFirestore,
   collection,
   doc,
   getDoc,
@@ -17,28 +15,18 @@ import {
   uploadBytes,
   getDownloadURL,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js';
-import { isFirebaseConfigured } from './firebase-auth.js';
+import { getFirebaseApp, getFirestoreDb, isFirebaseConfigured } from './firebase-auth.js';
 
-let db = null;
+export { isFirebaseConfigured };
+
 let storage = null;
-
-function getFirebaseApp() {
-  if (!isFirebaseConfigured()) {
-    throw new Error('Firebase is not configured.');
-  }
-  const config = window.firebaseConfig;
-  return getApps().length ? getApps()[0] : initializeApp(config);
-}
-
-export function getFirestoreDb() {
-  if (!db) db = getFirestore(getFirebaseApp());
-  return db;
-}
 
 export function getFirebaseStorage() {
   if (!storage) storage = getStorage(getFirebaseApp());
   return storage;
 }
+
+export { getFirestoreDb };
 
 export async function fetchAllProducts() {
   const snap = await getDocs(collection(getFirestoreDb(), 'products'));

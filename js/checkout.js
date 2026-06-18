@@ -67,22 +67,31 @@
 
   async function createPaymentIntent(customer) {
     const config = window.stripeConfig || {};
-    const url = config.checkoutApiUrl;
+    const url = config.checkoutApiUrl || window.AfroSite?.checkoutApiUrl;
     if (!url) throw new Error('Betalnings-API saknas.');
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: AfroCart.getItems(),
-        amount: AfroCart.getTotal(),
-        customer,
-      }),
-    });
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: AfroCart.getItems(),
+          amount: AfroCart.getTotal(),
+          customer,
+        }),
+      });
+    } catch (err) {
+      console.error('Payment API request failed:', err);
+      throw new Error('Kunde inte nå betalningsservern. Kontrollera internet och försök igen.');
+    }
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(data.error || 'Kunde inte starta betalningen.');
+      const message = data.error || (response.status === 403
+        ? 'Betalningsservern är inte tillgänglig ännu. Kontakta oss om felet kvarstår.'
+        : 'Kunde inte starta betalningen.');
+      throw new Error(message);
     }
     if (!data.clientSecret) {
       throw new Error('Ogiltigt svar från betalningsservern.');
