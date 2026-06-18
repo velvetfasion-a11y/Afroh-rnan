@@ -64,19 +64,39 @@ export function bootstrapAuth() {
   return authBootstrapPromise;
 }
 
-function isMobileDevice() {
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+function prefersGoogleRedirect() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod|Android/i.test(ua)) return true;
+  // Safari (inkl. macOS) har ofta problem med popup-inloggning.
+  if (/Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR|Firefox/i.test(ua)) return true;
+  return false;
 }
 
 export async function signInWithGoogle() {
+  await bootstrapAuth();
   const authInstance = await ensureAuthPersistence();
-  if (isMobileDevice()) {
+
+  if (prefersGoogleRedirect()) {
     markGoogleRedirectPending();
     await signInWithRedirect(authInstance, googleProvider);
     return null;
   }
-  const result = await signInWithPopup(authInstance, googleProvider);
-  return result.user;
+
+  try {
+    const result = await signInWithPopup(authInstance, googleProvider);
+    return result.user;
+  } catch (error) {
+    const useRedirect =
+      error?.code === 'auth/popup-blocked' ||
+      error?.code === 'auth/operation-not-supported-in-this-environment' ||
+      error?.code === 'auth/internal-error';
+
+    if (!useRedirect) throw error;
+
+    markGoogleRedirectPending();
+    await signInWithRedirect(authInstance, googleProvider);
+    return null;
+  }
 }
 
 export function resetGoogleButton(buttonId = 'googleLogin') {
@@ -240,6 +260,8 @@ export function authErrorMessage(code) {
     'auth/internal-error': 'Inloggningen kunde inte slutföras. Ladda om sidan och försök igen.',
     'auth/missing-or-invalid-nonce': 'Inloggningssessionen gick ut. Ladda om sidan och försök igen.',
     'auth/web-storage-unsupported': 'Webbläsaren blockerar lagring som krävs för inloggning. Tillåt cookies och försök igen.',
+    'auth/operation-not-supported-in-this-environment':
+      'Google-inloggning stöds inte i den här webbläsaren. Prova Safari eller Chrome.',
     'auth/missing-email': 'Ange din e-postadress först.',
   };
   return messages[code] || 'Något gick fel. Försök igen.';
@@ -385,10 +407,8 @@ export function setGoogleLoading(button, loading) {
 
 function shouldShowRedirectError(error, pendingGoogle) {
   if (!pendingGoogle) return false;
-  if (!error?.code) return false;
-  if (error.code === 'auth/network-request-failed') return false;
+  if (!error?.code) return true;
   if (error.code === 'auth/no-auth-event') return false;
-  if (error.code === 'auth/internal-error') return false;
   return true;
 }
 
@@ -401,12 +421,17 @@ async function finishGoogleRedirect(auth) {
       await redirectAfterAuth(result.user);
       return true;
     }
+    if (pendingGoogle) {
+      showAuthError('Google-inloggningen kunde inte slutföras. Försök igen.');
+    }
     return false;
   } catch (error) {
     consumeGoogleRedirectPending();
     console.warn('Google redirect result:', error?.code, error?.message);
     if (shouldShowRedirectError(error, pendingGoogle)) {
       showAuthError(authErrorMessage(error.code));
+    } else if (pendingGoogle) {
+      showAuthError('Google-inloggningen kunde inte slutföras. Försök igen.');
     }
     return false;
   }

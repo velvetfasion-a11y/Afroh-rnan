@@ -12,7 +12,8 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js?v=13';
+  bootstrapAuth,
+} from './firebase-auth.js?v=15';
 
 initAuthPage({ googleButtonId: 'googleSignup' });
 
@@ -26,6 +27,7 @@ document.getElementById('googleSignup').addEventListener('click', async () => {
 
   setGoogleLoading(button, true);
   try {
+    await bootstrapAuth();
     const user = await signInWithGoogle();
     if (user) await redirectAfterAuth(user);
   } catch (error) {

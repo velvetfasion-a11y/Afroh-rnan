@@ -11,7 +11,8 @@ import {
   setGoogleLoading,
   initAuthPage,
   isFirebaseConfigured,
-} from './firebase-auth.js?v=14';
+  bootstrapAuth,
+} from './firebase-auth.js?v=15';
 
 const forgotWrap = document.getElementById('forgotPasswordWrap');
 const forgotBtn = document.getElementById('forgotPasswordBtn');
@@ -32,6 +33,7 @@ document.getElementById('googleLogin').addEventListener('click', async () => {
 
   setGoogleLoading(button, true);
   try {
+    await bootstrapAuth();
     const user = await signInWithGoogle();
     if (user) await redirectAfterAuth(user);
   } catch (error) {
