@@ -145,7 +145,7 @@ function renderColorVariants() {
   };
 
   if (!colorVariants.length) {
-    list.innerHTML = '<p class="admin-color-empty">Inga färgvarianter ännu. Lägg till en eller flera färger.</p>';
+    list.innerHTML = '<p class="admin-color-empty">Inga varianter ännu. Lägg till en eller flera varianter.</p>';
     syncInventoryField();
     return;
   }
@@ -153,6 +153,9 @@ function renderColorVariants() {
   list.innerHTML = colorVariants
     .map((color, index) => {
       const imageUrl = resolveColorImageUrl(color);
+      const basePrice = document.getElementById('fieldPrice')?.value || '';
+      const priceValue = color.price != null && color.price !== '' ? Number(color.price) : '';
+      const pricePlaceholder = basePrice ? `Standard (${basePrice} kr)` : 'Samma som huvudpris';
       return `
         <div class="admin-color-row" data-index="${index}">
           <div class="admin-color-thumb" aria-hidden="true">${renderColorThumb(imageUrl)}</div>
@@ -162,8 +165,12 @@ function renderColorVariants() {
               ${imageSelect(color.imageUrl, index)}
             </div>
             <div class="admin-field">
-              <label>Färgnamn</label>
-              <input type="text" class="admin-color-name" data-field="name" data-index="${index}" value="${escapeHtml(color.name)}" placeholder="t.ex. Svart" required>
+              <label>Variantnamn</label>
+              <input type="text" class="admin-color-name" data-field="name" data-index="${index}" value="${escapeHtml(color.name)}" placeholder="t.ex. Silver" required>
+            </div>
+            <div class="admin-field">
+              <label>Pris (kr)</label>
+              <input type="number" class="admin-color-price" data-field="price" data-index="${index}" min="0" step="1" value="${priceValue === '' ? '' : priceValue}" placeholder="${escapeHtml(pricePlaceholder)}" aria-label="Pris för ${escapeHtml(color.name || 'variant')}">
             </div>
             <div class="admin-field">
               <label>Lager Fittja</label>
@@ -174,7 +181,7 @@ function renderColorVariants() {
               <input type="number" class="admin-color-stock-marsta" data-field="stockMarsta" data-index="${index}" min="0" step="1" value="${Number(color.stockMarsta) || 0}">
             </div>
           </div>
-          <button type="button" class="admin-color-remove" data-remove-color="${index}" aria-label="Ta bort färg">×</button>
+          <button type="button" class="admin-color-remove" data-remove-color="${index}" aria-label="Ta bort variant">×</button>
         </div>`;
     })
     .join('');
@@ -187,6 +194,10 @@ function renderColorVariants() {
       if (!color) return;
 
       if (field === 'name') color.name = event.target.value;
+      if (field === 'price') {
+        const raw = event.target.value.trim();
+        color.price = raw === '' ? null : Number(raw);
+      }
       if (field === 'stockFittja') {
         color.stockFittja = Number.parseInt(event.target.value, 10) || 0;
         syncInventoryField();
@@ -227,9 +238,11 @@ function renderColorVariants() {
 }
 
 function addColorVariant(data = {}) {
+  const basePrice = document.getElementById('fieldPrice')?.value;
   colorVariants.push({
     id: data.id || crypto.randomUUID(),
     name: data.name || '',
+    price: data.price ?? (basePrice !== '' ? Number(basePrice) : null),
     stockFittja: data.stockFittja ?? 0,
     stockMarsta: data.stockMarsta ?? 0,
     imageUrl: data.imageUrl || existingImages[0] || pendingImages[0]?.previewUrl || '',
@@ -246,10 +259,19 @@ function readColorVariants() {
       const source = colorVariants[index] || {};
       const stockFittja = Number.parseInt(row.querySelector('.admin-color-stock-fittja')?.value, 10) || 0;
       const stockMarsta = Number.parseInt(row.querySelector('.admin-color-stock-marsta')?.value, 10) || 0;
+      const priceRaw = row.querySelector('.admin-color-price')?.value.trim() ?? '';
+      let price = null;
+      if (priceRaw !== '') {
+        price = Number(priceRaw);
+        if (Number.isNaN(price) || price < 0) {
+          throw new Error(`Ange ett giltigt pris för varianten «${name}».`);
+        }
+      }
       return {
         id: source.id || slugifyColorId(name, index),
         name,
         hex: row.querySelector('.admin-color-hex')?.value || '#888888',
+        price,
         stock: { fittja: stockFittja, marsta: stockMarsta },
         image: row.querySelector('.admin-color-image')?.value || '',
       };
@@ -376,8 +398,13 @@ function readForm() {
   if (!sku) throw new Error('Ange ett SKU.');
   if (Number.isNaN(price) || price < 0) throw new Error('Ange ett giltigt pris.');
   if (Number.isNaN(inventory) || inventory < 0) throw new Error('Ange ett giltigt lagersaldo.');
-  if (colorVariants.length && !readColorVariants().length) {
-    throw new Error('Ange minst ett färgnamn eller ta bort färgvarianterna.');
+
+  let colors = [];
+  if (colorVariants.length) {
+    colors = readColorVariants();
+    if (!colors.length) {
+      throw new Error('Ange minst ett variantnamn eller ta bort varianterna.');
+    }
   }
 
   return {
@@ -390,6 +417,7 @@ function readForm() {
     price,
     inventory,
     stock: { fittja: stockFittja, marsta: stockMarsta },
+    colors,
   };
 }
 
@@ -447,6 +475,7 @@ async function loadProduct() {
       id: color.id,
       name: color.name,
       hex: color.hex || '#888888',
+      price: color.price != null ? color.price : null,
       stockFittja: color.stock?.fittja ?? 0,
       stockMarsta: color.stock?.marsta ?? 0,
       imageUrl: color.image || '',
@@ -497,7 +526,7 @@ async function handleSubmit(event) {
         brand: fields.brand,
         description: fields.description,
         existingImages,
-        colors: readColorVariants(),
+        colors: fields.colors,
       },
       pendingImages
         .map((item) => item.file)
