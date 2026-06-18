@@ -1,4 +1,5 @@
 import { fetchProductForSlug } from './products.js';
+import { saveProductPreview } from './product-preview.js?v=12';
 
 function formatKr(n) {
   return n.toLocaleString('sv-SE') + ' kr';
@@ -35,6 +36,37 @@ function setText(selector, text) {
   if (el && text != null) el.textContent = text;
 }
 
+function setById(id, text) {
+  const el = document.getElementById(id);
+  if (el && text != null) el.textContent = text;
+}
+
+function markPageReady() {
+  document.body.classList.remove('product-page-loading');
+  document.body.classList.add('product-page-ready');
+
+  const variantSkeleton = document.getElementById('productVariantSkeleton');
+  if (variantSkeleton) variantSkeleton.hidden = true;
+
+  ['qtyMinus', 'qtyPlus', 'buyBtn'].forEach((id) => {
+    document.getElementById(id)?.removeAttribute('disabled');
+  });
+}
+
+function preloadImage(src) {
+  return new Promise((resolve) => {
+    if (!src) {
+      resolve();
+      return;
+    }
+    const probe = new Image();
+    probe.referrerPolicy = 'no-referrer';
+    probe.onload = () => resolve();
+    probe.onerror = () => resolve();
+    probe.src = src;
+  });
+}
+
 function buildProductDescription(product, color) {
   if (product.description?.trim()) return product.description.trim();
 
@@ -57,7 +89,7 @@ function buildProductDescription(product, color) {
 }
 
 function updateProductDescription(product, color) {
-  setText('.product-desc', buildProductDescription(product, color));
+  setById('productDesc', buildProductDescription(product, color));
 }
 
 function resolveVariantImage(color, product) {
@@ -127,15 +159,19 @@ function renderProductThumbs(images, alt) {
   });
 }
 
-function updateGallery(view) {
-  const img = document.querySelector('.product-gallery-img img');
+async function updateGallery(view) {
+  const img = document.getElementById('productMainImage') || document.querySelector('.product-gallery-img img');
   const galleryImages = Array.isArray(view.images) && view.images.length ? view.images : view.image ? [view.image] : [];
+  const src = galleryImages[0];
 
-  if (img && galleryImages.length) {
-    img.hidden = false;
+  if (img && src) {
+    await preloadImage(src);
     img.referrerPolicy = 'no-referrer';
-    img.src = galleryImages[0];
+    img.decoding = 'async';
+    img.src = src;
     img.alt = view.name;
+    img.hidden = false;
+    img.classList.add('is-visible');
   }
 
   renderProductThumbs(galleryImages, view.name);
@@ -152,9 +188,9 @@ function selectColor(product, colorId) {
 
   renderColorPicker(product);
   const view = getProductView(product, activeColor);
-  setText('.product-price', formatKr(view.price));
-  setText('#productColorSelected', color.name);
-  updateGallery(view);
+  setById('productPrice', formatKr(view.price));
+  setById('productColorSelected', color.name);
+  void updateGallery(view);
   updateProductDescription(product, color);
   document.getElementById('buyBtn')?._refreshPrice?.(view);
 }
@@ -172,6 +208,9 @@ function renderColorPicker(product) {
     activeColor = null;
     return;
   }
+
+  const variantSkeleton = document.getElementById('productVariantSkeleton');
+  if (variantSkeleton) variantSkeleton.hidden = true;
 
   wrap.hidden = false;
   if (hint) hint.hidden = colors.length < 2;
@@ -191,7 +230,7 @@ function renderColorPicker(product) {
       const active = color.id === activeColor?.id;
       const imageUrl = resolveVariantImage(color, product);
       const thumb = imageUrl
-        ? `<img class="product-color-swatch-img" src="${escapeAttr(imageUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+        ? `<img class="product-color-swatch-img" src="${escapeAttr(imageUrl)}" alt="" loading="eager" decoding="async" referrerpolicy="no-referrer">`
         : `<span class="product-color-swatch-fallback">${escapeAttr(color.name.charAt(0) || '?')}</span>`;
       return `<button type="button" class="product-color-swatch${active ? ' active' : ''}${out ? ' out-of-stock' : ''}"
         role="radio" aria-checked="${active}" aria-label="${escapeAttr(color.name)}${out ? ' – slut i lager' : ''}"
@@ -212,19 +251,20 @@ function applyProduct(product) {
   if (!product) return;
 
   activeProduct = product;
+  saveProductPreview(product);
   document.title = `${product.name} – Afrohörnan`;
 
-  setText('.product-brand', product.brand);
-  setText('.product-details h1', product.name);
-  setText('.breadcrumb span:last-child', product.name);
+  setById('productBrand', product.brand);
+  setById('productTitle', product.name);
+  setById('productBreadcrumbName', product.name);
 
   renderColorPicker(product);
   const view = getProductView(product, activeColor);
-  setText('.product-price', formatKr(view.price));
-  updateGallery(view);
+  setById('productPrice', formatKr(view.price));
+  void updateGallery(view);
   updateProductDescription(product, activeColor);
 
-  const badge = document.querySelector('.product-badge');
+  const badge = document.getElementById('productBadge') || document.querySelector('.product-badge');
   if (badge) {
     if (product.badge) {
       badge.textContent = product.badge;
@@ -237,6 +277,7 @@ function applyProduct(product) {
 
   wireBuyButton(product);
   document.getElementById('buyBtn')?._refreshPrice?.(view);
+  markPageReady();
 }
 
 function wireBuyButton(product) {
@@ -337,10 +378,13 @@ if (!slug) {
   fetchProductForSlug(slug).then((product) => {
     if (product) showProduct(product);
     else showNotFound();
+  }).catch(() => {
+    showNotFound();
   });
 }
 
 function showNotFound() {
+  markPageReady();
   const main = document.querySelector('.product-main');
   if (main && !main.querySelector('.product-sync-error')) {
     main.insertAdjacentHTML(

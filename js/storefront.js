@@ -1,4 +1,5 @@
 import { subscribeMergedProducts, productsForCategory, mergeProducts } from './products.js';
+import { saveProductPreview } from './product-preview.js';
 
 function escapeHtml(str) {
   return String(str ?? '')
@@ -55,6 +56,7 @@ function createProductCard(product) {
   const link = document.createElement('a');
   link.href = product.url;
   link.className = 'pcard-link';
+  link.addEventListener('click', () => saveProductPreview(product));
 
   const imgWrap = document.createElement('div');
   imgWrap.className = 'pcard-img';

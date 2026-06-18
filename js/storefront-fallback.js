@@ -72,6 +72,28 @@
     return Number.isFinite(p.inventory) && p.inventory > 0;
   }
 
+  document.addEventListener(
+    'click',
+    function (event) {
+      var link = event.target.closest('.pcard-link');
+      if (!link) return;
+      var card = link.closest('.pcard');
+      if (!card) return;
+      var preview = {
+        slug: card.dataset.slug,
+        name: card.dataset.name,
+        brand: card.dataset.brand || '',
+        price: Number(card.dataset.price),
+        image: card.dataset.image || '',
+        hasMultipleColors: card.dataset.hasColors === 'true',
+      };
+      if (window.AfroProductPreview && preview.slug) {
+        window.AfroProductPreview.save(preview);
+      }
+    },
+    true,
+  );
+
   function cardHtml(p) {
     const url = 'produkt.html?slug=' + encodeURIComponent(p.id);
     const inventoryAttr = Number.isFinite(p.inventory) ? ' data-inventory="' + p.inventory + '"' : '';

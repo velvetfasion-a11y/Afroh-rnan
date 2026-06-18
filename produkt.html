@@ -7,9 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="products/product.css?v=11">
+<link rel="stylesheet" href="products/product.css?v=12">
 </head>
-<body data-product-slug="">
+<body class="product-page-loading" data-product-slug="">
 
 <nav>
   <a href="index.html" class="logo">Afro<em>hörnan</em></a>
@@ -33,22 +33,31 @@
   <nav class="breadcrumb" aria-label="Brödsmulor">
     <a href="index.html">Hem</a> /
     <a href="kosmetika.html">Sortiment</a> /
-    <span>Produkt</span>
+    <span id="productBreadcrumbName">Produkt</span>
   </nav>
 
-  <div class="product-layout">
+  <div class="product-layout" id="productLayout">
     <div class="product-gallery">
       <div class="product-gallery-img">
-        <img src="" alt="" hidden>
-        <span class="product-badge" hidden></span>
+        <div class="product-img-placeholder" id="productImgPlaceholder" aria-hidden="true"></div>
+        <img id="productMainImage" src="" alt="" hidden decoding="async">
+        <span class="product-badge" id="productBadge" hidden></span>
       </div>
     </div>
 
     <div class="product-details">
-      <p class="product-brand">Laddar…</p>
-      <h1>Produkt</h1>
-      <p class="product-price">—</p>
+      <p class="product-brand" id="productBrand">&nbsp;</p>
+      <h1 id="productTitle">Produkt</h1>
+      <p class="product-price" id="productPrice">&nbsp;</p>
+
       <p class="product-colors-hint" id="productColorsHint" hidden>Finns i fler varianter</p>
+
+      <div class="product-variant-skeleton" id="productVariantSkeleton" hidden aria-hidden="true">
+        <p class="product-colors-label">Varianter</p>
+        <div class="product-variant-skeleton-swatches">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
 
       <div class="product-colors" id="productColors" hidden>
         <p class="product-colors-label">Varianter</p>
@@ -58,19 +67,19 @@
 
       <hr class="product-divider">
 
-      <p class="product-desc">Hämtar produktinformation…</p>
+      <p class="product-desc" id="productDesc">&nbsp;</p>
 
       <hr class="product-divider">
 
       <p class="product-qty-label">Antal</p>
       <div class="product-qty-row">
-        <button type="button" class="qty-btn" id="qtyMinus" aria-label="Minska antal">−</button>
+        <button type="button" class="qty-btn" id="qtyMinus" aria-label="Minska antal" disabled>−</button>
         <span id="qty">1</span>
-        <button type="button" class="qty-btn" id="qtyPlus" aria-label="Öka antal">+</button>
-        <span id="total">—</span>
+        <button type="button" class="qty-btn" id="qtyPlus" aria-label="Öka antal" disabled>+</button>
+        <span id="total">&nbsp;</span>
       </div>
 
-      <button type="button" class="btn-buy-product" id="buyBtn">Köp nu</button>
+      <button type="button" class="btn-buy-product" id="buyBtn" disabled>Köp nu</button>
     </div>
   </div>
 </main>
@@ -82,14 +91,11 @@
   © 2026 Afrohörnan. Alla rättigheter förbehållna.
 </footer>
 
-<script>
-  const slug = new URLSearchParams(location.search).get('slug');
-  if (slug) document.body.dataset.productSlug = slug;
-</script>
+<script src="js/product-preview-boot.js?v=12"></script>
 <script src="js/firebase-config.js?v=10"></script>
 <script src="js/admin-gate.js?v=11"></script>
 <script src="js/cart.js"></script>
-<script type="module" src="js/product-detail.js?v=11"></script>
+<script type="module" src="js/product-detail.js?v=12"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>
 </html>
