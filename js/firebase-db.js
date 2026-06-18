@@ -70,7 +70,7 @@ export async function uploadProductImage(file, productId) {
   return getDownloadURL(storageRef);
 }
 
-export async function saveProduct(productId, fields, imageFiles = []) {
+export async function saveProduct(productId, fields, imageFiles = [], pendingPreviewUrls = []) {
   const dbRef = getFirestoreDb();
   const isNew = !productId;
   const docRef = isNew ? doc(collection(dbRef, 'products')) : doc(dbRef, 'products', productId);
@@ -79,9 +79,13 @@ export async function saveProduct(productId, fields, imageFiles = []) {
   let images = [...(fields.existingImages || [])];
   const files = (Array.isArray(imageFiles) ? imageFiles : imageFiles ? [imageFiles] : [])
     .filter((file) => file && file instanceof Blob);
-  for (const file of files) {
+  const previewToUrl = new Map();
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index];
     const url = await uploadProductImage(file, id);
     images.push(url);
+    const previewUrl = pendingPreviewUrls[index];
+    if (previewUrl) previewToUrl.set(previewUrl, url);
   }
 
   const colors = Array.isArray(fields.colors)
@@ -92,6 +96,12 @@ export async function saveProduct(productId, fields, imageFiles = []) {
             marsta: Math.max(0, Number(color.stock?.marsta ?? color.stockMarsta) || 0),
           };
           const inventory = (stock.fittja || 0) + (stock.marsta || 0);
+          let image = color.image || '';
+          if (image && previewToUrl.has(image)) {
+            image = previewToUrl.get(image);
+          } else if (image.startsWith('blob:')) {
+            image = '';
+          }
           return {
             id: color.id,
             name: color.name,
@@ -100,7 +110,7 @@ export async function saveProduct(productId, fields, imageFiles = []) {
             price: color.price != null && color.price !== '' ? Number(color.price) : null,
             inventory,
             stock,
-            image: color.image || '',
+            image,
           };
         })
         .filter((color) => color.name)

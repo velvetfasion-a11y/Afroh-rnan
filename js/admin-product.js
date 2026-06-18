@@ -62,6 +62,7 @@ function addImageFiles(fileList) {
   });
 
   if (added) {
+    syncColorVariantImageKeys();
     renderImageGallery();
     renderColorVariants();
   }
@@ -70,12 +71,65 @@ function addImageFiles(fileList) {
 function getAllImageOptions() {
   const options = [];
   existingImages.forEach((url, index) => {
-    options.push({ url, label: `Bild ${index + 1}` });
+    options.push({
+      key: `e-${index}`,
+      url,
+      label: index === 0 ? `Bild ${index + 1} (huvudbild)` : `Bild ${index + 1}`,
+    });
   });
   pendingImages.forEach((item, index) => {
-    options.push({ url: item.previewUrl, label: `Ny bild ${index + 1}` });
+    options.push({
+      key: `p-${item.id}`,
+      url: item.previewUrl,
+      label: `Ny bild ${index + 1}`,
+    });
   });
   return options;
+}
+
+function resolveImageKeyToUrl(keyOrUrl) {
+  if (!keyOrUrl) return '';
+  if (keyOrUrl.startsWith('e-')) {
+    const index = Number(keyOrUrl.slice(2));
+    return existingImages[index] || '';
+  }
+  if (keyOrUrl.startsWith('p-')) {
+    const id = keyOrUrl.slice(2);
+    return pendingImages.find((item) => item.id === id)?.previewUrl || '';
+  }
+  return keyOrUrl;
+}
+
+function urlToImageKey(url) {
+  if (!url) return '';
+  let index = existingImages.indexOf(url);
+  if (index === -1) {
+    const base = url.split('?')[0];
+    index = existingImages.findIndex((entry) => entry.split('?')[0] === base);
+  }
+  if (index !== -1) return `e-${index}`;
+  const pending = pendingImages.find((item) => item.previewUrl === url);
+  if (pending) return `p-${pending.id}`;
+  return url;
+}
+
+function syncColorVariantImageKeys() {
+  colorVariants.forEach((color) => {
+    if (color.imageUrl && !color.imageUrl.startsWith('blob:')) {
+      color.imageKey = urlToImageKey(color.imageUrl);
+      return;
+    }
+    if (color.imageKey) {
+      const resolved = resolveImageKeyToUrl(color.imageKey);
+      if (resolved) {
+        color.imageUrl = resolved;
+        color.imageKey = urlToImageKey(resolved);
+        return;
+      }
+    }
+    color.imageKey = '';
+    color.imageUrl = '';
+  });
 }
 
 function syncInventoryField() {
@@ -114,6 +168,8 @@ function wireStockFields() {
 }
 
 function resolveColorImageUrl(color) {
+  const fromKey = resolveImageKeyToUrl(color?.imageKey);
+  if (fromKey) return fromKey;
   if (color?.imageUrl) return color.imageUrl;
   if (existingImages[0]) return existingImages[0];
   if (pendingImages[0]?.previewUrl) return pendingImages[0].previewUrl;
@@ -132,16 +188,25 @@ function renderColorVariants() {
   if (!list) return;
 
   const imageOptions = getAllImageOptions();
-  const imageSelect = (selectedUrl, index) => {
-    const options = ['<option value="">Standardbild</option>']
-      .concat(
-        imageOptions.map(
-          (option) =>
-            `<option value="${escapeHtml(option.url)}"${option.url === selectedUrl ? ' selected' : ''}>${escapeHtml(option.label)}</option>`,
-        ),
-      )
-      .join('');
-    return `<select class="admin-color-image" data-field="image" data-index="${index}" aria-label="Bild för färg">${options}</select>`;
+  const imageSelect = (color, index) => {
+    const selectedKey = color.imageKey || urlToImageKey(color.imageUrl) || '';
+    const options = ['<option value="">Standardbild (första bilden)</option>'];
+    imageOptions.forEach((option) => {
+      const selected = option.key === selectedKey ? ' selected' : '';
+      options.push(
+        `<option value="${escapeHtml(option.key)}"${selected}>${escapeHtml(option.label)}</option>`,
+      );
+    });
+    if (
+      selectedKey &&
+      !imageOptions.some((option) => option.key === selectedKey) &&
+      (selectedKey.startsWith('http') || selectedKey.startsWith('blob:'))
+    ) {
+      options.push(
+        `<option value="${escapeHtml(selectedKey)}" selected>${escapeHtml('Sparad bild (välj om)')}</option>`,
+      );
+    }
+    return `<select class="admin-color-image" data-field="image" data-index="${index}" aria-label="Bild för variant">${options.join('')}</select>`;
   };
 
   if (!colorVariants.length) {
@@ -162,7 +227,7 @@ function renderColorVariants() {
           <div class="admin-color-fields">
             <div class="admin-field full">
               <label>Produktbild</label>
-              ${imageSelect(color.imageUrl, index)}
+              ${imageSelect(color, index)}
             </div>
             <div class="admin-field">
               <label>Variantnamn</label>
@@ -207,7 +272,8 @@ function renderColorVariants() {
         syncInventoryField();
       }
       if (field === 'image') {
-        color.imageUrl = event.target.value;
+        color.imageKey = event.target.value;
+        color.imageUrl = resolveImageKeyToUrl(color.imageKey);
         const row = list.querySelector(`.admin-color-row[data-index="${index}"]`);
         const thumb = row?.querySelector('.admin-color-thumb');
         if (thumb) thumb.innerHTML = renderColorThumb(resolveColorImageUrl(color));
@@ -219,7 +285,8 @@ function renderColorVariants() {
         const index = Number(event.target.dataset.index);
         const color = colorVariants[index];
         if (!color) return;
-        color.imageUrl = event.target.value;
+        color.imageKey = event.target.value;
+        color.imageUrl = resolveImageKeyToUrl(color.imageKey);
         const row = list.querySelector(`.admin-color-row[data-index="${index}"]`);
         const thumb = row?.querySelector('.admin-color-thumb');
         if (thumb) thumb.innerHTML = renderColorThumb(resolveColorImageUrl(color));
@@ -245,6 +312,7 @@ function addColorVariant(data = {}) {
     price: data.price ?? (basePrice !== '' ? Number(basePrice) : null),
     stockFittja: data.stockFittja ?? 0,
     stockMarsta: data.stockMarsta ?? 0,
+    imageKey: data.imageKey || (existingImages.length ? 'e-0' : pendingImages[0] ? `p-${pendingImages[0].id}` : ''),
     imageUrl: data.imageUrl || existingImages[0] || pendingImages[0]?.previewUrl || '',
   });
   renderColorVariants();
@@ -267,13 +335,14 @@ function readColorVariants() {
           throw new Error(`Ange ett giltigt pris för varianten «${name}».`);
         }
       }
+      const imageKey = row.querySelector('.admin-color-image')?.value || '';
       return {
         id: source.id || slugifyColorId(name, index),
         name,
         hex: row.querySelector('.admin-color-hex')?.value || '#888888',
         price,
         stock: { fittja: stockFittja, marsta: stockMarsta },
-        image: row.querySelector('.admin-color-image')?.value || '',
+        image: resolveImageKeyToUrl(imageKey),
       };
     })
     .filter(Boolean);
@@ -372,6 +441,7 @@ function renderImageGallery() {
         pendingImages.splice(index, 1);
       }
       renderImageGallery();
+      syncColorVariantImageKeys();
       renderColorVariants();
     });
   });
@@ -479,7 +549,11 @@ async function loadProduct() {
       stockFittja: color.stock?.fittja ?? 0,
       stockMarsta: color.stock?.marsta ?? 0,
       imageUrl: color.image || '',
+      imageKey: '',
     }));
+    colorVariants.forEach((color) => {
+      color.imageKey = urlToImageKey(color.imageUrl);
+    });
     renderImageGallery();
     renderColorVariants();
   } catch (err) {
@@ -531,6 +605,7 @@ async function handleSubmit(event) {
       pendingImages
         .map((item) => item.file)
         .filter((file) => file && file instanceof Blob),
+      pendingImages.map((item) => item.previewUrl),
     );
 
     pendingImages.forEach((item) => {
@@ -538,7 +613,7 @@ async function handleSubmit(event) {
     });
     pendingImages = [];
 
-    window.location.href = `admin-products.html?saved=${encodeURIComponent(id)}`;
+    window.location.href = `admin-product.html?id=${encodeURIComponent(id)}&saved=1`;
   } catch (err) {
     const msg =
       err?.code === 'permission-denied'

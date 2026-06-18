@@ -84,10 +84,44 @@ exports.createPaymentIntent = onRequest(
 
       try {
         const stripe = new Stripe(stripeSecret.value().trim());
-        const { items, customer, amount } = req.body || {};
+        const { items, customer, amount, fulfillment, pickupStore } = req.body || {};
+        const isPickup = fulfillment === 'pickup';
 
         if (!Array.isArray(items) || !items.length) {
           res.status(400).json({ error: 'Cart is empty' });
+          return;
+        }
+
+        if (isPickup) {
+          if (!pickupStore || !STORE_LABELS[pickupStore]) {
+            res.status(400).json({ error: 'Invalid store' });
+            return;
+          }
+          if (!customer?.phone || String(customer.phone).trim().length < 6) {
+            res.status(400).json({ error: 'Missing phone number' });
+            return;
+          }
+          if (!customer?.email || !String(customer.email).includes('@')) {
+            res.status(400).json({ error: 'Missing email' });
+            return;
+          }
+          const unavailable = await validatePickupStock(items, pickupStore);
+          if (unavailable.length) {
+            res.status(409).json({
+              error: 'En eller flera produkter finns inte i vald butik.',
+              code: 'unavailable_in_store',
+              items: unavailable.map((item) => item.name || item.slug),
+            });
+            return;
+          }
+        } else if (
+          !customer?.email ||
+          !customer?.phone ||
+          !customer?.address ||
+          !customer?.postal ||
+          !customer?.city
+        ) {
+          res.status(400).json({ error: 'Missing customer details' });
           return;
         }
 
@@ -100,20 +134,18 @@ exports.createPaymentIntent = onRequest(
           return;
         }
 
-        if (!customer?.email || !customer?.phone || !customer?.address || !customer?.postal || !customer?.city) {
-          res.status(400).json({ error: 'Missing customer details' });
-          return;
-        }
+        const storeLabel = isPickup ? STORE_LABELS[pickupStore] : '';
 
         const orderRef = await db.collection('orders').add({
-          fulfillment: 'delivery',
+          fulfillment: isPickup ? 'pickup' : 'delivery',
+          pickupStore: isPickup ? pickupStore : null,
           customer: {
-            name: customer.name || '',
-            email: customer.email,
+            name: customer.name || (isPickup ? `Hämtning ${storeLabel}` : ''),
+            email: customer.email || '',
             phone: customer.phone,
-            address: customer.address,
-            postal: customer.postal,
-            city: customer.city,
+            address: isPickup ? `Hämtning i butik – ${storeLabel}` : customer.address,
+            postal: customer.postal || '',
+            city: customer.city || (isPickup ? storeLabel : ''),
             country: customer.country || 'Sverige',
           },
           items: items.map((item) => ({
@@ -134,21 +166,35 @@ exports.createPaymentIntent = onRequest(
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        const intent = await stripe.paymentIntents.create({
+        const intentMetadata = {
+          order_id: orderRef.id,
+          fulfillment: isPickup ? 'pickup' : 'delivery',
+          customer_name: customer.name || '',
+          customer_email: customer.email || '',
+          customer_phone: customer.phone,
+        };
+
+        if (isPickup) {
+          intentMetadata.pickup_store = pickupStore;
+        } else {
+          intentMetadata.customer_address = customer.address;
+          intentMetadata.customer_postal = customer.postal;
+          intentMetadata.customer_city = customer.city;
+        }
+
+        const intentPayload = {
           amount: total * 100,
           currency: 'sek',
           automatic_payment_methods: { enabled: true },
-          receipt_email: customer.email,
-          metadata: {
-            order_id: orderRef.id,
-            customer_name: customer.name || '',
-            customer_email: customer.email,
-            customer_phone: customer.phone,
-            customer_address: customer.address,
-            customer_postal: customer.postal,
-            customer_city: customer.city,
-          },
-          shipping: {
+          metadata: intentMetadata,
+        };
+
+        if (customer.email) {
+          intentPayload.receipt_email = customer.email;
+        }
+
+        if (!isPickup) {
+          intentPayload.shipping = {
             name: customer.name || 'Kund',
             phone: customer.phone,
             address: {
@@ -157,8 +203,10 @@ exports.createPaymentIntent = onRequest(
               city: customer.city,
               country: 'SE',
             },
-          },
-        });
+          };
+        }
+
+        const intent = await stripe.paymentIntents.create(intentPayload);
 
         await orderRef.update({ paymentIntentId: intent.id });
 
@@ -302,6 +350,8 @@ exports.createPickupOrder = onRequest(
         await sendAdminOrderNotificationEmail(order, orderRef.id, smtp, {
           paymentMethod: `Hämtning i butik – ${storeLabel}`,
           pickupStore: storeLabel,
+        }).catch((emailErr) => {
+          console.error('Pickup admin email failed:', emailErr.message);
         });
 
         await orderRef.update({
@@ -346,7 +396,15 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
   }
 
   if (!order.adminEmailSentAt) {
-    await sendAdminOrderNotificationEmail(order, orderId, smtp, { paymentMethod });
+    const pickupStore = order.pickupStore === 'fittja'
+      ? 'Fittja'
+      : order.pickupStore === 'marsta'
+        ? 'Märsta'
+        : order.pickupStore || '';
+    await sendAdminOrderNotificationEmail(order, orderId, smtp, {
+      paymentMethod,
+      pickupStore,
+    });
     await orderRef.update({
       adminEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
     });

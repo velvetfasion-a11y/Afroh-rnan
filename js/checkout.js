@@ -11,6 +11,9 @@
   const pickupErrorEl = document.getElementById('pickup-error');
   const pickupUnavailableEl = document.getElementById('pickup-unavailable');
   const pickupSubmitBtn = document.getElementById('pickup-submit');
+  const pickupPaymentWrap = document.getElementById('pickup-payment');
+  const pickupExpressMount = document.getElementById('pickup-express-checkout-element');
+  const pickupPaymentMount = document.getElementById('pickup-payment-element');
   const paymentWrap = document.getElementById('checkout-payment');
   const expressMount = document.getElementById('express-checkout-element');
   const paymentMount = document.getElementById('payment-element');
@@ -21,6 +24,9 @@
   let stripe = null;
   let elements = null;
   let paymentReady = false;
+  let pickupStripe = null;
+  let pickupElements = null;
+  let pickupPaymentReady = false;
   let productsCache = null;
 
   function formatKr(n) {
@@ -86,8 +92,9 @@
 
   function readPickup() {
     const phone = document.getElementById('pickup-phone')?.value.trim() || '';
+    const email = document.getElementById('pickup-email')?.value.trim() || '';
     const store = pickupForm?.querySelector('input[name="pickup-store"]:checked')?.value || '';
-    return { phone, store };
+    return { phone, email, store };
   }
 
   function validateCustomer(customer) {
@@ -100,9 +107,22 @@
   }
 
   function validatePickup(pickup) {
+    if (!pickup.email || !pickup.email.includes('@')) return 'Ange en giltig e-postadress.';
     if (!pickup.phone || pickup.phone.length < 6) return 'Ange ett telefonnummer.';
     if (!pickup.store || !window.AfroStores?.STORES?.[pickup.store]) return 'Välj en butik.';
     return '';
+  }
+
+  function pickupCustomer(pickup) {
+    const storeLabel = window.AfroStores?.STORES?.[pickup.store]?.label || pickup.store;
+    return {
+      name: `Hämtning ${storeLabel}`,
+      email: pickup.email,
+      phone: pickup.phone,
+      address: `Hämtning i butik – ${storeLabel}`,
+      postal: '',
+      city: storeLabel,
+    };
   }
 
   function loadStripeScript() {
@@ -120,7 +140,7 @@
     });
   }
 
-  async function createPaymentIntent(customer) {
+  async function createPaymentIntent(customer, options = {}) {
     const config = window.stripeConfig || {};
     const url = config.checkoutApiUrl || window.AfroSite?.checkoutApiUrl;
     if (!url) throw new Error('Betalnings-API saknas.');
@@ -134,6 +154,8 @@
           items: AfroCart.getItems(),
           amount: AfroCart.getTotal(),
           customer,
+          fulfillment: options.fulfillment || 'delivery',
+          pickupStore: options.pickupStore || '',
         }),
       });
     } catch (err) {
@@ -143,6 +165,9 @@
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (data.code === 'unavailable_in_store') {
+        if (pickupUnavailableEl) pickupUnavailableEl.hidden = false;
+      }
       const message = data.error || (response.status === 403
         ? 'Betalningsservern är inte tillgänglig ännu. Kontakta oss om felet kvarstår.'
         : 'Kunde inte starta betalningen.');
@@ -152,38 +177,6 @@
       throw new Error('Ogiltigt svar från betalningsservern.');
     }
     return data.clientSecret;
-  }
-
-  async function createPickupOrder(pickup) {
-    const url = window.AfroSite?.pickupApiUrl;
-    if (!url) throw new Error('Hämtnings-API saknas.');
-
-    let response;
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: AfroCart.getItems(),
-          amount: AfroCart.getTotal(),
-          phone: pickup.phone,
-          store: pickup.store,
-        }),
-      });
-    } catch (err) {
-      console.error('Pickup API request failed:', err);
-      throw new Error('Kunde inte nå servern. Kontrollera internet och försök igen.');
-    }
-
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (data.code === 'unavailable_in_store') {
-        if (pickupUnavailableEl) pickupUnavailableEl.hidden = false;
-        throw new Error(data.error || 'Produkten finns inte i vald butik.');
-      }
-      throw new Error(data.error || 'Kunde inte skapa hämtningsbeställningen.');
-    }
-    return data;
   }
 
   function openMailtoOrder(customer) {
@@ -196,18 +189,22 @@
     window.location.href = `mailto:info@afrohornan.com?subject=${subject}&body=${body}`;
   }
 
-  async function setupPayment(customer) {
+  async function setupPayment(customer, options = {}) {
     const config = window.stripeConfig || {};
     if (!config.configured || !config.publishableKey) {
       openMailtoOrder(customer);
       return false;
     }
 
-    await loadStripeScript();
-    stripe = window.Stripe(config.publishableKey);
-    const clientSecret = await createPaymentIntent(customer);
+    const isPickup = options.fulfillment === 'pickup';
+    const expressTarget = isPickup ? pickupExpressMount : expressMount;
+    const paymentTarget = isPickup ? pickupPaymentMount : paymentMount;
 
-    elements = stripe.elements({
+    await loadStripeScript();
+    const stripeClient = window.Stripe(config.publishableKey);
+    const clientSecret = await createPaymentIntent(customer, options);
+
+    const stripeElements = stripeClient.elements({
       clientSecret,
       appearance: {
         theme: 'stripe',
@@ -219,8 +216,8 @@
       },
     });
 
-    if (expressMount && !expressMount.dataset.mounted) {
-      const express = elements.create('expressCheckout', {
+    if (expressTarget && !expressTarget.dataset.mounted) {
+      const express = stripeElements.create('expressCheckout', {
         buttonHeight: 48,
         paymentMethods: {
           applePay: 'auto',
@@ -228,14 +225,22 @@
           link: 'auto',
         },
       });
-      express.mount(expressMount);
-      expressMount.dataset.mounted = '1';
+      express.mount(expressTarget);
+      expressTarget.dataset.mounted = '1';
     }
 
-    if (paymentMount && !paymentMount.dataset.mounted) {
-      const payment = elements.create('payment');
-      payment.mount(paymentMount);
-      paymentMount.dataset.mounted = '1';
+    if (paymentTarget && !paymentTarget.dataset.mounted) {
+      const payment = stripeElements.create('payment');
+      payment.mount(paymentTarget);
+      paymentTarget.dataset.mounted = '1';
+    }
+
+    if (isPickup) {
+      pickupStripe = stripeClient;
+      pickupElements = stripeElements;
+    } else {
+      stripe = stripeClient;
+      elements = stripeElements;
     }
 
     return true;
@@ -250,6 +255,16 @@
   pickupBtn?.addEventListener('click', () => {
     if (!AfroCart.getItems().length) return;
     showPickupError('');
+    pickupPaymentReady = false;
+    pickupStripe = null;
+    pickupElements = null;
+    if (pickupExpressMount) delete pickupExpressMount.dataset.mounted;
+    if (pickupPaymentMount) delete pickupPaymentMount.dataset.mounted;
+    if (pickupPaymentWrap) pickupPaymentWrap.hidden = true;
+    if (pickupSubmitBtn) {
+      pickupSubmitBtn.hidden = false;
+      pickupSubmitBtn.textContent = 'Fortsätt till betalning';
+    }
     if (pickupUnavailableEl) pickupUnavailableEl.hidden = true;
     openPanel(pickupPanel);
   });
@@ -361,36 +376,67 @@
       return;
     }
 
+    if (!pickupPaymentReady) {
+      pickupSubmitBtn.disabled = true;
+      pickupSubmitBtn.textContent = 'Kontrollerar lager…';
+
+      try {
+        const products = await ensureProducts();
+        const unavailable = window.AfroStores.checkCartAvailability(AfroCart.getItems(), products, pickup.store);
+        if (unavailable.length) {
+          if (pickupUnavailableEl) pickupUnavailableEl.hidden = false;
+          showPickupError('En eller flera produkter finns inte i vald butik.');
+          return;
+        }
+
+        pickupSubmitBtn.textContent = 'Laddar betalning…';
+        const customer = pickupCustomer(pickup);
+        const ready = await setupPayment(customer, {
+          fulfillment: 'pickup',
+          pickupStore: pickup.store,
+        });
+        if (!ready) return;
+
+        if (pickupPaymentWrap) pickupPaymentWrap.hidden = false;
+        pickupPaymentReady = true;
+        pickupSubmitBtn.textContent = 'Betala';
+        pickupPaymentWrap?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        showPickupError(err.message || 'Något gick fel.');
+      } finally {
+        pickupSubmitBtn.disabled = false;
+      }
+      return;
+    }
+
     pickupSubmitBtn.disabled = true;
-    pickupSubmitBtn.textContent = 'Kontrollerar lager…';
+    pickupSubmitBtn.textContent = 'Betalar…';
 
     try {
-      const products = await ensureProducts();
-      const unavailable = window.AfroStores.checkCartAvailability(AfroCart.getItems(), products, pickup.store);
-      if (unavailable.length) {
-        if (pickupUnavailableEl) pickupUnavailableEl.hidden = false;
-        showPickupError('En eller flera produkter finns inte i vald butik.');
-        return;
-      }
+      const customer = pickupCustomer(pickup);
+      const { error } = await pickupStripe.confirmPayment({
+        elements: pickupElements,
+        confirmParams: {
+          return_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
+          receipt_email: customer.email,
+          payment_method_data: {
+            billing_details: {
+              name: customer.name,
+              email: customer.email,
+              phone: customer.phone,
+            },
+          },
+        },
+      });
 
-      pickupSubmitBtn.textContent = 'Skickar…';
-      await createPickupOrder(pickup);
-
-      AfroCart.clear();
-      window.history.replaceState({}, '', 'kundvagn.html?pickup=success');
-      const content = document.getElementById('cart-content');
-      hidePanels();
-      if (content) {
-        content.insertAdjacentHTML(
-          'afterbegin',
-          '<p class="checkout-success">Tack! Vi förbereder din order för hämtning. Vi ringer dig på angivet nummer när den är redo.</p>',
-        );
+      if (error) {
+        showPickupError(error.message || 'Betalningen misslyckades.');
       }
     } catch (err) {
       showPickupError(err.message || 'Något gick fel.');
     } finally {
       pickupSubmitBtn.disabled = false;
-      pickupSubmitBtn.textContent = 'Bekräfta hämtning';
+      pickupSubmitBtn.textContent = 'Betala';
     }
   });
 

@@ -114,11 +114,15 @@
 
     <section id="pickup-panel" class="checkout-panel pickup-panel" hidden>
       <h2>Hämta i butik</h2>
-      <p class="checkout-lead">Ange ditt telefonnummer och välj vilken butik du vill hämta i. Du betalar i butiken.</p>
+      <p class="checkout-lead">Välj butik, ange dina uppgifter och betala online. Vi förbereder ordern till hämtning.</p>
 
       <form id="pickup-form" class="checkout-form" novalidate>
         <div class="checkout-grid">
-          <label class="checkout-field full">
+          <label class="checkout-field">
+            <span>E-post</span>
+            <input type="email" id="pickup-email" name="email" autocomplete="email" required placeholder="din@epost.se">
+          </label>
+          <label class="checkout-field">
             <span>Telefon</span>
             <input type="tel" id="pickup-phone" name="phone" autocomplete="tel" required placeholder="07X XXX XX XX">
           </label>
@@ -142,12 +146,18 @@
           </label>
         </fieldset>
 
+        <div id="pickup-payment" class="checkout-payment" hidden>
+          <p class="checkout-payment-label">Betalning</p>
+          <div id="pickup-express-checkout-element" class="checkout-express"></div>
+          <div id="pickup-payment-element" class="checkout-stripe-element"></div>
+        </div>
+
         <p id="pickup-unavailable" class="pickup-notice" role="alert" hidden>
           En eller flera produkter finns inte tillgängliga i den valda butiken. Välj annan butik eller beställ med leverans till din brevlåda.
         </p>
         <p id="pickup-error" class="checkout-error" hidden></p>
 
-        <button type="submit" class="cart-btn-primary" id="pickup-submit">Bekräfta hämtning</button>
+        <button type="submit" class="cart-btn-primary" id="pickup-submit">Fortsätt till betalning</button>
       </form>
     </section>
   </div>
@@ -165,7 +175,7 @@
 <script src="js/firebase-config.js?v=10"></script>
 <script src="js/store-stock.js"></script>
 <script src="js/stripe-config.js"></script>
-<script src="js/checkout.js?v=10"></script>
+<script src="js/checkout.js?v=11"></script>
 <script src="js/admin-gate.js?v=11"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>
