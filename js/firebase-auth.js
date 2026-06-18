@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {
   getAuth,
+  initializeAuth,
   connectAuthEmulator,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -10,8 +11,9 @@ import {
   GoogleAuthProvider,
   updateProfile,
   onAuthStateChanged,
-  setPersistence,
+  indexedDBLocalPersistence,
   browserLocalPersistence,
+  browserSessionPersistence,
   signOut,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
@@ -35,6 +37,34 @@ let auth = null;
 let db = null;
 let emulatorsWired = false;
 let persistenceReady = false;
+
+const GOOGLE_REDIRECT_KEY = 'afroPendingGoogleRedirect';
+
+export function markGoogleRedirectPending() {
+  try {
+    sessionStorage.setItem(GOOGLE_REDIRECT_KEY, '1');
+  } catch {
+    /* private mode */
+  }
+}
+
+function consumeGoogleRedirectPending() {
+  try {
+    const pending = sessionStorage.getItem(GOOGLE_REDIRECT_KEY) === '1';
+    sessionStorage.removeItem(GOOGLE_REDIRECT_KEY);
+    return pending;
+  } catch {
+    return false;
+  }
+}
+
+function hasGoogleRedirectPending() {
+  try {
+    return sessionStorage.getItem(GOOGLE_REDIRECT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 function shouldUseEmulators() {
   return isLocalDev() && window.AfroSite?.useFirebaseEmulators === true;
@@ -67,7 +97,18 @@ export function getFirebaseApp() {
 
 export function getFirebaseAuth() {
   if (!auth) {
-    auth = getAuth(getFirebaseApp());
+    const firebaseApp = getFirebaseApp();
+    try {
+      auth = initializeAuth(firebaseApp, {
+        persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
+      });
+    } catch (err) {
+      if (err?.code === 'auth/already-initialized') {
+        auth = getAuth(firebaseApp);
+      } else {
+        throw err;
+      }
+    }
   }
   return auth;
 }
@@ -81,19 +122,25 @@ export function getFirestoreDb() {
 
 export async function ensureAuthPersistence() {
   if (persistenceReady) return getFirebaseAuth();
-  const a = getFirebaseAuth();
-  try {
-    await Promise.race([
-      setPersistence(a, browserLocalPersistence),
-      new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error('Auth persistence timeout')), 8000);
-      }),
-    ]);
-  } catch (err) {
-    console.warn('Auth persistence skipped:', err?.message || err);
-  }
   persistenceReady = true;
-  return a;
+  return getFirebaseAuth();
+}
+
+export async function signInWithEmailPassword(email, password) {
+  const auth = await ensureAuthPersistence();
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      lastError = err;
+      if (err?.code !== 'auth/network-request-failed' || attempt === 1) throw err;
+      await new Promise((resolve) => window.setTimeout(resolve, 600));
+    }
+  }
+
+  throw lastError;
 }
 
 export const googleProvider = new GoogleAuthProvider();
@@ -126,7 +173,8 @@ export function authErrorMessage(code) {
     'auth/operation-not-allowed': 'Den här inloggningsmetoden är inte aktiverad i Firebase.',
     'auth/too-many-requests': 'För många försök. Försök igen om en stund.',
     'auth/unauthorized-domain': 'Den här webbplatsen är inte tillåten för inloggning. Kontakta support.',
-    'auth/network-request-failed': 'Nätverksfel. Kontrollera din anslutning och försök igen.',
+    'auth/network-request-failed':
+      'Kunde inte nå inloggningstjänsten. Ladda om sidan och försök igen. Om felet kvarstår: stäng av adblocker och testa i ett annat webbläsarfönster.',
   };
   return messages[code] || 'Något gick fel. Försök igen.';
 }
@@ -245,6 +293,35 @@ export function setGoogleLoading(button, loading) {
   }
 }
 
+function shouldShowRedirectError(error, pendingGoogle) {
+  if (!error?.code) return pendingGoogle;
+  if (pendingGoogle) return true;
+  if (error.code === 'auth/network-request-failed') return false;
+  if (error.code === 'auth/no-auth-event') return false;
+  return true;
+}
+
+async function finishGoogleRedirect(auth) {
+  const pendingGoogle = hasGoogleRedirectPending();
+  try {
+    const result = await getRedirectResult(auth);
+    consumeGoogleRedirectPending();
+    if (result?.user) {
+      await redirectAfterAuth(result.user);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    consumeGoogleRedirectPending();
+    if (shouldShowRedirectError(error, pendingGoogle)) {
+      showAuthError(authErrorMessage(error.code) || 'Google-inloggningen misslyckades. Försök igen.');
+    } else {
+      console.warn('Google redirect result skipped:', error?.code || error);
+    }
+    return false;
+  }
+}
+
 export async function initAuthPage() {
   if (!isFirebaseConfigured()) {
     showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
@@ -252,26 +329,13 @@ export async function initAuthPage() {
   }
 
   try {
-    await ensureAuthPersistence();
-    const auth = getFirebaseAuth();
+    const auth = await ensureAuthPersistence();
 
-    try {
-      const result = await getRedirectResult(auth);
-      if (result?.user) {
-        await redirectAfterAuth(result.user);
-        return;
-      }
-    } catch (error) {
-      if (error?.code) {
-        showAuthError(authErrorMessage(error.code));
-      } else {
-        console.error('Google redirect sign-in failed:', error);
-        showAuthError('Google-inloggningen misslyckades. Försök igen.');
-      }
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) await redirectAfterAuth(user);
+    finishGoogleRedirect(auth).then((handled) => {
+      if (handled) return;
+      onAuthStateChanged(auth, async (user) => {
+        if (user) await redirectAfterAuth(user);
+      });
     });
   } catch (err) {
     console.error('Firebase auth init failed:', err);

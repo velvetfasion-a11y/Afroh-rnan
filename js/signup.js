@@ -13,7 +13,8 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js?v=10';
+  markGoogleRedirectPending,
+} from './firebase-auth.js?v=12';
 
 initAuthPage();
 
@@ -28,6 +29,7 @@ document.getElementById('googleSignup').addEventListener('click', async () => {
   setGoogleLoading(button, true);
   try {
     await ensureAuthPersistence();
+    markGoogleRedirectPending();
     await signInWithRedirect(getFirebaseAuth(), googleProvider);
   } catch (error) {
     showAuthError(authErrorMessage(error.code));

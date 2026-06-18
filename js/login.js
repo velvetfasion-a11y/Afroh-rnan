@@ -1,7 +1,7 @@
 import {
   getFirebaseAuth,
   googleProvider,
-  signInWithEmailAndPassword,
+  signInWithEmailPassword,
   signInWithRedirect,
   authErrorMessage,
   redirectAfterAuth,
@@ -12,7 +12,8 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js?v=10';
+  markGoogleRedirectPending,
+} from './firebase-auth.js?v=12';
 
 initAuthPage();
 
@@ -27,6 +28,7 @@ document.getElementById('googleLogin').addEventListener('click', async () => {
   setGoogleLoading(button, true);
   try {
     await ensureAuthPersistence();
+    markGoogleRedirectPending();
     await signInWithRedirect(getFirebaseAuth(), googleProvider);
   } catch (error) {
     showAuthError(authErrorMessage(error.code));
@@ -49,8 +51,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   setButtonLoading(button, true, 'Loggar in…');
   try {
-    await ensureAuthPersistence();
-    const result = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    const result = await signInWithEmailPassword(email, password);
     await redirectAfterAuth(result.user);
   } catch (error) {
     console.error('Email sign-in failed:', error?.code, error?.message);
