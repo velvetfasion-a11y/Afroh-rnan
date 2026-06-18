@@ -189,10 +189,15 @@
     window.location.href = `mailto:info@afrohornan.com?subject=${subject}&body=${body}`;
   }
 
+  function buildReturnUrl(options = {}) {
+    const param = options.fulfillment === 'pickup' ? 'pickup=success' : 'checkout=success';
+    return `${window.location.origin}${window.location.pathname}?${param}`;
+  }
+
   function buildConfirmParams(customer, options = {}) {
     const isPickup = options.fulfillment === 'pickup';
     const params = {
-      return_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
+      return_url: buildReturnUrl(options),
       receipt_email: customer.email,
     };
 
@@ -223,13 +228,97 @@
     return params;
   }
 
+  function showOrderSuccessBanner(type) {
+    const header = document.querySelector('.cart-header');
+    const emptyEl = document.getElementById('cart-empty');
+    const contentEl = document.getElementById('cart-content');
+
+    hidePanels();
+    if (contentEl) contentEl.hidden = true;
+    if (emptyEl) emptyEl.hidden = true;
+
+    let banner = document.getElementById('order-success-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'order-success-banner';
+      banner.className = 'checkout-success checkout-success-panel';
+      header?.insertAdjacentElement('afterend', banner);
+    }
+
+    banner.hidden = false;
+    banner.textContent = type === 'pickup'
+      ? 'Tack! Vi förbereder din order för hämtning. Du får bekräftelse via e-post.'
+      : 'Tack för din beställning! Du får en bekräftelse via e-post.';
+    banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetDeliveryPayment() {
+    paymentReady = false;
+    stripe = null;
+    elements = null;
+    clearPaymentMount(expressMount);
+    clearPaymentMount(paymentMount);
+    if (paymentWrap) paymentWrap.hidden = true;
+    if (continueBtn) {
+      continueBtn.hidden = false;
+      continueBtn.textContent = 'Fortsätt till betalning';
+    }
+    if (payBtn) payBtn.hidden = true;
+  }
+
+  function resetPickupPayment() {
+    pickupPaymentReady = false;
+    pickupStripe = null;
+    pickupElements = null;
+    clearPaymentMount(pickupExpressMount);
+    clearPaymentMount(pickupPaymentMount);
+    if (pickupPaymentWrap) pickupPaymentWrap.hidden = true;
+    if (pickupSubmitBtn) {
+      pickupSubmitBtn.hidden = false;
+      pickupSubmitBtn.textContent = 'Fortsätt till betalning';
+    }
+  }
+
+  function showReturnError(fulfillment, message) {
+    if (fulfillment === 'pickup') {
+      resetPickupPayment();
+      openPanel(pickupPanel);
+      showPickupError(message);
+    } else {
+      resetDeliveryPayment();
+      openPanel(panel);
+      showError(message);
+    }
+  }
+
+  async function processPayment(stripeClient, stripeElements, customer, options, onError) {
+    const { error, paymentIntent } = await stripeClient.confirmPayment({
+      elements: stripeElements,
+      confirmParams: buildConfirmParams(customer, options),
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      onError(error.message || 'Betalningen misslyckades.');
+      return false;
+    }
+
+    if (paymentIntent?.status === 'succeeded') {
+      AfroCart.clear();
+      showOrderSuccessBanner(options.fulfillment === 'pickup' ? 'pickup' : 'delivery');
+      return true;
+    }
+
+    return false;
+  }
+
   function clearPaymentMount(target) {
     if (!target) return;
     target.innerHTML = '';
     delete target.dataset.mounted;
   }
 
-  function mountExpressCheckout(stripeClient, stripeElements, expressTarget, confirmParams, onError) {
+  function mountExpressCheckout(stripeClient, stripeElements, expressTarget, customer, options, onError) {
     if (!expressTarget) return;
 
     clearPaymentMount(expressTarget);
@@ -252,11 +341,26 @@
     });
 
     express.on('confirm', async () => {
-      const { error } = await stripeClient.confirmPayment({
-        elements: stripeElements,
-        confirmParams,
-      });
-      if (error) onError(error.message || 'Betalningen misslyckades.');
+      await processPayment(stripeClient, stripeElements, customer, options, onError);
+    });
+
+    express.on('ready', ({ availablePaymentMethods }) => {
+      const hasExpress =
+        availablePaymentMethods?.applePay ||
+        availablePaymentMethods?.googlePay ||
+        availablePaymentMethods?.link;
+      const section = expressTarget.closest('.checkout-payment');
+      const label = section?.querySelector('.checkout-payment-label');
+      const divider = section?.querySelector('.checkout-payment-divider');
+      if (!hasExpress) {
+        expressTarget.hidden = true;
+        if (label) label.hidden = true;
+        if (divider) divider.hidden = true;
+      } else {
+        expressTarget.hidden = false;
+        if (label) label.hidden = false;
+        if (divider) divider.hidden = false;
+      }
     });
 
     express.mount(expressTarget);
@@ -308,13 +412,12 @@
       },
     });
 
-    const confirmParams = buildConfirmParams(customer, options);
     const onPaymentError = (message) => {
       if (isPickup) showPickupError(message);
       else showError(message);
     };
 
-    mountExpressCheckout(stripeClient, stripeElements, expressTarget, confirmParams, onPaymentError);
+    mountExpressCheckout(stripeClient, stripeElements, expressTarget, customer, options, onPaymentError);
     mountPaymentElement(stripeElements, paymentTarget);
 
     if (isPickup) {
@@ -391,8 +494,16 @@
     }
   });
 
-  form.addEventListener('submit', async (event) => {
+  form.addEventListener('submit', (event) => {
     event.preventDefault();
+    if (!paymentReady) {
+      continueBtn?.click();
+      return;
+    }
+    payBtn?.click();
+  });
+
+  payBtn?.addEventListener('click', async () => {
     showError('');
 
     const customer = readCustomer();
@@ -402,7 +513,7 @@
       return;
     }
 
-    if (!paymentReady) {
+    if (!paymentReady || !stripe || !elements) {
       continueBtn?.click();
       return;
     }
@@ -411,14 +522,7 @@
     payBtn.textContent = 'Betalar…';
 
     try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: buildConfirmParams(customer),
-      });
-
-      if (error) {
-        showError(error.message || 'Betalningen misslyckades.');
-      }
+      await processPayment(stripe, elements, customer, { fulfillment: 'delivery' }, showError);
     } catch (err) {
       showError(err.message || 'Något gick fel.');
     } finally {
@@ -491,17 +595,13 @@
 
     try {
       const customer = pickupCustomer(pickup);
-      const { error } = await pickupStripe.confirmPayment({
-        elements: pickupElements,
-        confirmParams: buildConfirmParams(customer, {
-          fulfillment: 'pickup',
-          pickupStore: pickup.store,
-        }),
-      });
-
-      if (error) {
-        showPickupError(error.message || 'Betalningen misslyckades.');
-      }
+      await processPayment(
+        pickupStripe,
+        pickupElements,
+        customer,
+        { fulfillment: 'pickup', pickupStore: pickup.store },
+        showPickupError,
+      );
     } catch (err) {
       showPickupError(err.message || 'Något gick fel.');
     } finally {
@@ -510,28 +610,32 @@
     }
   });
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('checkout') === 'success') {
-    AfroCart.clear();
-    window.history.replaceState({}, '', 'kundvagn.html');
-    const content = document.getElementById('cart-content');
-    if (content) {
-      content.insertAdjacentHTML(
-        'afterbegin',
-        '<p class="checkout-success">Tack för din beställning! Du får en bekräftelse via e-post.</p>',
+  function handlePaymentReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const redirectStatus = params.get('redirect_status');
+    const fulfillment = params.get('pickup') === 'success'
+      ? 'pickup'
+      : params.get('checkout') === 'success'
+        ? 'delivery'
+        : null;
+
+    if (!fulfillment || !params.has('payment_intent')) return;
+
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (redirectStatus !== 'succeeded') {
+      showReturnError(
+        fulfillment,
+        redirectStatus === 'failed'
+          ? 'Betalningen misslyckades. Försök igen.'
+          : 'Betalningen kunde inte slutföras.',
       );
+      return;
     }
+
+    AfroCart.clear();
+    showOrderSuccessBanner(fulfillment);
   }
 
-  if (params.get('pickup') === 'success') {
-    AfroCart.clear();
-    window.history.replaceState({}, '', 'kundvagn.html');
-    const content = document.getElementById('cart-content');
-    if (content) {
-      content.insertAdjacentHTML(
-        'afterbegin',
-        '<p class="checkout-success">Tack! Vi förbereder din order för hämtning. Vi ringer dig när den är redo.</p>',
-      );
-    }
-  }
+  handlePaymentReturn();
 })();

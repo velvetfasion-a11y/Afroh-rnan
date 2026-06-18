@@ -405,6 +405,11 @@
   font-size: .88rem;
 }
 
+.checkout-success-panel {
+  margin: 0 0 1.5rem;
+  max-width: 720px;
+}
+
 .cart-btn-pickup {
   background: linear-gradient(135deg, var(--brown) 0%, #4a2f22 100%);
 }
