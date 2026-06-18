@@ -100,8 +100,9 @@
         </div>
 
         <div id="checkout-payment" class="checkout-payment" hidden>
-          <p class="checkout-payment-label">Betalning</p>
-          <div id="express-checkout-element" class="checkout-express"></div>
+          <p class="checkout-payment-label">Snabb betalning</p>
+          <div id="express-checkout-element" class="checkout-express" aria-label="Apple Pay och Google Pay"></div>
+          <p class="checkout-payment-divider">eller betala med kort</p>
           <div id="payment-element" class="checkout-stripe-element"></div>
         </div>
 
@@ -114,7 +115,7 @@
 
     <section id="pickup-panel" class="checkout-panel pickup-panel" hidden>
       <h2>Hämta i butik</h2>
-      <p class="checkout-lead">Välj butik, ange dina uppgifter och betala online. Vi förbereder ordern till hämtning.</p>
+      <p class="checkout-lead">Välj butik, ange dina uppgifter och betala med Apple Pay eller kort.</p>
 
       <form id="pickup-form" class="checkout-form" novalidate>
         <div class="checkout-grid">
@@ -147,8 +148,9 @@
         </fieldset>
 
         <div id="pickup-payment" class="checkout-payment" hidden>
-          <p class="checkout-payment-label">Betalning</p>
-          <div id="pickup-express-checkout-element" class="checkout-express"></div>
+          <p class="checkout-payment-label">Snabb betalning</p>
+          <div id="pickup-express-checkout-element" class="checkout-express" aria-label="Apple Pay och Google Pay"></div>
+          <p class="checkout-payment-divider">eller betala med kort</p>
           <div id="pickup-payment-element" class="checkout-stripe-element"></div>
         </div>
 
@@ -175,7 +177,7 @@
 <script src="js/firebase-config.js?v=10"></script>
 <script src="js/store-stock.js"></script>
 <script src="js/stripe-config.js"></script>
-<script src="js/checkout.js?v=11"></script>
+<script src="js/checkout.js?v=12"></script>
 <script src="js/admin-gate.js?v=11"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>

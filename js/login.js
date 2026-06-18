@@ -1,19 +1,24 @@
 import {
-  getFirebaseAuth,
-  googleProvider,
   signInWithEmailPassword,
-  signInWithRedirect,
+  signInWithGoogle,
+  sendPasswordReset,
   authErrorMessage,
   redirectAfterAuth,
   showAuthError,
+  showAuthSuccess,
   clearAuthError,
   setButtonLoading,
   setGoogleLoading,
   initAuthPage,
   isFirebaseConfigured,
-  ensureAuthPersistence,
-  markGoogleRedirectPending,
-} from './firebase-auth.js?v=12';
+} from './firebase-auth.js?v=14';
+
+const forgotWrap = document.getElementById('forgotPasswordWrap');
+const forgotBtn = document.getElementById('forgotPasswordBtn');
+
+function showForgotPassword() {
+  forgotWrap?.removeAttribute('hidden');
+}
 
 initAuthPage();
 
@@ -27,12 +32,34 @@ document.getElementById('googleLogin').addEventListener('click', async () => {
 
   setGoogleLoading(button, true);
   try {
-    await ensureAuthPersistence();
-    markGoogleRedirectPending();
-    await signInWithRedirect(getFirebaseAuth(), googleProvider);
+    const user = await signInWithGoogle();
+    if (user) await redirectAfterAuth(user);
   } catch (error) {
-    showAuthError(authErrorMessage(error.code));
+    console.error('Google sign-in failed:', error?.code, error?.message);
+    showAuthError(authErrorMessage(error?.code));
+  } finally {
     setGoogleLoading(button, false);
+  }
+});
+
+forgotBtn?.addEventListener('click', async () => {
+  clearAuthError();
+  const email = document.getElementById('email').value.trim();
+  if (!email) {
+    showAuthError('Ange din e-postadress ovan först.');
+    document.getElementById('email').focus();
+    return;
+  }
+
+  forgotBtn.disabled = true;
+  try {
+    await sendPasswordReset(email);
+    showAuthSuccess('Vi har skickat en länk för att återställa lösenordet om kontot finns.');
+  } catch (error) {
+    console.error('Password reset failed:', error?.code, error?.message);
+    showAuthError(authErrorMessage(error?.code));
+  } finally {
+    forgotBtn.disabled = false;
   }
 });
 
@@ -55,7 +82,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     await redirectAfterAuth(result.user);
   } catch (error) {
     console.error('Email sign-in failed:', error?.code, error?.message);
-    showAuthError(authErrorMessage(error.code));
+    showAuthError(authErrorMessage(error?.code));
+    showForgotPassword();
   } finally {
     setButtonLoading(button, false);
   }

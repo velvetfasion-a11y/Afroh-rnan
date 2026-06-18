@@ -15,6 +15,7 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   signOut,
+  sendPasswordResetEmail,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { isAdminUser } from './admin-check.js?v=11';
@@ -40,6 +41,53 @@ let persistenceReady = false;
 
 const GOOGLE_REDIRECT_KEY = 'afroPendingGoogleRedirect';
 
+let authBootstrapPromise = null;
+
+export function bootstrapAuth() {
+  if (authBootstrapPromise) return authBootstrapPromise;
+
+  authBootstrapPromise = (async () => {
+    if (!isFirebaseConfigured()) return { auth: null, redirectHandled: false };
+
+    const authInstance = await ensureAuthPersistence();
+    let redirectHandled = false;
+
+    try {
+      redirectHandled = await finishGoogleRedirect(authInstance);
+    } catch (err) {
+      console.error('Google redirect bootstrap failed:', err);
+    }
+
+    return { auth: authInstance, redirectHandled };
+  })();
+
+  return authBootstrapPromise;
+}
+
+function isMobileDevice() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
+export async function signInWithGoogle() {
+  const authInstance = await ensureAuthPersistence();
+  if (isMobileDevice()) {
+    markGoogleRedirectPending();
+    await signInWithRedirect(authInstance, googleProvider);
+    return null;
+  }
+  const result = await signInWithPopup(authInstance, googleProvider);
+  return result.user;
+}
+
+export function resetGoogleButton(buttonId = 'googleLogin') {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+  button.disabled = false;
+  const label = button.querySelector('.btn-google-label');
+  if (label?.dataset.originalText) {
+    label.textContent = label.dataset.originalText;
+  }
+}
 export function markGoogleRedirectPending() {
   try {
     sessionStorage.setItem(GOOGLE_REDIRECT_KEY, '1');
@@ -143,6 +191,20 @@ export async function signInWithEmailPassword(email, password) {
   throw lastError;
 }
 
+export async function sendPasswordReset(email) {
+  const authInstance = await ensureAuthPersistence();
+  const trimmed = String(email || '').trim();
+  if (!trimmed) {
+    const err = new Error('Missing email');
+    err.code = 'auth/missing-email';
+    throw err;
+  }
+
+  await sendPasswordResetEmail(authInstance, trimmed, {
+    url: `${window.location.origin}${window.location.pathname}`,
+  });
+}
+
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -175,6 +237,10 @@ export function authErrorMessage(code) {
     'auth/unauthorized-domain': 'Den här webbplatsen är inte tillåten för inloggning. Kontakta support.',
     'auth/network-request-failed':
       'Kunde inte nå inloggningstjänsten. Ladda om sidan och försök igen. Om felet kvarstår: stäng av adblocker och testa i ett annat webbläsarfönster.',
+    'auth/internal-error': 'Inloggningen kunde inte slutföras. Ladda om sidan och försök igen.',
+    'auth/missing-or-invalid-nonce': 'Inloggningssessionen gick ut. Ladda om sidan och försök igen.',
+    'auth/web-storage-unsupported': 'Webbläsaren blockerar lagring som krävs för inloggning. Tillåt cookies och försök igen.',
+    'auth/missing-email': 'Ange din e-postadress först.',
   };
   return messages[code] || 'Något gick fel. Försök igen.';
 }
@@ -222,9 +288,10 @@ export function wireNavProfile(options = {}) {
   const { basePath = '' } = options;
   if (!isFirebaseConfigured()) return;
 
-  ensureAuthPersistence()
-    .then(() => {
-      onAuthStateChanged(getFirebaseAuth(), async (user) => {
+  bootstrapAuth()
+    .then(({ auth: authInstance }) => {
+      if (!authInstance) return;
+      onAuthStateChanged(authInstance, async (user) => {
         let href;
         let label;
         try {
@@ -255,6 +322,23 @@ export function wireNavProfile(options = {}) {
 
 export function showAuthError(message) {
   const el = document.getElementById('authError');
+  const success = document.getElementById('authSuccess');
+  if (success) {
+    success.textContent = '';
+    success.hidden = true;
+  }
+  if (!el) return;
+  el.textContent = message;
+  el.hidden = false;
+}
+
+export function showAuthSuccess(message) {
+  const el = document.getElementById('authSuccess');
+  const error = document.getElementById('authError');
+  if (error) {
+    error.textContent = '';
+    error.hidden = true;
+  }
   if (!el) return;
   el.textContent = message;
   el.hidden = false;
@@ -262,9 +346,15 @@ export function showAuthError(message) {
 
 export function clearAuthError() {
   const el = document.getElementById('authError');
-  if (!el) return;
-  el.textContent = '';
-  el.hidden = true;
+  const success = document.getElementById('authSuccess');
+  if (el) {
+    el.textContent = '';
+    el.hidden = true;
+  }
+  if (success) {
+    success.textContent = '';
+    success.hidden = true;
+  }
 }
 
 export function setButtonLoading(button, loading, loadingText) {
@@ -294,10 +384,11 @@ export function setGoogleLoading(button, loading) {
 }
 
 function shouldShowRedirectError(error, pendingGoogle) {
-  if (!error?.code) return pendingGoogle;
-  if (pendingGoogle) return true;
+  if (!pendingGoogle) return false;
+  if (!error?.code) return false;
   if (error.code === 'auth/network-request-failed') return false;
   if (error.code === 'auth/no-auth-event') return false;
+  if (error.code === 'auth/internal-error') return false;
   return true;
 }
 
@@ -313,33 +404,35 @@ async function finishGoogleRedirect(auth) {
     return false;
   } catch (error) {
     consumeGoogleRedirectPending();
+    console.warn('Google redirect result:', error?.code, error?.message);
     if (shouldShowRedirectError(error, pendingGoogle)) {
-      showAuthError(authErrorMessage(error.code) || 'Google-inloggningen misslyckades. Försök igen.');
-    } else {
-      console.warn('Google redirect result skipped:', error?.code || error);
+      showAuthError(authErrorMessage(error.code));
     }
     return false;
   }
 }
 
-export async function initAuthPage() {
+export async function initAuthPage(options = {}) {
+  const googleButtonId = options.googleButtonId || 'googleLogin';
+  resetGoogleButton(googleButtonId);
+  clearAuthError();
+
   if (!isFirebaseConfigured()) {
     showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
   try {
-    const auth = await ensureAuthPersistence();
+    const { auth: authInstance, redirectHandled } = await bootstrapAuth();
+    if (!authInstance || redirectHandled) return;
 
-    finishGoogleRedirect(auth).then((handled) => {
-      if (handled) return;
-      onAuthStateChanged(auth, async (user) => {
-        if (user) await redirectAfterAuth(user);
-      });
+    onAuthStateChanged(authInstance, async (user) => {
+      if (user) await redirectAfterAuth(user);
     });
   } catch (err) {
     console.error('Firebase auth init failed:', err);
     showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan.');
+    resetGoogleButton(googleButtonId);
   }
 }
 

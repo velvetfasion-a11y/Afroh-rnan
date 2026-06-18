@@ -51,6 +51,11 @@
   border-top: 1px solid #E8E0D5;
   border-bottom: 1px solid #E8E0D5;
 }
+.product-grid--sparse {
+  background: #fff;
+  border-top-color: #fff;
+  border-bottom-color: #fff;
+}
 .pcard {
   background: #fff;
   cursor: pointer;

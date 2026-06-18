@@ -369,6 +369,13 @@
   min-height: 48px;
 }
 
+.checkout-payment-divider {
+  font-size: .78rem;
+  color: var(--muted);
+  text-align: center;
+  margin: .35rem 0 .85rem;
+}
+
 .checkout-stripe-element {
   margin-bottom: .5rem;
 }

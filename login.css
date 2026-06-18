@@ -169,6 +169,46 @@
 
 .auth-error[hidden] { display: none; }
 
+.auth-success {
+  margin-bottom: 1rem;
+  padding: .75rem .9rem;
+  border-radius: 6px;
+  background: rgba(44, 90, 56, .08);
+  border: 1px solid rgba(44, 90, 56, .2);
+  color: var(--green);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.auth-success[hidden] { display: none; }
+
+.auth-forgot {
+  margin: -.35rem 0 .85rem;
+  text-align: right;
+}
+
+.auth-forgot-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--rust);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-forgot-link:hover {
+  color: #a04316;
+}
+
+.auth-forgot-link:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
 .auth-submit:disabled,
 .btn-google:disabled {
   opacity: .7;

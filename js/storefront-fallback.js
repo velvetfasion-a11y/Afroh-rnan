@@ -123,10 +123,35 @@
     return el && el.querySelector('.pcard');
   }
 
+  function syncProductGridBackground(grid) {
+    if (!grid) return;
+    var count = grid.querySelectorAll('.pcard').length;
+    if (!count) {
+      grid.classList.add('product-grid--sparse');
+      return;
+    }
+    var cols = getComputedStyle(grid).gridTemplateColumns
+      .split(' ')
+      .filter(function (track) { return track && track !== '0px'; }).length || 1;
+    var rows = Math.ceil(count / cols);
+    grid.classList.toggle('product-grid--sparse', count < rows * cols);
+  }
+
+  function observeProductGrid(grid) {
+    syncProductGridBackground(grid);
+    if (!grid || grid.dataset.gridObserved) return;
+    grid.dataset.gridObserved = '1';
+    if (typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(function () { syncProductGridBackground(grid); }).observe(grid);
+  }
+
+  window.AfroObserveProductGrid = observeProductGrid;
+
   function renderGrid(el, products) {
     if (!el || gridHasProducts(el)) return;
     if (!products.length) {
       el.innerHTML = '<p class="shop-empty">Inga produkter i denna kategori just nu.</p>';
+      observeProductGrid(el);
       return;
     }
     el.innerHTML = products.map(cardHtml).join('');
@@ -135,6 +160,7 @@
       card.classList.add('pcard-visible');
       card.style.opacity = '1';
     });
+    observeProductGrid(el);
   }
 
   function boot() {

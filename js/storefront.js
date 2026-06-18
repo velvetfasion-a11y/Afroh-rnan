@@ -87,6 +87,30 @@ function createProductCard(product) {
   return card;
 }
 
+function syncProductGridBackground(grid) {
+  if (!grid) return;
+  const count = grid.querySelectorAll('.pcard').length;
+  if (!count) {
+    grid.classList.add('product-grid--sparse');
+    return;
+  }
+  const cols = getComputedStyle(grid).gridTemplateColumns
+    .split(' ')
+    .filter((track) => track && track !== '0px').length || 1;
+  const rows = Math.ceil(count / cols);
+  grid.classList.toggle('product-grid--sparse', count < rows * cols);
+}
+
+const gridObservers = new WeakMap();
+
+function observeProductGrid(grid) {
+  syncProductGridBackground(grid);
+  if (gridObservers.has(grid)) return;
+  const observer = new ResizeObserver(() => syncProductGridBackground(grid));
+  observer.observe(grid);
+  gridObservers.set(grid, observer);
+}
+
 function renderProductGrid(grid, products) {
   grid.replaceChildren();
   if (!products.length) {
@@ -94,9 +118,11 @@ function renderProductGrid(grid, products) {
     empty.className = 'shop-empty';
     empty.textContent = 'Inga produkter i denna kategori just nu.';
     grid.appendChild(empty);
+    observeProductGrid(grid);
     return;
   }
   products.forEach((product) => grid.appendChild(createProductCard(product)));
+  observeProductGrid(grid);
 }
 
 function afterGridRender(grid) {
@@ -225,3 +251,5 @@ function loadStorefront() {
 }
 
 loadStorefront();
+
+window.AfroObserveProductGrid = observeProductGrid;

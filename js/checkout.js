@@ -189,6 +189,98 @@
     window.location.href = `mailto:info@afrohornan.com?subject=${subject}&body=${body}`;
   }
 
+  function buildConfirmParams(customer, options = {}) {
+    const isPickup = options.fulfillment === 'pickup';
+    const params = {
+      return_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
+      receipt_email: customer.email,
+    };
+
+    if (isPickup) {
+      params.payment_method_data = {
+        billing_details: {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+        },
+      };
+    } else {
+      params.payment_method_data = {
+        billing_details: {
+          name: customer.name || undefined,
+          email: customer.email,
+          phone: customer.phone,
+          address: {
+            line1: customer.address,
+            postal_code: customer.postal,
+            city: customer.city,
+            country: 'SE',
+          },
+        },
+      };
+    }
+
+    return params;
+  }
+
+  function clearPaymentMount(target) {
+    if (!target) return;
+    target.innerHTML = '';
+    delete target.dataset.mounted;
+  }
+
+  function mountExpressCheckout(stripeClient, stripeElements, expressTarget, confirmParams, onError) {
+    if (!expressTarget) return;
+
+    clearPaymentMount(expressTarget);
+
+    const express = stripeElements.create('expressCheckout', {
+      buttonHeight: 48,
+      buttonType: {
+        applePay: 'buy',
+        googlePay: 'buy',
+      },
+      paymentMethods: {
+        applePay: 'always',
+        googlePay: 'auto',
+        link: 'auto',
+      },
+      layout: {
+        maxColumns: 1,
+        maxRows: 2,
+      },
+    });
+
+    express.on('confirm', async () => {
+      const { error } = await stripeClient.confirmPayment({
+        elements: stripeElements,
+        confirmParams,
+      });
+      if (error) onError(error.message || 'Betalningen misslyckades.');
+    });
+
+    express.mount(expressTarget);
+    expressTarget.dataset.mounted = '1';
+  }
+
+  function mountPaymentElement(stripeElements, paymentTarget) {
+    if (!paymentTarget) return;
+
+    clearPaymentMount(paymentTarget);
+
+    const payment = stripeElements.create('payment', {
+      wallets: {
+        applePay: 'auto',
+        googlePay: 'auto',
+      },
+      layout: {
+        type: 'tabs',
+      },
+    });
+    payment.mount(paymentTarget);
+    paymentTarget.dataset.mounted = '1';
+  }
+
   async function setupPayment(customer, options = {}) {
     const config = window.stripeConfig || {};
     if (!config.configured || !config.publishableKey) {
@@ -216,24 +308,14 @@
       },
     });
 
-    if (expressTarget && !expressTarget.dataset.mounted) {
-      const express = stripeElements.create('expressCheckout', {
-        buttonHeight: 48,
-        paymentMethods: {
-          applePay: 'auto',
-          googlePay: 'auto',
-          link: 'auto',
-        },
-      });
-      express.mount(expressTarget);
-      expressTarget.dataset.mounted = '1';
-    }
+    const confirmParams = buildConfirmParams(customer, options);
+    const onPaymentError = (message) => {
+      if (isPickup) showPickupError(message);
+      else showError(message);
+    };
 
-    if (paymentTarget && !paymentTarget.dataset.mounted) {
-      const payment = stripeElements.create('payment');
-      payment.mount(paymentTarget);
-      paymentTarget.dataset.mounted = '1';
-    }
+    mountExpressCheckout(stripeClient, stripeElements, expressTarget, confirmParams, onPaymentError);
+    mountPaymentElement(stripeElements, paymentTarget);
 
     if (isPickup) {
       pickupStripe = stripeClient;
@@ -249,6 +331,17 @@
   checkoutBtn.addEventListener('click', () => {
     if (!AfroCart.getItems().length) return;
     showError('');
+    paymentReady = false;
+    stripe = null;
+    elements = null;
+    clearPaymentMount(expressMount);
+    clearPaymentMount(paymentMount);
+    if (paymentWrap) paymentWrap.hidden = true;
+    if (continueBtn) {
+      continueBtn.hidden = false;
+      continueBtn.textContent = 'Fortsätt till betalning';
+    }
+    if (payBtn) payBtn.hidden = true;
     openPanel(panel);
   });
 
@@ -258,8 +351,8 @@
     pickupPaymentReady = false;
     pickupStripe = null;
     pickupElements = null;
-    if (pickupExpressMount) delete pickupExpressMount.dataset.mounted;
-    if (pickupPaymentMount) delete pickupPaymentMount.dataset.mounted;
+    clearPaymentMount(pickupExpressMount);
+    clearPaymentMount(pickupPaymentMount);
     if (pickupPaymentWrap) pickupPaymentWrap.hidden = true;
     if (pickupSubmitBtn) {
       pickupSubmitBtn.hidden = false;
@@ -320,23 +413,7 @@
     try {
       const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          return_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
-          receipt_email: customer.email,
-          payment_method_data: {
-            billing_details: {
-              name: customer.name || undefined,
-              email: customer.email,
-              phone: customer.phone,
-              address: {
-                line1: customer.address,
-                postal_code: customer.postal,
-                city: customer.city,
-                country: 'SE',
-              },
-            },
-          },
-        },
+        confirmParams: buildConfirmParams(customer),
       });
 
       if (error) {
@@ -416,17 +493,10 @@
       const customer = pickupCustomer(pickup);
       const { error } = await pickupStripe.confirmPayment({
         elements: pickupElements,
-        confirmParams: {
-          return_url: `${window.location.origin}${window.location.pathname}?checkout=success`,
-          receipt_email: customer.email,
-          payment_method_data: {
-            billing_details: {
-              name: customer.name,
-              email: customer.email,
-              phone: customer.phone,
-            },
-          },
-        },
+        confirmParams: buildConfirmParams(customer, {
+          fulfillment: 'pickup',
+          pickupStore: pickup.store,
+        }),
       });
 
       if (error) {

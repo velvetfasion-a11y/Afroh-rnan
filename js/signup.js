@@ -1,8 +1,7 @@
 import {
   getFirebaseAuth,
-  googleProvider,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithGoogle,
   updateProfile,
   authErrorMessage,
   redirectAfterAuth,
@@ -13,10 +12,9 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-  markGoogleRedirectPending,
-} from './firebase-auth.js?v=12';
+} from './firebase-auth.js?v=13';
 
-initAuthPage();
+initAuthPage({ googleButtonId: 'googleSignup' });
 
 document.getElementById('googleSignup').addEventListener('click', async () => {
   clearAuthError();
@@ -28,11 +26,12 @@ document.getElementById('googleSignup').addEventListener('click', async () => {
 
   setGoogleLoading(button, true);
   try {
-    await ensureAuthPersistence();
-    markGoogleRedirectPending();
-    await signInWithRedirect(getFirebaseAuth(), googleProvider);
+    const user = await signInWithGoogle();
+    if (user) await redirectAfterAuth(user);
   } catch (error) {
-    showAuthError(authErrorMessage(error.code));
+    console.error('Google sign-up failed:', error?.code, error?.message);
+    showAuthError(authErrorMessage(error?.code));
+  } finally {
     setGoogleLoading(button, false);
   }
 });
@@ -60,7 +59,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     }
     await redirectAfterAuth(credential.user);
   } catch (error) {
-    showAuthError(authErrorMessage(error.code));
+    showAuthError(authErrorMessage(error?.code));
   } finally {
     setButtonLoading(button, false);
   }
