@@ -438,17 +438,25 @@ footer a { color: var(--gold); text-decoration: none; }
       node.style.transform = 'none';
     });
   });
+  function isLocalDev() {
+    return /localhost|127\.0\.0\.1/.test(window.location.hostname);
+  }
+  function pageReloadHint() {
+    return isLocalDev()
+      ? 'Öppna http://localhost:8000 och tryck Cmd+Shift+R.'
+      : 'Ladda om sidan (Cmd+Shift+R).';
+  }
   window.addEventListener('error', function (e) {
     if (e.filename && /\/js\//.test(e.filename)) {
-      showPageError('Sidan kunde inte laddas helt. Öppna http://localhost:8000 och tryck Cmd+Shift+R.');
+      showPageError('Sidan kunde inte laddas helt. ' + pageReloadHint());
     }
   }, true);
   setTimeout(function () {
     var grid = document.getElementById('har-grid');
     if (grid && !grid.children.length) {
-      showPageError('Produkterna laddas inte. Öppna http://localhost:8000 (inte 8765) och ladda om sidan.');
+      showPageError('Produkterna laddas inte. ' + pageReloadHint());
     }
-  }, 4000);
+  }, 6000);
 })();
 </script>
 

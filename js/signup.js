@@ -13,7 +13,7 @@ import {
   guardAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js';
+} from './firebase-auth.js?v=2';
 
 guardAuthPage();
 

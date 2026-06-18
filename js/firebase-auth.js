@@ -40,7 +40,16 @@ export function getFirebaseAuth() {
 export async function ensureAuthPersistence() {
   if (persistenceReady) return getFirebaseAuth();
   const a = getFirebaseAuth();
-  await setPersistence(a, browserLocalPersistence);
+  try {
+    await Promise.race([
+      setPersistence(a, browserLocalPersistence),
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error('Auth persistence timeout')), 8000);
+      }),
+    ]);
+  } catch (err) {
+    console.warn('Auth persistence skipped:', err?.message || err);
+  }
   persistenceReady = true;
   return a;
 }
@@ -189,7 +198,7 @@ export function guardAuthPage() {
 }
 
 export function requireAuth(onUser, options = {}) {
-  const { onError } = options;
+  const { onError, onStateKnown } = options;
 
   if (!isFirebaseConfigured()) {
     if (onError) onError(new Error('Firebase är inte konfigurerat.'));
@@ -199,6 +208,7 @@ export function requireAuth(onUser, options = {}) {
   ensureAuthPersistence()
     .then(() => {
       onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        if (onStateKnown) onStateKnown(user);
         if (!user) {
           const page = window.location.pathname.split('/').pop() || 'profile.html';
           window.location.href = `login.html?next=${encodeURIComponent(page)}`;
