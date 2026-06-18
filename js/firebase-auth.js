@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   updateProfile,
   onAuthStateChanged,
@@ -101,6 +103,8 @@ export {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   updateProfile,
   onAuthStateChanged,
   signOut,
@@ -112,7 +116,7 @@ export function authErrorMessage(code) {
     'auth/user-disabled': 'Det här kontot är inaktiverat.',
     'auth/user-not-found': 'Inget konto hittades med den e-postadressen.',
     'auth/wrong-password': 'Fel lösenord.',
-    'auth/invalid-credential': 'Fel e-post eller lösenord.',
+    'auth/invalid-credential': 'Fel e-post eller lösenord. Har du inget konto? Registrera dig först.',
     'auth/email-already-in-use': 'E-postadressen används redan.',
     'auth/weak-password': 'Lösenordet måste vara minst 6 tecken.',
     'auth/popup-closed-by-user': 'Google-inloggningen avbröts.',
@@ -121,6 +125,8 @@ export function authErrorMessage(code) {
     'auth/account-exists-with-different-credential': 'E-postadressen är kopplad till ett annat inloggningssätt.',
     'auth/operation-not-allowed': 'Den här inloggningsmetoden är inte aktiverad i Firebase.',
     'auth/too-many-requests': 'För många försök. Försök igen om en stund.',
+    'auth/unauthorized-domain': 'Den här webbplatsen är inte tillåten för inloggning. Kontakta support.',
+    'auth/network-request-failed': 'Nätverksfel. Kontrollera din anslutning och försök igen.',
   };
   return messages[code] || 'Något gick fel. Försök igen.';
 }
@@ -228,22 +234,43 @@ export function setGoogleLoading(button, loading) {
   }
 }
 
-export function guardAuthPage() {
+export async function initAuthPage() {
   if (!isFirebaseConfigured()) {
     showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
-  ensureAuthPersistence()
-    .then(() => {
-      onAuthStateChanged(getFirebaseAuth(), async (user) => {
-        if (user) await redirectAfterAuth(user);
-      });
-    })
-    .catch((err) => {
-      console.error('Firebase auth init failed:', err);
-      showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan.');
+  try {
+    await ensureAuthPersistence();
+    const auth = getFirebaseAuth();
+
+    try {
+      const result = await getRedirectResult(auth);
+      if (result?.user) {
+        await redirectAfterAuth(result.user);
+        return;
+      }
+    } catch (error) {
+      if (error?.code) {
+        showAuthError(authErrorMessage(error.code));
+      } else {
+        console.error('Google redirect sign-in failed:', error);
+        showAuthError('Google-inloggningen misslyckades. Försök igen.');
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) await redirectAfterAuth(user);
     });
+  } catch (err) {
+    console.error('Firebase auth init failed:', err);
+    showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan.');
+  }
+}
+
+/** @deprecated Use initAuthPage */
+export function guardAuthPage() {
+  initAuthPage();
 }
 
 export function requireAuth(onUser, options = {}) {

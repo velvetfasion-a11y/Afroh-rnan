@@ -2,19 +2,19 @@ import {
   getFirebaseAuth,
   googleProvider,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   authErrorMessage,
   redirectAfterAuth,
   showAuthError,
   clearAuthError,
   setButtonLoading,
   setGoogleLoading,
-  guardAuthPage,
+  initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js?v=5';
+} from './firebase-auth.js?v=6';
 
-guardAuthPage();
+initAuthPage();
 
 document.getElementById('googleLogin').addEventListener('click', async () => {
   clearAuthError();
@@ -27,13 +27,9 @@ document.getElementById('googleLogin').addEventListener('click', async () => {
   setGoogleLoading(button, true);
   try {
     await ensureAuthPersistence();
-    const result = await signInWithPopup(getFirebaseAuth(), googleProvider);
-    await redirectAfterAuth(result.user);
+    await signInWithRedirect(getFirebaseAuth(), googleProvider);
   } catch (error) {
-    if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-      showAuthError(authErrorMessage(error.code));
-    }
-  } finally {
+    showAuthError(authErrorMessage(error.code));
     setGoogleLoading(button, false);
   }
 });
@@ -57,6 +53,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const result = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
     await redirectAfterAuth(result.user);
   } catch (error) {
+    console.error('Email sign-in failed:', error?.code, error?.message);
     showAuthError(authErrorMessage(error.code));
   } finally {
     setButtonLoading(button, false);

@@ -2,7 +2,7 @@ import {
   getFirebaseAuth,
   googleProvider,
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   updateProfile,
   authErrorMessage,
   redirectAfterAuth,
@@ -10,12 +10,12 @@ import {
   clearAuthError,
   setButtonLoading,
   setGoogleLoading,
-  guardAuthPage,
+  initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js?v=5';
+} from './firebase-auth.js?v=6';
 
-guardAuthPage();
+initAuthPage();
 
 document.getElementById('googleSignup').addEventListener('click', async () => {
   clearAuthError();
@@ -28,13 +28,9 @@ document.getElementById('googleSignup').addEventListener('click', async () => {
   setGoogleLoading(button, true);
   try {
     await ensureAuthPersistence();
-    const result = await signInWithPopup(getFirebaseAuth(), googleProvider);
-    await redirectAfterAuth(result.user);
+    await signInWithRedirect(getFirebaseAuth(), googleProvider);
   } catch (error) {
-    if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-      showAuthError(authErrorMessage(error.code));
-    }
-  } finally {
+    showAuthError(authErrorMessage(error.code));
     setGoogleLoading(button, false);
   }
 });
