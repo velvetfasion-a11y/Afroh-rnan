@@ -13,7 +13,7 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   ensureAuthPersistence,
-} from './firebase-auth.js?v=6';
+} from './firebase-auth.js?v=10';
 
 initAuthPage();
 

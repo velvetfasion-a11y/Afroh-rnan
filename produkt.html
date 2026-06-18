@@ -48,6 +48,13 @@
       <p class="product-brand">Laddar…</p>
       <h1>Produkt</h1>
       <p class="product-price">—</p>
+      <p class="product-colors-hint" id="productColorsHint" hidden>Finns i fler färger</p>
+
+      <div class="product-colors" id="productColors" hidden>
+        <p class="product-colors-label">Färg</p>
+        <div class="product-color-swatches" id="productColorSwatches" role="radiogroup" aria-label="Välj färg"></div>
+        <p class="product-color-selected" id="productColorSelected"></p>
+      </div>
 
       <hr class="product-divider">
 
@@ -66,8 +73,6 @@
       <button type="button" class="btn-buy-product" id="buyBtn">Köp nu</button>
     </div>
   </div>
-
-  <a href="kosmetika.html" class="back-shop">← Tillbaka till sortimentet</a>
 </main>
 
 <footer>
@@ -81,10 +86,10 @@
   const slug = new URLSearchParams(location.search).get('slug');
   if (slug) document.body.dataset.productSlug = slug;
 </script>
-<script src="js/firebase-config.js?v=2"></script>
+<script src="js/firebase-config.js?v=10"></script>
 <script src="js/admin-gate.js"></script>
 <script src="js/cart.js"></script>
-<script type="module" src="js/product-detail.js"></script>
+<script type="module" src="js/product-detail.js?v=10"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>
 </html>

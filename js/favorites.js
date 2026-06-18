@@ -32,6 +32,7 @@
         } else {
           localStorage.removeItem('fav-' + id);
         }
+        document.dispatchEvent(new CustomEvent('favorites:updated'));
       });
 
       img.appendChild(btn);

@@ -84,15 +84,54 @@ export async function saveProduct(productId, fields, imageFiles = []) {
     images.push(url);
   }
 
+  const colors = Array.isArray(fields.colors)
+    ? fields.colors
+        .map((color) => {
+          const stock = {
+            fittja: Math.max(0, Number(color.stock?.fittja ?? color.stockFittja) || 0),
+            marsta: Math.max(0, Number(color.stock?.marsta ?? color.stockMarsta) || 0),
+          };
+          const inventory = (stock.fittja || 0) + (stock.marsta || 0);
+          return {
+            id: color.id,
+            name: color.name,
+            hex: color.hex || '',
+            sku: color.sku || '',
+            price: color.price != null && color.price !== '' ? Number(color.price) : null,
+            inventory,
+            stock,
+            image: color.image || '',
+          };
+        })
+        .filter((color) => color.name)
+    : [];
+
+  const productStock = fields.stock
+    ? {
+        fittja: Math.max(0, Number(fields.stock.fittja) || 0),
+        marsta: Math.max(0, Number(fields.stock.marsta) || 0),
+      }
+    : {
+        fittja: Math.max(0, Number(fields.stockFittja) || 0),
+        marsta: Math.max(0, Number(fields.stockMarsta) || 0),
+      };
+
+  const inventory = colors.length
+    ? colors.reduce((sum, color) => sum + Math.max(0, Number(color.inventory) || 0), 0)
+    : productStock.fittja + productStock.marsta;
+
   const payload = {
     title: fields.title,
     sku: fields.sku,
     barcode: fields.barcode,
     price: fields.price,
-    inventory: fields.inventory,
+    inventory,
+    stock: productStock,
     images,
     category: fields.category,
     subtitle: fields.brand || '',
+    description: fields.description || '',
+    colors,
   };
 
   if (isNew) {

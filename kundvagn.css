@@ -121,6 +121,12 @@
   color: var(--rust);
 }
 
+.cart-row-color {
+  font-size: .75rem;
+  color: var(--muted);
+  margin: .15rem 0 .35rem;
+}
+
 .cart-row-price {
   font-size: .82rem;
   color: var(--muted);
@@ -390,6 +396,79 @@
   color: var(--green);
   border-radius: 3px;
   font-size: .88rem;
+}
+
+.cart-btn-pickup {
+  background: linear-gradient(135deg, var(--brown) 0%, #4a2f22 100%);
+}
+
+.pickup-panel {
+  margin-top: 1.5rem;
+}
+
+.pickup-store-fieldset {
+  border: 1px solid #E8E0D5;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0 0 1rem;
+  background: #fff;
+}
+
+.pickup-store-legend {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text);
+  padding: 0 .35rem;
+}
+
+.pickup-store-option {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .75rem;
+  border: 1px solid #E8E0D5;
+  border-radius: 8px;
+  margin-top: .65rem;
+  cursor: pointer;
+  background: var(--bg2);
+}
+
+.pickup-store-option:first-of-type {
+  margin-top: .35rem;
+}
+
+.pickup-store-option input {
+  margin-top: .2rem;
+}
+
+.pickup-store-option strong {
+  display: block;
+  font-size: .92rem;
+  color: var(--text);
+}
+
+.pickup-store-option small {
+  display: block;
+  margin-top: .15rem;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.pickup-store-option:has(input:checked) {
+  border-color: var(--gold);
+  background: #fff8eb;
+}
+
+.pickup-notice {
+  font-size: .85rem;
+  color: #9a5b00;
+  background: #fff8eb;
+  border: 1px solid #e8c97a;
+  padding: .75rem .85rem;
+  border-radius: 3px;
+  margin-bottom: .75rem;
 }
 
 @media (max-width: 640px) {

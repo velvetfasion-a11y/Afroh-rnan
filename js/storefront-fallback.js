@@ -26,24 +26,45 @@
     return 'kosmetika';
   }
 
+  function parseColors(f) {
+    const values = f.colors?.arrayValue?.values || [];
+    return values
+      .map((entry) => {
+        const map = entry.mapValue?.fields || {};
+        const name = map.name?.stringValue || map.label?.stringValue || '';
+        if (!name) return null;
+        return {
+          name,
+          inventory: Number(map.inventory?.integerValue || map.inventory?.doubleValue || 0),
+          image: map.image?.stringValue || '',
+        };
+      })
+      .filter(Boolean);
+  }
+
   function fromFirestore(doc) {
     const f = doc.fields || {};
     const str = (k) => f[k]?.stringValue || '';
     const num = (k) => Number(f[k]?.integerValue || f[k]?.doubleValue || 0);
     const images = (f.images?.arrayValue?.values || []).map((v) => v.stringValue).filter(Boolean);
+    const colors = parseColors(f);
     const id = doc.name.split('/').pop();
     const cat = resolveCat({
       category: str('category'),
       categories: (f.categories?.arrayValue?.values || []).map((v) => v.stringValue),
     });
+    const displayColor = colors.find((color) => color.inventory > 0) || colors[0];
     return {
       id,
       name: str('title') || 'Produkt',
       brand: str('subtitle') || '',
       cat,
       price: num('price'),
-      image: images[0] || '',
-      inventory: num('inventory'),
+      image: displayColor?.image || images[0] || '',
+      inventory: colors.length
+        ? colors.reduce((sum, color) => sum + Math.max(0, color.inventory), 0)
+        : num('inventory'),
+      hasMultipleColors: colors.length > 1,
     };
   }
 
@@ -54,20 +75,24 @@
   function cardHtml(p) {
     const url = 'produkt.html?slug=' + encodeURIComponent(p.id);
     const inventoryAttr = Number.isFinite(p.inventory) ? ' data-inventory="' + p.inventory + '"' : '';
+    const hasColorsAttr = p.hasMultipleColors ? ' data-has-colors="true"' : '';
     const img = p.image
       ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" referrerpolicy="no-referrer">'
       : '<span class="pcard-emoji" aria-hidden="true">📦</span>';
+    const colorsHint = p.hasMultipleColors ? '<div class="pcard-colors-hint">Finns i fler färger</div>' : '';
+    const cartLabel = p.hasMultipleColors ? 'Välj färg' : 'Lägg i kundvagn';
     return (
-      '<div class="pcard" data-slug="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-brand="' + esc(p.brand) + '" data-price="' + p.price + '" data-image="' + esc(p.image) + '" data-url="' + esc(url) + '" data-emoji="📦"' + inventoryAttr + '>' +
+      '<div class="pcard" data-slug="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-brand="' + esc(p.brand) + '" data-price="' + p.price + '" data-image="' + esc(p.image) + '" data-url="' + esc(url) + '" data-emoji="📦"' + inventoryAttr + hasColorsAttr + '>' +
         '<a href="' + esc(url) + '" class="pcard-link">' +
           '<div class="pcard-img">' + img + '<span class="pcard-badge gold">Ny</span></div>' +
           '<div class="pcard-body">' +
             '<div class="pcard-brand">' + esc(p.brand || 'Produkt') + '</div>' +
             '<div class="pcard-name">' + esc(p.name) + '</div>' +
+            colorsHint +
             '<div class="pcard-price">' + Number(p.price).toLocaleString('sv-SE') + ' kr</div>' +
           '</div>' +
         '</a>' +
-        '<div class="pcard-actions"><button type="button" class="pcard-cart">Lägg i kundvagn</button></div>' +
+        '<div class="pcard-actions"><button type="button" class="pcard-cart">' + cartLabel + '</button></div>' +
       '</div>'
     );
   }
@@ -91,6 +116,7 @@
   }
 
   function boot() {
+    if (window.__afroStorefrontReady) return;
     var hasGrid = GRIDS.some(function (g) { return document.getElementById(g.id); });
     if (!hasGrid) return;
     if (GRIDS.every(function (g) { return gridHasProducts(document.getElementById(g.id)); })) return;
@@ -124,5 +150,7 @@
   } else {
     boot();
   }
-  window.setTimeout(boot, 1200);
+  window.setTimeout(function () {
+    if (!window.__afroStorefrontReady) boot();
+  }, 2500);
 })();

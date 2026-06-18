@@ -1,5 +1,6 @@
 import { requireAdmin, signOut, getFirebaseAuth } from './firebase-auth.js';
 import { getProduct, saveProduct, deleteProduct } from './firebase-db.js';
+import { normalizeColors, slugifyColorId, normalizeStock, totalFromStock } from './products.js';
 
 const params = new URLSearchParams(window.location.search);
 const productId = params.get('id');
@@ -8,6 +9,7 @@ const isEdit = Boolean(productId);
 let existingImages = [];
 let pendingImages = [];
 let loadedProductTitle = '';
+let colorVariants = [];
 
 function setFormError(message) {
   const el = document.getElementById('formError');
@@ -59,7 +61,200 @@ function addImageFiles(fileList) {
     added += 1;
   });
 
-  if (added) renderImageGallery();
+  if (added) {
+    renderImageGallery();
+    renderColorVariants();
+  }
+}
+
+function getAllImageOptions() {
+  const options = [];
+  existingImages.forEach((url, index) => {
+    options.push({ url, label: `Bild ${index + 1}` });
+  });
+  pendingImages.forEach((item, index) => {
+    options.push({ url: item.previewUrl, label: `Ny bild ${index + 1}` });
+  });
+  return options;
+}
+
+function syncInventoryField() {
+  const field = document.getElementById('fieldInventory');
+  const hint = document.getElementById('inventoryHint');
+  const fittjaWrap = document.getElementById('fieldStockFittjaWrap');
+  const marstaWrap = document.getElementById('fieldStockMarstaWrap');
+  const hasColors = colorVariants.length > 0;
+  if (!field) return;
+
+  if (hasColors) {
+    const total = colorVariants.reduce(
+      (sum, color) => sum + Math.max(0, Number(color.stockFittja) || 0) + Math.max(0, Number(color.stockMarsta) || 0),
+      0,
+    );
+    field.value = String(total);
+    if (hint) hint.hidden = false;
+    if (fittjaWrap) fittjaWrap.hidden = true;
+    if (marstaWrap) marstaWrap.hidden = true;
+    return;
+  }
+
+  if (fittjaWrap) fittjaWrap.hidden = false;
+  if (marstaWrap) marstaWrap.hidden = false;
+  if (hint) hint.hidden = true;
+
+  const fittja = Number.parseInt(document.getElementById('fieldStockFittja')?.value, 10) || 0;
+  const marsta = Number.parseInt(document.getElementById('fieldStockMarsta')?.value, 10) || 0;
+  field.value = String(Math.max(0, fittja) + Math.max(0, marsta));
+}
+
+function wireStockFields() {
+  ['fieldStockFittja', 'fieldStockMarsta'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', syncInventoryField);
+  });
+}
+
+function resolveColorImageUrl(color) {
+  if (color?.imageUrl) return color.imageUrl;
+  if (existingImages[0]) return existingImages[0];
+  if (pendingImages[0]?.previewUrl) return pendingImages[0].previewUrl;
+  return '';
+}
+
+function renderColorThumb(imageUrl) {
+  if (imageUrl) {
+    return `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy">`;
+  }
+  return '<span class="admin-color-thumb-empty">Välj bild</span>';
+}
+
+function renderColorVariants() {
+  const list = document.getElementById('colorVariantsList');
+  if (!list) return;
+
+  const imageOptions = getAllImageOptions();
+  const imageSelect = (selectedUrl, index) => {
+    const options = ['<option value="">Standardbild</option>']
+      .concat(
+        imageOptions.map(
+          (option) =>
+            `<option value="${escapeHtml(option.url)}"${option.url === selectedUrl ? ' selected' : ''}>${escapeHtml(option.label)}</option>`,
+        ),
+      )
+      .join('');
+    return `<select class="admin-color-image" data-field="image" data-index="${index}" aria-label="Bild för färg">${options}</select>`;
+  };
+
+  if (!colorVariants.length) {
+    list.innerHTML = '<p class="admin-color-empty">Inga färgvarianter ännu. Lägg till en eller flera färger.</p>';
+    syncInventoryField();
+    return;
+  }
+
+  list.innerHTML = colorVariants
+    .map((color, index) => {
+      const imageUrl = resolveColorImageUrl(color);
+      return `
+        <div class="admin-color-row" data-index="${index}">
+          <div class="admin-color-thumb" aria-hidden="true">${renderColorThumb(imageUrl)}</div>
+          <div class="admin-color-fields">
+            <div class="admin-field full">
+              <label>Produktbild</label>
+              ${imageSelect(color.imageUrl, index)}
+            </div>
+            <div class="admin-field">
+              <label>Färgnamn</label>
+              <input type="text" class="admin-color-name" data-field="name" data-index="${index}" value="${escapeHtml(color.name)}" placeholder="t.ex. Svart" required>
+            </div>
+            <div class="admin-field">
+              <label>Lager Fittja</label>
+              <input type="number" class="admin-color-stock-fittja" data-field="stockFittja" data-index="${index}" min="0" step="1" value="${Number(color.stockFittja) || 0}">
+            </div>
+            <div class="admin-field">
+              <label>Lager Märsta</label>
+              <input type="number" class="admin-color-stock-marsta" data-field="stockMarsta" data-index="${index}" min="0" step="1" value="${Number(color.stockMarsta) || 0}">
+            </div>
+          </div>
+          <button type="button" class="admin-color-remove" data-remove-color="${index}" aria-label="Ta bort färg">×</button>
+        </div>`;
+    })
+    .join('');
+
+  list.querySelectorAll('[data-field]').forEach((input) => {
+    input.addEventListener('input', (event) => {
+      const index = Number(event.target.dataset.index);
+      const field = event.target.dataset.field;
+      const color = colorVariants[index];
+      if (!color) return;
+
+      if (field === 'name') color.name = event.target.value;
+      if (field === 'stockFittja') {
+        color.stockFittja = Number.parseInt(event.target.value, 10) || 0;
+        syncInventoryField();
+      }
+      if (field === 'stockMarsta') {
+        color.stockMarsta = Number.parseInt(event.target.value, 10) || 0;
+        syncInventoryField();
+      }
+      if (field === 'image') {
+        color.imageUrl = event.target.value;
+        const row = list.querySelector(`.admin-color-row[data-index="${index}"]`);
+        const thumb = row?.querySelector('.admin-color-thumb');
+        if (thumb) thumb.innerHTML = renderColorThumb(resolveColorImageUrl(color));
+      }
+    });
+
+    if (input.dataset.field === 'image') {
+      input.addEventListener('change', (event) => {
+        const index = Number(event.target.dataset.index);
+        const color = colorVariants[index];
+        if (!color) return;
+        color.imageUrl = event.target.value;
+        const row = list.querySelector(`.admin-color-row[data-index="${index}"]`);
+        const thumb = row?.querySelector('.admin-color-thumb');
+        if (thumb) thumb.innerHTML = renderColorThumb(resolveColorImageUrl(color));
+      });
+    }
+  });
+
+  list.querySelectorAll('[data-remove-color]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      colorVariants.splice(Number(btn.dataset.removeColor), 1);
+      renderColorVariants();
+    });
+  });
+
+  syncInventoryField();
+}
+
+function addColorVariant(data = {}) {
+  colorVariants.push({
+    id: data.id || crypto.randomUUID(),
+    name: data.name || '',
+    stockFittja: data.stockFittja ?? 0,
+    stockMarsta: data.stockMarsta ?? 0,
+    imageUrl: data.imageUrl || existingImages[0] || pendingImages[0]?.previewUrl || '',
+  });
+  renderColorVariants();
+}
+
+function readColorVariants() {
+  const rows = document.querySelectorAll('.admin-color-row');
+  return [...rows]
+    .map((row, index) => {
+      const name = row.querySelector('.admin-color-name')?.value.trim() || '';
+      if (!name) return null;
+      const source = colorVariants[index] || {};
+      const stockFittja = Number.parseInt(row.querySelector('.admin-color-stock-fittja')?.value, 10) || 0;
+      const stockMarsta = Number.parseInt(row.querySelector('.admin-color-stock-marsta')?.value, 10) || 0;
+      return {
+        id: source.id || slugifyColorId(name, index),
+        name,
+        hex: row.querySelector('.admin-color-hex')?.value || '#888888',
+        stock: { fittja: stockFittja, marsta: stockMarsta },
+        image: row.querySelector('.admin-color-image')?.value || '',
+      };
+    })
+    .filter(Boolean);
 }
 
 function wireImageDropZone() {
@@ -155,6 +350,7 @@ function renderImageGallery() {
         pendingImages.splice(index, 1);
       }
       renderImageGallery();
+      renderColorVariants();
     });
   });
 
@@ -167,9 +363,12 @@ function readForm() {
   const title = document.getElementById('fieldTitle').value.trim();
   const category = document.getElementById('fieldCategory').value;
   const brand = document.getElementById('fieldBrand').value.trim();
+  const description = document.getElementById('fieldDescription')?.value.trim() || '';
   const sku = document.getElementById('fieldSku').value.trim();
   const barcode = document.getElementById('fieldBarcode').value.trim();
   const price = Number(document.getElementById('fieldPrice').value);
+  const stockFittja = Number.parseInt(document.getElementById('fieldStockFittja')?.value, 10) || 0;
+  const stockMarsta = Number.parseInt(document.getElementById('fieldStockMarsta')?.value, 10) || 0;
   const inventory = Number.parseInt(document.getElementById('fieldInventory').value, 10);
 
   if (!title) throw new Error('Ange ett produktnamn.');
@@ -177,13 +376,27 @@ function readForm() {
   if (!sku) throw new Error('Ange ett SKU.');
   if (Number.isNaN(price) || price < 0) throw new Error('Ange ett giltigt pris.');
   if (Number.isNaN(inventory) || inventory < 0) throw new Error('Ange ett giltigt lagersaldo.');
+  if (colorVariants.length && !readColorVariants().length) {
+    throw new Error('Ange minst ett färgnamn eller ta bort färgvarianterna.');
+  }
 
-  return { title, category, brand, sku, barcode, price, inventory };
+  return {
+    title,
+    category,
+    brand,
+    description,
+    sku,
+    barcode,
+    price,
+    inventory,
+    stock: { fittja: stockFittja, marsta: stockMarsta },
+  };
 }
 
 async function loadProduct() {
   if (!isEdit) {
     renderImageGallery();
+    renderColorVariants();
     return;
   }
 
@@ -206,8 +419,12 @@ async function loadProduct() {
     document.getElementById('fieldSku').value = product.sku || '';
     document.getElementById('fieldBarcode').value = product.barcode || '';
     document.getElementById('fieldPrice').value = product.price ?? '';
-    document.getElementById('fieldInventory').value = product.inventory ?? 0;
+    const stock = normalizeStock(product, product.inventory ?? 0);
+    document.getElementById('fieldStockFittja').value = stock.fittja;
+    document.getElementById('fieldStockMarsta').value = stock.marsta;
+    document.getElementById('fieldInventory').value = totalFromStock(stock);
     document.getElementById('fieldBrand').value = product.subtitle || product.brand || '';
+    document.getElementById('fieldDescription').value = product.description || '';
 
     const category =
       product.category ||
@@ -226,7 +443,16 @@ async function loadProduct() {
     }
 
     existingImages = Array.isArray(product.images) ? [...product.images] : [];
+    colorVariants = normalizeColors(product).map((color) => ({
+      id: color.id,
+      name: color.name,
+      hex: color.hex || '#888888',
+      stockFittja: color.stock?.fittja ?? 0,
+      stockMarsta: color.stock?.marsta ?? 0,
+      imageUrl: color.image || '',
+    }));
     renderImageGallery();
+    renderColorVariants();
   } catch (err) {
     setFormError(`Kunde inte ladda produkten: ${err.message || 'Okänt fel'}`);
     document.getElementById('productForm').hidden = true;
@@ -266,9 +492,12 @@ async function handleSubmit(event) {
         barcode: fields.barcode,
         price: fields.price,
         inventory: fields.inventory,
+        stock: fields.stock,
         category: fields.category,
         brand: fields.brand,
+        description: fields.description,
         existingImages,
+        colors: readColorVariants(),
       },
       pendingImages
         .map((item) => item.file)
@@ -330,6 +559,7 @@ requireAdmin((user) => {
   document.getElementById('adminContent').hidden = false;
   document.getElementById('adminEmail').textContent = user.email || '';
   wireImageDropZone();
+  wireStockFields();
   loadProduct();
 });
 
@@ -347,6 +577,10 @@ document.getElementById('fieldBarcode').addEventListener('keydown', (event) => {
 document.getElementById('productForm').addEventListener('submit', handleSubmit);
 
 document.getElementById('deleteBtn').addEventListener('click', handleDelete);
+
+document.getElementById('addColorBtn')?.addEventListener('click', () => {
+  addColorVariant();
+});
 
 document.getElementById('fieldImage').addEventListener('change', (event) => {
   addImageFiles(event.target.files);

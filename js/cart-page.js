@@ -45,7 +45,7 @@
     items.forEach((item) => {
       const row = document.createElement('article');
       row.className = 'cart-row';
-      row.dataset.slug = item.slug;
+      row.dataset.lineId = AfroCart.lineId(item);
 
       const imgLink = document.createElement('a');
       imgLink.href = item.url;
@@ -70,6 +70,7 @@
       info.innerHTML = `
         <p class="cart-row-brand">${escapeHtml(item.brand || 'Produkt')}</p>
         <a href="${escapeHtml(item.url)}" class="cart-row-name">${escapeHtml(item.name)}</a>
+        ${item.colorName ? `<p class="cart-row-color">Färg: ${escapeHtml(item.colorName)}</p>` : ''}
         <p class="cart-row-price">${formatKr(item.price)}</p>`;
 
       const actions = document.createElement('div');
@@ -91,16 +92,16 @@
   listEl.addEventListener('click', (e) => {
     const row = e.target.closest('.cart-row');
     if (!row) return;
-    const slug = row.dataset.slug;
-    const item = AfroCart.getItems().find((i) => i.slug === slug);
+    const id = row.dataset.lineId;
+    const item = AfroCart.getItems().find((entry) => AfroCart.lineId(entry) === id);
     if (!item) return;
 
     if (e.target.closest('[data-action="minus"]')) {
-      AfroCart.setQty(slug, item.qty - 1);
+      AfroCart.setQty(id, item.qty - 1);
     } else if (e.target.closest('[data-action="plus"]')) {
-      AfroCart.setQty(slug, item.qty + 1);
+      AfroCart.setQty(id, item.qty + 1);
     } else if (e.target.closest('[data-action="remove"]')) {
-      AfroCart.removeItem(slug);
+      AfroCart.removeItem(id);
     }
   });
 

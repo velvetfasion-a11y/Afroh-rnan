@@ -62,14 +62,14 @@
       </div>
       <div class="cart-actions">
         <button type="button" class="cart-btn-primary" id="checkout-btn">Gå till kassa</button>
-        <a href="har.html" class="cart-btn-secondary cart-btn-dark">Fortsätt handla</a>
+        <button type="button" class="cart-btn-primary cart-btn-pickup" id="pickup-btn">Hämta i butik</button>
         <button type="button" class="cart-btn-secondary" id="cart-clear">Töm kundvagn</button>
       </div>
     </aside>
 
     <section id="checkout-panel" class="checkout-panel" hidden>
-      <h2>Kassa</h2>
-      <p class="checkout-lead">Fyll i dina uppgifter och betala med Apple Pay eller kort.</p>
+      <h2>Leverans till brevlåda</h2>
+      <p class="checkout-lead">Fyll i dina uppgifter och betala med Apple Pay eller kort. Vi skickar till din brevlåda.</p>
 
       <form id="checkout-form" class="checkout-form" novalidate>
         <div class="checkout-grid">
@@ -111,6 +111,45 @@
         <button type="submit" class="cart-btn-primary checkout-pay" id="checkout-pay" hidden>Betala</button>
       </form>
     </section>
+
+    <section id="pickup-panel" class="checkout-panel pickup-panel" hidden>
+      <h2>Hämta i butik</h2>
+      <p class="checkout-lead">Ange ditt telefonnummer och välj vilken butik du vill hämta i. Du betalar i butiken.</p>
+
+      <form id="pickup-form" class="checkout-form" novalidate>
+        <div class="checkout-grid">
+          <label class="checkout-field full">
+            <span>Telefon</span>
+            <input type="tel" id="pickup-phone" name="phone" autocomplete="tel" required placeholder="07X XXX XX XX">
+          </label>
+        </div>
+
+        <fieldset class="pickup-store-fieldset">
+          <legend class="pickup-store-legend">Välj butik</legend>
+          <label class="pickup-store-option">
+            <input type="radio" name="pickup-store" value="fittja" required>
+            <span>
+              <strong>Fittja</strong>
+              <small>Stockholm Fittja</small>
+            </span>
+          </label>
+          <label class="pickup-store-option">
+            <input type="radio" name="pickup-store" value="marsta">
+            <span>
+              <strong>Märsta</strong>
+              <small>Stockholm Märsta</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <p id="pickup-unavailable" class="pickup-notice" role="alert" hidden>
+          En eller flera produkter finns inte tillgängliga i den valda butiken. Välj annan butik eller beställ med leverans till din brevlåda.
+        </p>
+        <p id="pickup-error" class="checkout-error" hidden></p>
+
+        <button type="submit" class="cart-btn-primary" id="pickup-submit">Bekräfta hämtning</button>
+      </form>
+    </section>
   </div>
 </main>
 
@@ -123,9 +162,10 @@
 
 <script src="js/cart.js"></script>
 <script src="js/cart-page.js"></script>
-<script src="js/firebase-config.js?v=2"></script>
+<script src="js/firebase-config.js?v=10"></script>
+<script src="js/store-stock.js"></script>
 <script src="js/stripe-config.js"></script>
-<script src="js/checkout.js?v=2"></script>
+<script src="js/checkout.js?v=10"></script>
 <script src="js/admin-gate.js"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>

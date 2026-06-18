@@ -121,7 +121,62 @@
   font-size: 1.75rem;
   font-weight: 600;
   color: var(--rust);
-  margin-bottom: 1.25rem;
+  margin-bottom: .35rem;
+}
+.product-colors-hint {
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: .04em;
+  margin-bottom: 1rem;
+}
+.product-colors {
+  margin-bottom: .25rem;
+}
+.product-colors-label {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: .65rem;
+}
+.product-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-bottom: .5rem;
+}
+.product-color-swatch {
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+  border: 2px solid #E8E0D5;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+}
+.product-color-swatch-inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--swatch-color, #888);
+  border: 1px solid rgba(0,0,0,.08);
+}
+.product-color-swatch.active {
+  border-color: var(--gold);
+  transform: scale(1.05);
+}
+.product-color-swatch.out-of-stock {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.product-color-selected {
+  font-size: .82rem;
+  color: var(--muted);
+  margin-bottom: .25rem;
 }
 .product-divider {
   border: none;

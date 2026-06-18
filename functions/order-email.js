@@ -128,24 +128,27 @@ function renderOrderConfirmationEmail(order, orderId) {
   });
 }
 
-function renderAdminOrderNotificationEmail(order, orderId, paymentMethod) {
+function renderAdminOrderNotificationEmail(order, orderId, paymentMethod, options = {}) {
   const customer = order.customer || {};
   const items = Array.isArray(order.items) ? order.items : [];
   const orderDate = resolveOrderDate(order);
+  const pickupStore = options.pickupStore || (
+    order.pickupStore === 'fittja' ? 'Fittja' : order.pickupStore === 'marsta' ? 'Märsta' : order.pickupStore || ''
+  );
 
   return applyReplacements(loadTemplate(ADMIN_TEMPLATE_PATH), {
     order_number: escapeHtml(formatOrderNumber(orderId)),
     order_datetime: escapeHtml(formatOrderDateTime(orderDate)),
-    customer_name: escapeHtml(customer.name || 'Kund'),
-    customer_email: escapeHtml(customer.email || ''),
+    customer_name: escapeHtml(customer.name || (pickupStore ? 'Hämtning i butik' : 'Kund')),
+    customer_email: escapeHtml(customer.email || '—'),
     customer_phone: escapeHtml(customer.phone || ''),
-    customer_address: escapeHtml(customer.address || ''),
+    customer_address: escapeHtml(customer.address || (pickupStore ? `Hämtning: ${pickupStore}` : '')),
     customer_postal: escapeHtml(customer.postal || ''),
     customer_city: escapeHtml(customer.city || ''),
     customer_country: escapeHtml(customer.country || 'Sverige'),
     product_rows: buildAdminProductRows(items),
     total_price: escapeHtml(formatPrice(orderTotal(order))),
-    payment_method: escapeHtml(paymentMethod || 'Kort'),
+    payment_method: escapeHtml(paymentMethod || (pickupStore ? `Hämtning i butik – ${pickupStore}` : 'Kort')),
   });
 }
 
@@ -195,31 +198,35 @@ async function sendOrderConfirmationEmail(order, orderId, smtp) {
 
 async function sendAdminOrderNotificationEmail(order, orderId, smtp, options = {}) {
   const adminTo = smtp.adminTo || 'info@afrohörnan.se';
-  const html = renderAdminOrderNotificationEmail(order, orderId, options.paymentMethod);
+  const html = renderAdminOrderNotificationEmail(order, orderId, options.paymentMethod, options);
   const transport = createMailTransport(smtp);
   const from = smtp.from || 'Afrohörnan <info@afrohornan.com>';
   const orderNumber = formatOrderNumber(orderId);
   const customer = order.customer || {};
+  const pickupStore = options.pickupStore || '';
 
   await transport.sendMail({
     from,
     to: adminTo,
-    subject: `Ny beställning ${orderNumber} – ${customer.name || 'Kund'}`,
+    subject: pickupStore
+      ? `Ny hämtningsorder ${orderNumber} – ${pickupStore}`
+      : `Ny beställning ${orderNumber} – ${customer.name || 'Kund'}`,
     html,
     text: [
-      'Ny beställning inkom',
+      pickupStore ? 'Ny hämtningsorder inkom' : 'Ny beställning inkom',
       '',
       `Ordernummer: ${orderNumber}`,
       `Datum: ${formatOrderDateTime(resolveOrderDate(order))}`,
       '',
-      `Kund: ${customer.name || 'Kund'}`,
-      `E-post: ${customer.email || ''}`,
+      pickupStore ? `Butik: ${pickupStore}` : '',
+      `Kund: ${customer.name || (pickupStore ? 'Hämtning i butik' : 'Kund')}`,
+      `E-post: ${customer.email || '—'}`,
       `Telefon: ${customer.phone || ''}`,
-      `Adress: ${customer.address || ''}, ${customer.postal || ''} ${customer.city || ''}`,
+      pickupStore ? '' : `Adress: ${customer.address || ''}, ${customer.postal || ''} ${customer.city || ''}`,
       '',
-      `Betalningsmetod: ${options.paymentMethod || 'Kort'}`,
+      `Betalningsmetod: ${options.paymentMethod || (pickupStore ? `Hämtning i butik – ${pickupStore}` : 'Kort')}`,
       `Totalt: ${formatPrice(orderTotal(order))} kr`,
-    ].join('\n'),
+    ].filter(Boolean).join('\n'),
   });
 }
 

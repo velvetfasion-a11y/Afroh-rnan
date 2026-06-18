@@ -48,6 +48,9 @@ function createProductCard(product) {
   if (Number.isFinite(product.inventory)) {
     card.dataset.inventory = String(product.inventory);
   }
+  if (product.hasMultipleColors) {
+    card.dataset.hasColors = 'true';
+  }
 
   const link = document.createElement('a');
   link.href = product.url;
@@ -69,13 +72,14 @@ function createProductCard(product) {
   body.innerHTML = `
     <div class="pcard-brand">${escapeHtml(product.brand || 'Produkt')}</div>
     <div class="pcard-name">${escapeHtml(product.name)}</div>
+    ${product.hasMultipleColors ? '<div class="pcard-colors-hint">Finns i fler färger</div>' : ''}
     <div class="pcard-price">${product.price.toLocaleString('sv-SE')} kr</div>`;
 
   link.append(imgWrap, body);
 
   const actions = document.createElement('div');
   actions.className = 'pcard-actions';
-  actions.innerHTML = `<button type="button" class="pcard-cart">Lägg i kundvagn</button>`;
+  actions.innerHTML = `<button type="button" class="pcard-cart">${product.hasMultipleColors ? 'Välj färg' : 'Lägg i kundvagn'}</button>`;
 
   card.append(link, actions);
   return card;
@@ -104,6 +108,7 @@ const CATEGORY_GRIDS = [
 ];
 
 function renderGrids(products) {
+  window.__afroStorefrontReady = true;
   const pageCategory = document.body.dataset.category;
   if (pageCategory) {
     renderCategoryPage(products, pageCategory);
@@ -201,9 +206,15 @@ function loadStorefront() {
     document.getElementById('category-grid');
   if (!hasGrid) return;
 
+  let renderTimer = null;
+  const scheduleRender = (products) => {
+    window.clearTimeout(renderTimer);
+    renderTimer = window.setTimeout(() => renderGrids(products), 60);
+  };
+
   try {
     subscribeMergedProducts((products) => {
-      renderGrids(products);
+      scheduleRender(products);
     });
   } catch (err) {
     console.error('Kunde inte ladda produkter:', err);

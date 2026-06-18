@@ -1,4 +1,4 @@
-import { subscribeMergedProducts, getProductBySlug } from './products.js';
+import { fetchProductForSlug } from './products.js';
 
 function formatKr(n) {
   return n.toLocaleString('sv-SE') + ' kr';
@@ -34,6 +34,51 @@ function setText(selector, text) {
   const el = document.querySelector(selector);
   if (el && text != null) el.textContent = text;
 }
+
+function buildProductDescription(product, color) {
+  if (product.description?.trim()) return product.description.trim();
+
+  const parts = [];
+  if (product.brand && product.name) {
+    parts.push(`${product.name} från ${product.brand}.`);
+  } else if (product.name) {
+    parts.push(`${product.name}.`);
+  }
+  if (product.catLabel) parts.push(product.catLabel + '.');
+  if (color?.name) {
+    parts.push(`Färg: ${color.name}.`);
+  } else if (product.hasMultipleColors) {
+    parts.push('Finns i flera färger – välj färg nedan.');
+  }
+  if (Number(product.price) > 0) {
+    parts.push(`Pris ${formatKr(product.price)}.`);
+  }
+  return parts.join(' ') || 'Produkt från Afrohörnan.';
+}
+
+function updateProductDescription(product, color) {
+  setText('.product-desc', buildProductDescription(product, color));
+}
+
+function getProductView(product, color) {
+  if (!color) return product;
+
+  const gallery = color.image
+    ? [color.image, ...(product.images || []).filter((src) => src !== color.image)]
+    : product.images || [];
+
+  return {
+    ...product,
+    price: color.price != null ? color.price : product.price,
+    image: gallery[0] || product.image,
+    images: gallery,
+    inventory: color.inventory,
+    selectedColor: color,
+  };
+}
+
+let activeProduct = null;
+let activeColor = null;
 
 function renderProductThumbs(images, alt) {
   let wrap = document.getElementById('product-thumbs');
@@ -71,27 +116,99 @@ function renderProductThumbs(images, alt) {
   });
 }
 
-function applyProduct(product) {
-  if (!product) return;
-
-  document.title = `${product.name} – Afrohörnan`;
-
-  setText('.product-brand', product.brand);
-  setText('.product-details h1', product.name);
-  setText('.product-price', formatKr(product.price));
-  setText('.breadcrumb span:last-child', product.name);
-
+function updateGallery(view) {
   const img = document.querySelector('.product-gallery-img img');
-  const galleryImages = Array.isArray(product.images) && product.images.length ? product.images : product.image ? [product.image] : [];
+  const galleryImages = Array.isArray(view.images) && view.images.length ? view.images : view.image ? [view.image] : [];
 
   if (img && galleryImages.length) {
     img.hidden = false;
     img.referrerPolicy = 'no-referrer';
     img.src = galleryImages[0];
-    img.alt = product.name;
+    img.alt = view.name;
   }
 
-  renderProductThumbs(galleryImages, product.name);
+  renderProductThumbs(galleryImages, view.name);
+}
+
+function selectColor(product, colorId) {
+  const color = (product.colors || []).find((entry) => entry.id === colorId);
+  if (!color || color.inventory <= 0) return;
+
+  activeColor = color;
+  const url = new URL(window.location.href);
+  url.searchParams.set('color', color.id);
+  window.history.replaceState(null, '', url);
+
+  renderColorPicker(product);
+  const view = getProductView(product, activeColor);
+  setText('.product-price', formatKr(view.price));
+  setText('#productColorSelected', color.name);
+  updateGallery(view);
+  updateProductDescription(product, color);
+  document.getElementById('buyBtn')?._refreshPrice?.(view);
+}
+
+function renderColorPicker(product) {
+  const colors = product.colors || [];
+  const wrap = document.getElementById('productColors');
+  const swatches = document.getElementById('productColorSwatches');
+  const hint = document.getElementById('productColorsHint');
+  const selectedLabel = document.getElementById('productColorSelected');
+
+  if (!colors.length || !wrap || !swatches) {
+    if (wrap) wrap.hidden = true;
+    if (hint) hint.hidden = true;
+    activeColor = null;
+    return;
+  }
+
+  wrap.hidden = false;
+  if (hint) hint.hidden = colors.length < 2;
+
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get('color');
+  const inStock = colors.filter((color) => color.inventory > 0);
+  activeColor =
+    inStock.find((color) => color.id === fromUrl) ||
+    inStock.find((color) => color.id === activeColor?.id) ||
+    inStock[0] ||
+    colors[0];
+
+  swatches.innerHTML = colors
+    .map((color) => {
+      const out = color.inventory <= 0;
+      const active = color.id === activeColor?.id;
+      const style = color.hex ? ` style="--swatch-color:${color.hex}"` : '';
+      return `<button type="button" class="product-color-swatch${active ? ' active' : ''}${out ? ' out-of-stock' : ''}"
+        role="radio" aria-checked="${active}" aria-label="${color.name}${out ? ' – slut i lager' : ''}"
+        data-color-id="${color.id}"${out ? ' disabled' : ''}${style}>
+        <span class="product-color-swatch-inner"></span>
+      </button>`;
+    })
+    .join('');
+
+  swatches.querySelectorAll('.product-color-swatch').forEach((btn) => {
+    btn.addEventListener('click', () => selectColor(product, btn.dataset.colorId));
+  });
+
+  if (selectedLabel) selectedLabel.textContent = activeColor?.name || '';
+}
+
+function applyProduct(product) {
+  if (!product) return;
+
+  activeProduct = product;
+  document.title = `${product.name} – Afrohörnan`;
+
+  setText('.product-brand', product.brand);
+  setText('.product-details h1', product.name);
+  setText('.breadcrumb span:last-child', product.name);
+
+  renderColorPicker(product);
+  const view = getProductView(product, activeColor);
+  setText('.product-price', formatKr(view.price));
+  updateGallery(view);
+  updateProductDescription(product, activeColor);
 
   const badge = document.querySelector('.product-badge');
   if (badge) {
@@ -104,20 +221,8 @@ function applyProduct(product) {
     }
   }
 
-  const dataEl = document.getElementById('product-data');
-  if (dataEl) {
-    dataEl.textContent = JSON.stringify({
-      slug: product.slug,
-      name: product.name,
-      brand: product.brand,
-      price: product.price,
-      image: product.image,
-      images: product.images || [],
-      url: product.url,
-    });
-  }
-
   wireBuyButton(product);
+  document.getElementById('buyBtn')?._refreshPrice?.(view);
 }
 
 function wireBuyButton(product) {
@@ -138,12 +243,24 @@ function wireBuyButton(product) {
     if (totalEl) totalEl.textContent = formatKr(qty * price) + ' totalt';
   }
 
-  function refreshPrice(nextProduct) {
-    price = Number(nextProduct?.price) || 0;
-    const inv = Number(nextProduct?.inventory);
+  function refreshPrice(nextView) {
+    price = Number(nextView?.price) || 0;
+    const inv = Number(nextView?.inventory);
     maxStock = Number.isFinite(inv) && inv > 0 ? inv : Infinity;
     qty = Math.min(qty, maxStock);
     updateTotal();
+
+    const outOfStock =
+      (Number.isFinite(maxStock) && maxStock <= 0) ||
+      (nextView?.selectedColor && nextView.selectedColor.inventory <= 0);
+
+    if (outOfStock) {
+      buyBtn.disabled = true;
+      buyBtn.textContent = 'Slut i lager';
+    } else {
+      buyBtn.disabled = false;
+      if (buyBtn.textContent === 'Slut i lager') buyBtn.textContent = 'Köp nu';
+    }
   }
 
   buyBtn._refreshPrice = refreshPrice;
@@ -160,13 +277,20 @@ function wireBuyButton(product) {
   });
 
   buyBtn.addEventListener('click', () => {
+    const current = activeProduct || product;
+    const color = activeColor;
+    const view = getProductView(current, color);
+    const colorLabel = color?.name ? ` – ${color.name}` : '';
+
     const payload = {
-      slug: product.slug,
-      name: product.name,
-      brand: product.brand,
+      slug: current.slug,
+      colorId: color?.id,
+      colorName: color?.name,
+      name: current.name + colorLabel,
+      brand: current.brand,
       price,
-      image: product.image,
-      url: product.url,
+      image: view.image,
+      url: color?.id ? `${current.url}&color=${encodeURIComponent(color.id)}` : current.url,
       inventory: maxStock !== Infinity ? maxStock : undefined,
       qty,
     };
@@ -188,20 +312,26 @@ if (!slug) {
     '<p class="product-sync-error">Produkten kunde inte hittas.</p>',
   );
 } else {
-  subscribeMergedProducts((products) => {
-    const product = getProductBySlug(products, slug);
-    if (!product) {
-      const main = document.querySelector('.product-main');
-      if (main && !main.querySelector('.product-sync-error')) {
-        main.insertAdjacentHTML(
-          'afterbegin',
-          '<p class="product-sync-error">Produkten hittades inte i sortimentet.</p>',
-        );
-      }
-      return;
-    }
+  let productShown = false;
 
+  function showProduct(product) {
+    if (!product) return;
+    productShown = true;
     applyProduct(product);
-    document.getElementById('buyBtn')?._refreshPrice?.(product);
+  }
+
+  fetchProductForSlug(slug).then((product) => {
+    if (product) showProduct(product);
+    else showNotFound();
   });
+}
+
+function showNotFound() {
+  const main = document.querySelector('.product-main');
+  if (main && !main.querySelector('.product-sync-error')) {
+    main.insertAdjacentHTML(
+      'afterbegin',
+      '<p class="product-sync-error">Produkten hittades inte i sortimentet.</p>',
+    );
+  }
 }

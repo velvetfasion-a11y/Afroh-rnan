@@ -144,7 +144,14 @@
   font-weight: 400;
   color: var(--text);
   line-height: 1.4;
-  margin-bottom: .55rem;
+  margin-bottom: .35rem;
+}
+.pcard-colors-hint {
+  font-size: .68rem;
+  font-weight: 500;
+  color: var(--gold);
+  letter-spacing: .03em;
+  margin-bottom: .45rem;
 }
 .pcard-price {
   font-size: .98rem;

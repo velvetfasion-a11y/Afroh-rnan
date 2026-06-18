@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="admin.css?v=10">
 </head>
 <body class="admin-body">
 
@@ -60,9 +60,13 @@
               <option value="mat">Mat &amp; Kryddor</option>
             </select>
           </div>
-          <div class="admin-field">
+          <div class="admin-field full">
             <label for="fieldBrand">Märke / undertitel</label>
             <input type="text" id="fieldBrand" autocomplete="off" placeholder="t.ex. Sheabutter">
+          </div>
+          <div class="admin-field full">
+            <label for="fieldDescription">Produktinformation</label>
+            <textarea id="fieldDescription" rows="4" placeholder="Beskriv produkten – visas på produktsidan"></textarea>
           </div>
           <div class="admin-field">
             <label for="fieldSku">SKU</label>
@@ -76,11 +80,27 @@
             <label for="fieldPrice">Pris (kr)</label>
             <input type="number" id="fieldPrice" required min="0" step="1" placeholder="129">
           </div>
+          <div class="admin-field" id="fieldStockFittjaWrap">
+            <label for="fieldStockFittja">Lager Fittja</label>
+            <input type="number" id="fieldStockFittja" min="0" step="1" value="0">
+          </div>
+          <div class="admin-field" id="fieldStockMarstaWrap">
+            <label for="fieldStockMarsta">Lager Märsta</label>
+            <input type="number" id="fieldStockMarsta" min="0" step="1" value="0">
+          </div>
           <div class="admin-field">
-            <label for="fieldInventory">Lagersaldo</label>
-            <input type="number" id="fieldInventory" required min="0" step="1" value="0">
+            <label for="fieldInventory">Totalt lager</label>
+            <input type="number" id="fieldInventory" required min="0" step="1" value="0" readonly>
+            <p class="admin-field-hint" id="inventoryHint" hidden>Summeras automatiskt från butikslagren ovan eller färgvarianterna nedan.</p>
           </div>
         </div>
+      </div>
+
+      <div class="admin-form-card">
+        <h2>Färgvarianter</h2>
+        <p class="admin-image-help">Lägg till flera färger för samma produkt. Kunderna väljer färg på produktsidan och ser «Finns i fler färger» i butiken.</p>
+        <div class="admin-color-list" id="colorVariantsList" aria-live="polite"></div>
+        <button type="button" class="admin-btn-outline admin-color-add" id="addColorBtn">+ Lägg till färg</button>
       </div>
 
       <div class="admin-form-actions">
@@ -92,7 +112,7 @@
   </div>
 </main>
 
-<script src="js/firebase-config.js?v=2"></script>
+<script src="js/firebase-config.js?v=10"></script>
 <script src="js/admin-gate.js"></script>
 <script type="module" src="js/admin-product.js"></script>
 </body>

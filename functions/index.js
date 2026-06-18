@@ -106,6 +106,7 @@ exports.createPaymentIntent = onRequest(
         }
 
         const orderRef = await db.collection('orders').add({
+          fulfillment: 'delivery',
           customer: {
             name: customer.name || '',
             email: customer.email,
@@ -117,6 +118,8 @@ exports.createPaymentIntent = onRequest(
           },
           items: items.map((item) => ({
             slug: item.slug || '',
+            colorId: item.colorId || '',
+            colorName: item.colorName || '',
             name: item.name || 'Produkt',
             brand: item.brand || '',
             price: Number(item.price) || 0,
@@ -163,6 +166,152 @@ exports.createPaymentIntent = onRequest(
       } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message || 'Payment setup failed' });
+      }
+    });
+  },
+);
+
+const STORE_LABELS = {
+  fittja: 'Fittja',
+  marsta: 'Märsta',
+};
+
+function getProductStoreStock(productData, colorId, storeId) {
+  const colors = Array.isArray(productData.colors) ? productData.colors : [];
+  if (colorId && colors.length) {
+    const color = colors.find((entry) => entry.id === colorId);
+    if (!color) return 0;
+    if (color.stock && typeof color.stock === 'object') {
+      return Number(color.stock[storeId]) || 0;
+    }
+    return Number(color.inventory) || 0;
+  }
+
+  if (productData.stock && typeof productData.stock === 'object') {
+    return Number(productData.stock[storeId]) || 0;
+  }
+
+  return Number(productData.inventory) || 0;
+}
+
+async function validatePickupStock(items, storeId) {
+  const unavailable = [];
+
+  for (const item of items) {
+    const productId = item.slug;
+    if (!productId) {
+      unavailable.push(item);
+      continue;
+    }
+
+    const snap = await db.collection('products').doc(productId).get();
+    if (!snap.exists) {
+      unavailable.push(item);
+      continue;
+    }
+
+    const available = getProductStoreStock(snap.data(), item.colorId, storeId);
+    if (available < (Number(item.qty) || 1)) {
+      unavailable.push({ ...item, available });
+    }
+  }
+
+  return unavailable;
+}
+
+exports.createPickupOrder = onRequest(
+  { secrets: [smtpUser, smtpPass], invoker: 'public' },
+  (req, res) => {
+    cors(req, res, async () => {
+      if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+      }
+
+      try {
+        const { items, phone, store, amount } = req.body || {};
+
+        if (!Array.isArray(items) || !items.length) {
+          res.status(400).json({ error: 'Cart is empty' });
+          return;
+        }
+
+        if (!phone || String(phone).trim().length < 6) {
+          res.status(400).json({ error: 'Missing phone number' });
+          return;
+        }
+
+        if (!store || !STORE_LABELS[store]) {
+          res.status(400).json({ error: 'Invalid store' });
+          return;
+        }
+
+        const unavailable = await validatePickupStock(items, store);
+        if (unavailable.length) {
+          res.status(409).json({
+            error: 'En eller flera produkter finns inte i vald butik.',
+            code: 'unavailable_in_store',
+            items: unavailable.map((item) => item.name || item.slug),
+          });
+          return;
+        }
+
+        const subtotal = orderSubtotal(items);
+        const total = Number.isFinite(Number(amount)) ? Number(amount) : subtotal;
+        const storeLabel = STORE_LABELS[store];
+
+        const orderRef = await db.collection('orders').add({
+          fulfillment: 'pickup',
+          pickupStore: store,
+          customer: {
+            name: '',
+            email: '',
+            phone: String(phone).trim(),
+            address: '',
+            postal: '',
+            city: '',
+            country: 'Sverige',
+          },
+          items: items.map((item) => ({
+            slug: item.slug || '',
+            colorId: item.colorId || '',
+            colorName: item.colorName || '',
+            name: item.name || 'Produkt',
+            brand: item.brand || '',
+            price: Number(item.price) || 0,
+            qty: Number(item.qty) || 1,
+            image: item.image || '',
+            url: item.url || '',
+          })),
+          subtotal,
+          shipping: 0,
+          total,
+          status: 'pickup_requested',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        const orderSnap = await orderRef.get();
+        const order = orderSnap.data();
+        const smtp = smtpConfig();
+
+        await sendAdminOrderNotificationEmail(order, orderRef.id, smtp, {
+          paymentMethod: `Hämtning i butik – ${storeLabel}`,
+          pickupStore: storeLabel,
+        });
+
+        await orderRef.update({
+          adminEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        res.json({ ok: true, orderId: orderRef.id });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message || 'Pickup order failed' });
       }
     });
   },

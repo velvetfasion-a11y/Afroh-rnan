@@ -32,6 +32,11 @@
     return readItems().reduce((sum, item) => sum + item.price * item.qty, 0);
   }
 
+  function lineId(item) {
+    if (!item?.slug) return '';
+    return item.colorId ? `${item.slug}:${item.colorId}` : item.slug;
+  }
+
   function maxQty(item) {
     const n = Number(item?.inventory);
     if (Number.isFinite(n) && n > 0) return n;
@@ -42,13 +47,17 @@
     if (!item?.slug) return;
     const items = readItems();
     const qty = item.qty || 1;
-    const existing = items.find((i) => i.slug === item.slug);
+    const id = lineId(item);
+    const existing = items.find((entry) => lineId(entry) === id);
     if (existing) {
       if (Number.isFinite(Number(item.inventory))) existing.inventory = Number(item.inventory);
+      if (item.colorName) existing.colorName = item.colorName;
       existing.qty = Math.min(existing.qty + qty, maxQty(existing));
     } else {
       items.push({
         slug: item.slug,
+        colorId: item.colorId || '',
+        colorName: item.colorName || '',
         name: item.name,
         brand: item.brand || '',
         price: Number(item.price) || 0,
@@ -61,16 +70,16 @@
     writeItems(items);
   }
 
-  function setQty(slug, qty) {
+  function setQty(id, qty) {
     const items = readItems();
     const next = qty <= 0
-      ? items.filter((i) => i.slug !== slug)
-      : items.map((i) => (i.slug === slug ? { ...i, qty: Math.min(qty, maxQty(i)) } : i));
+      ? items.filter((entry) => lineId(entry) !== id)
+      : items.map((entry) => (lineId(entry) === id ? { ...entry, qty: Math.min(qty, maxQty(entry)) } : entry));
     writeItems(next);
   }
 
-  function removeItem(slug) {
-    writeItems(readItems().filter((i) => i.slug !== slug));
+  function removeItem(id) {
+    writeItems(readItems().filter((entry) => lineId(entry) !== id));
   }
 
   function clear() {
@@ -110,6 +119,7 @@
       image: card.dataset.image || '',
       url: card.dataset.url || '#',
       inventory: card.dataset.inventory ? Number(card.dataset.inventory) : undefined,
+      hasColors: card.dataset.hasColors === 'true',
     };
   }
 
@@ -138,15 +148,21 @@
       e.preventDefault();
       e.stopPropagation();
 
-      const product = productFromCard(btn.closest('.pcard'));
+      const card = btn.closest('.pcard');
+      const product = productFromCard(card);
       if (!product) return;
+
+      if (product.hasColors) {
+        window.location.href = product.url;
+        return;
+      }
 
       addItem({ ...product, qty: 1 });
 
       btn.textContent = '✓ Tillagd';
       btn.classList.add('added');
       window.setTimeout(() => {
-        btn.textContent = 'Lägg i kundvagn';
+        btn.textContent = product.hasColors ? 'Välj färg' : 'Lägg i kundvagn';
         btn.classList.remove('added');
       }, 1500);
 
@@ -162,6 +178,7 @@
     setQty,
     removeItem,
     clear,
+    lineId,
     cartUrl,
     showToast: showCartToast,
     init() {

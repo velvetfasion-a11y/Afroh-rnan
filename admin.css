@@ -617,6 +617,28 @@
   border-color: rgba(212,148,26,.5);
 }
 
+.admin-field textarea {
+  padding: .7rem .9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(212,148,26,.2);
+  background: rgba(255,255,255,.05);
+  color: #F5EFE4;
+  font-family: 'Outfit', sans-serif;
+  font-size: .9rem;
+  outline: none;
+  resize: vertical;
+  min-height: 96px;
+  line-height: 1.5;
+}
+
+.admin-field textarea:focus {
+  border-color: rgba(212,148,26,.5);
+}
+
+.admin-field textarea::placeholder {
+  color: rgba(245,239,228,.25);
+}
+
 .admin-image-help {
   font-size: .82rem;
   color: rgba(245,239,228,.45);
@@ -821,4 +843,110 @@
   .admin-toolbar { flex-direction: column; align-items: stretch; }
   .admin-search-wrap { max-width: none; }
   .admin-form-grid { grid-template-columns: 1fr; }
+}
+
+.admin-field-hint {
+  margin-top: .35rem;
+  font-size: .72rem;
+  color: rgba(245, 239, 228, .55);
+}
+
+.admin-color-list {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  margin-bottom: 1rem;
+}
+
+.admin-color-empty {
+  font-size: .82rem;
+  color: rgba(245, 239, 228, .65);
+  margin: 0;
+}
+
+.admin-color-row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: .85rem;
+  align-items: start;
+  padding: .85rem;
+  border: 1px solid #E8E0D5;
+  border-radius: 10px;
+  background: var(--bg2);
+}
+
+.admin-color-preview {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+.admin-color-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+.admin-color-fields .full {
+  grid-column: 1 / -1;
+}
+
+.admin-color-row .admin-field label {
+  color: #5c4a3a;
+}
+
+.admin-color-row .admin-field input,
+.admin-color-row .admin-field select {
+  background: #fff;
+  border: 1px solid #cfc3b0;
+  color: #2b1810;
+  box-shadow: inset 0 1px 2px rgba(43, 24, 16, .04);
+}
+
+.admin-color-row .admin-field input:focus,
+.admin-color-row .admin-field select:focus {
+  border-color: var(--gold);
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(212, 148, 26, .18);
+}
+
+.admin-color-row .admin-field input::placeholder {
+  color: #9a8b7a;
+}
+
+.admin-color-row .admin-field input[type="color"] {
+  padding: .25rem;
+  min-height: 42px;
+  cursor: pointer;
+}
+
+.admin-color-row .admin-field select option {
+  color: #2b1810;
+  background: #fff;
+}
+
+.admin-color-remove {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--rust);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-color-add {
+  width: fit-content;
+}
+
+@media (max-width: 768px) {
+  .admin-color-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-color-fields {
+    grid-template-columns: 1fr 1fr;
+  }
 }

@@ -4,13 +4,13 @@ import {
   getFirebaseAuth,
   updateProfile,
   wireNavProfile,
-} from './firebase-auth.js?v=5';
+} from './firebase-auth.js?v=10';
 import { isAdminUser } from './admin-check.js';
 import {
   getStoredFavoriteSlugs,
   removeFavorite,
 } from './product-catalog.js';
-import { subscribeMergedProducts, getProductBySlug } from './products.js';
+import { fetchProductsForSlugs } from './products.js';
 
 let currentUser = null;
 let favFilter = 'alla';
@@ -43,9 +43,7 @@ function splitName(displayName) {
 }
 
 function resolvedFavorites() {
-  return getStoredFavoriteSlugs()
-    .map((slug) => getProductBySlug(mergedProducts, slug))
-    .filter(Boolean);
+  return mergedProducts;
 }
 
 function filteredFavorites() {
@@ -147,6 +145,7 @@ function renderFavoritesGrid() {
       if (card) card.classList.add('removing');
       setTimeout(() => {
         removeFavorite(slug);
+        mergedProducts = mergedProducts.filter((p) => p.slug !== slug);
         updateFavCounts();
         renderFavoritesGrid();
         renderOverviewFavorites();
@@ -313,18 +312,21 @@ requireAuth(async (user) => {
 
   revealProfile(user);
 
-  try {
-    subscribeMergedProducts((products) => {
-      mergedProducts = products;
+  async function refreshFavoriteProducts() {
+    try {
+      mergedProducts = await fetchProductsForSlugs(getStoredFavoriteSlugs());
       if (currentUser) {
         updateFavCounts();
         renderOverviewFavorites();
         renderFavoritesGrid();
       }
-    });
-  } catch (err) {
-    console.error('Could not subscribe to products on profile:', err);
+    } catch (err) {
+      console.error('Could not load favorite products:', err);
+    }
   }
+
+  refreshFavoriteProducts();
+  document.addEventListener('favorites:updated', refreshFavoriteProducts);
 }, {
   onStateKnown: (user) => {
     window.clearTimeout(profileBootTimer);
