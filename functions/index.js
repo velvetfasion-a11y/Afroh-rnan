@@ -25,6 +25,7 @@ const adminOrderEmail = defineString('ADMIN_ORDER_EMAIL', { default: 'info@afroh
 const adminEmails = defineString('ADMIN_EMAILS', { default: 'info@afrohornan.com' });
 const courseCustomerTemplateId = defineString('MAILERSEND_COURSE_CUSTOMER_TEMPLATE_ID', { default: '' });
 const courseAdminTemplateId = defineString('MAILERSEND_COURSE_ADMIN_TEMPLATE_ID', { default: '' });
+const refundTemplateId = defineString('MAILERSEND_REFUND_TEMPLATE_ID', { default: '3vz9dley0o74kj50' });
 const coursePortalUrl = defineString('MAILERSEND_COURSE_PORTAL_URL', { default: 'https://afrohornan.com/profile.html' });
 
 function orderSubtotal(items) {
@@ -106,6 +107,7 @@ function mailerSendConfig() {
     apiKey: mailerSendApiKey.value() || '',
     courseCustomerTemplateId: courseCustomerTemplateId.value() || '',
     courseAdminTemplateId: courseAdminTemplateId.value() || '',
+    refundTemplateId: refundTemplateId.value() || '',
     coursePortalUrl: coursePortalUrl.value() || 'https://afrohornan.com/profile.html',
     from: mailFrom.value() || 'Afrohörnan <info@afrohornan.com>',
     adminTo: adminOrderEmail.value() || 'info@afrohornan.com',

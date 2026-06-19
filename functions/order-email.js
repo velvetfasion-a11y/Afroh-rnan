@@ -305,6 +305,21 @@ async function sendRefundEmail(order, orderId, refundAmount, mailersend) {
   }
 
   const data = buildRefundEmailData(order, orderId, refundAmount);
+
+  if (mailersend?.refundTemplateId && mailersend?.apiKey) {
+    const from = parseFromAddress(mailersend.from);
+    await sendTemplateEmail({
+      apiKey: mailersend.apiKey,
+      templateId: mailersend.refundTemplateId,
+      toEmail,
+      toName: customer.name || toEmail,
+      fromEmail: from.email,
+      fromName: from.name,
+      data,
+    });
+    return;
+  }
+
   const html = renderRefundEmail(order, orderId, refundAmount);
 
   await deliverEmail({
