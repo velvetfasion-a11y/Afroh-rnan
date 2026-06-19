@@ -199,9 +199,11 @@ async function syncPendingPaidOrders(orders) {
   const user = auth.currentUser;
   if (!syncUrl || !user) return orders;
 
-  const pending = (orders || []).filter(
-    (order) => order.status === 'pending' && order.paymentIntentId,
-  );
+  const pending = (orders || []).filter((order) => {
+    if (order.status === 'pending' && order.paymentIntentId) return true;
+    if (order.status === 'paid' && (!order.emailSentAt || !order.adminEmailSentAt)) return true;
+    return false;
+  });
   if (!pending.length) return orders;
 
   const token = await user.getIdToken();

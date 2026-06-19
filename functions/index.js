@@ -4,7 +4,7 @@ const { defineSecret, defineString } = require('firebase-functions/params');
 const cors = require('cors')({ origin: true });
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
-const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder } = require('./order-email');
+const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder, sendOrderEmailsIfNeeded } = require('./order-email');
 const { resolveOrGenerateOrderNumber } = require('./order-number');
 const { deductOrderStock, validateOrderStock } = require('./inventory');
 
@@ -407,29 +407,29 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
   const paymentMethod = await resolvePaymentMethodLabel(stripe, paymentIntent);
   const mailersend = mailerSendConfig();
 
-  if (order.emailSentAt && order.adminEmailSentAt) {
-    return { skipped: true, reason: 'already_sent' };
-  }
-
   const orderNumber = await resolveOrGenerateOrderNumber(db, orderRef, order);
   const orderWithNumber = { ...order, orderNumber };
 
-  try {
-    await deductOrderStock(db, orderId);
-  } catch (stockErr) {
-    console.error('Stock deduction failed for paid order', orderId, stockErr.message);
-    await orderRef.update({
-      stockIssue: true,
-      stockIssueMessage: stockErr.message,
-    });
-  }
+  if (order.status !== 'paid') {
+    try {
+      await deductOrderStock(db, orderId);
+    } catch (stockErr) {
+      console.error('Stock deduction failed for paid order', orderId, stockErr.message);
+      await orderRef.update({
+        stockIssue: true,
+        stockIssueMessage: stockErr.message,
+      });
+    }
 
-  await orderRef.update({
-    status: 'paid',
-    paidAt: admin.firestore.FieldValue.serverTimestamp(),
-    paymentMethod,
-    orderNumber,
-  });
+    await orderRef.update({
+      status: 'paid',
+      paidAt: admin.firestore.FieldValue.serverTimestamp(),
+      paymentMethod,
+      orderNumber,
+    });
+  } else if (!order.orderNumber) {
+    await orderRef.update({ orderNumber, paymentMethod });
+  }
 
   const pickupStore = order.pickupStore === 'fittja'
     ? 'Fittja'
@@ -437,41 +437,59 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
       ? 'Märsta'
       : order.pickupStore || '';
   const adminOptions = { paymentMethod, pickupStore };
-  const courseTemplatesReady = isCourseOrder(order)
-    && mailersend.apiKey
-    && mailersend.courseCustomerTemplateId
-    && mailersend.courseAdminTemplateId;
-  const updates = {};
 
-  if (!order.emailSentAt && !order.adminEmailSentAt) {
-    await sendPaidOrderEmails(orderWithNumber, orderId, mailersend, adminOptions);
-    updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
-    updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
-  } else {
-    if (!order.emailSentAt) {
-      if (courseTemplatesReady) {
-        await sendCourseCustomerEmail(orderWithNumber, orderId, mailersend);
-      } else {
-        await sendOrderConfirmationEmail(orderWithNumber, orderId, mailersend);
-      }
-      updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
-    }
+  const freshSnap = await orderRef.get();
+  const freshOrder = { ...freshSnap.data(), orderNumber };
+  const emailResult = await sendOrderEmailsIfNeeded(freshOrder, orderId, mailersend, adminOptions);
 
-    if (!order.adminEmailSentAt) {
-      if (courseTemplatesReady) {
-        await sendCourseAdminEmail(orderWithNumber, orderId, mailersend);
-      } else {
-        await sendAdminOrderNotificationEmail(orderWithNumber, orderId, adminOptions, mailersend);
-      }
-      updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
-    }
+  const emailUpdates = {};
+  if (emailResult.customerSent && !freshOrder.emailSentAt) {
+    emailUpdates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
+    emailUpdates.emailError = admin.firestore.FieldValue.delete();
+  } else if (emailResult.errors.customer) {
+    emailUpdates.emailError = emailResult.errors.customer;
+    emailUpdates.emailLastAttemptAt = admin.firestore.FieldValue.serverTimestamp();
   }
 
-  if (Object.keys(updates).length) {
-    await orderRef.update(updates);
+  if (emailResult.adminSent && !freshOrder.adminEmailSentAt) {
+    emailUpdates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
+    emailUpdates.adminEmailError = admin.firestore.FieldValue.delete();
+  } else if (emailResult.errors.admin) {
+    emailUpdates.adminEmailError = emailResult.errors.admin;
+    emailUpdates.adminEmailLastAttemptAt = admin.firestore.FieldValue.serverTimestamp();
   }
 
-  return { skipped: false };
+  if (emailResult.errors.config) {
+    emailUpdates.emailError = emailResult.errors.config;
+    emailUpdates.adminEmailError = emailResult.errors.config;
+  }
+
+  if (Object.keys(emailUpdates).length) {
+    await orderRef.update(emailUpdates);
+  }
+
+  if (emailResult.errors.customer || emailResult.errors.admin || emailResult.errors.config) {
+    console.error('Order emails incomplete for', orderId, emailResult.errors);
+  }
+
+  return {
+    skipped: false,
+    orderNumber,
+    emails: emailResult,
+  };
+}
+
+async function resolveOrderIdFromPaymentIntent(paymentIntent) {
+  const fromMetadata = paymentIntent.metadata?.order_id;
+  if (fromMetadata) return fromMetadata;
+
+  const snap = await db.collection('orders')
+    .where('paymentIntentId', '==', paymentIntent.id)
+    .limit(1)
+    .get();
+
+  if (!snap.empty) return snap.docs[0].id;
+  return null;
 }
 
 async function verifyOrderAccess(decoded, order) {
@@ -538,7 +556,23 @@ exports.syncOrderPayment = onRequest(
         }
 
         if (order.status === 'paid') {
-          res.json({ ok: true, status: 'paid', orderNumber: order.orderNumber || null });
+          const stripe = new Stripe(stripeSecret.value().trim());
+          let paymentIntent = null;
+          if (order.paymentIntentId) {
+            paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+          }
+          const result = await handlePaidOrder(
+            orderId,
+            paymentIntent || { id: order.paymentIntentId, metadata: { order_id: orderId } },
+            stripe,
+          );
+          const updated = await orderRef.get();
+          res.json({
+            ok: true,
+            status: 'paid',
+            orderNumber: updated.data()?.orderNumber || null,
+            emails: result.emails,
+          });
           return;
         }
 
@@ -567,6 +601,75 @@ exports.syncOrderPayment = onRequest(
         res.status(500).json({ error: err.message || 'Sync failed' });
       }
     });
+  },
+);
+
+exports.adminResendOrderEmails = onRequest(
+  { secrets: [mailerSendApiKey], invoker: 'public' },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const auth = req.headers.authorization || '';
+    const expected = `Bearer ${mailerSendApiKey.value()}`;
+    if (!mailerSendApiKey.value() || auth !== expected) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    try {
+      const mailersend = mailerSendConfig();
+      const snap = await db.collection('orders').where('status', '==', 'paid').get();
+      const results = [];
+
+      for (const doc of snap.docs) {
+        const order = doc.data();
+        if (order.emailSentAt && order.adminEmailSentAt) continue;
+
+        const pickupStore = order.pickupStore === 'fittja'
+          ? 'Fittja'
+          : order.pickupStore === 'marsta'
+            ? 'Märsta'
+            : order.pickupStore || '';
+
+        const emailResult = await sendOrderEmailsIfNeeded(order, doc.id, mailersend, {
+          paymentMethod: order.paymentMethod || 'Kort',
+          pickupStore,
+        });
+
+        const updates = {};
+        if (emailResult.customerSent && !order.emailSentAt) {
+          updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
+          updates.emailError = admin.firestore.FieldValue.delete();
+        } else if (emailResult.errors.customer) {
+          updates.emailError = emailResult.errors.customer;
+        }
+
+        if (emailResult.adminSent && !order.adminEmailSentAt) {
+          updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
+          updates.adminEmailError = admin.firestore.FieldValue.delete();
+        } else if (emailResult.errors.admin) {
+          updates.adminEmailError = emailResult.errors.admin;
+        }
+
+        if (Object.keys(updates).length) {
+          await doc.ref.update(updates);
+        }
+
+        results.push({
+          orderId: doc.id,
+          email: order.customer?.email || null,
+          emails: emailResult,
+        });
+      }
+
+      res.json({ ok: true, processed: results.length, results });
+    } catch (err) {
+      console.error('adminResendOrderEmails failed:', err);
+      res.status(500).json({ error: err.message || 'Resend failed' });
+    }
   },
 );
 
@@ -600,12 +703,16 @@ exports.stripeWebhook = onRequest(
     try {
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
-        const orderId = paymentIntent.metadata?.order_id;
+        const orderId = await resolveOrderIdFromPaymentIntent(paymentIntent);
 
         if (orderId) {
-          await handlePaidOrder(orderId, paymentIntent, stripe);
+          try {
+            await handlePaidOrder(orderId, paymentIntent, stripe);
+          } catch (orderErr) {
+            console.error('handlePaidOrder failed for', orderId, orderErr.message);
+          }
         } else {
-          console.warn('payment_intent.succeeded without order_id metadata', paymentIntent.id);
+          console.warn('payment_intent.succeeded without matching order', paymentIntent.id);
         }
       }
 

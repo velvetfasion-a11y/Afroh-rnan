@@ -425,6 +425,59 @@ async function sendPaidOrderEmails(order, orderId, mailersend, adminOptions = {}
   await sendAdminOrderNotificationEmail(order, orderId, adminOptions, mailersend);
 }
 
+/**
+ * Skickar kund- och adminmejl om de inte redan skickats.
+ * Kastar inte – returnerar fel så att betalningsflödet kan slutföras ändå.
+ */
+async function sendOrderEmailsIfNeeded(order, orderId, mailersend, adminOptions = {}) {
+  const result = {
+    customerSent: Boolean(order.emailSentAt),
+    adminSent: Boolean(order.adminEmailSentAt),
+    errors: {},
+  };
+
+  if (!mailersend?.apiKey) {
+    const message = 'MailerSend API key is not configured';
+    result.errors.config = message;
+    return result;
+  }
+
+  const courseTemplatesReady = isCourseOrder(order)
+    && mailersend.apiKey
+    && mailersend.courseCustomerTemplateId
+    && mailersend.courseAdminTemplateId;
+
+  if (!order.emailSentAt) {
+    try {
+      if (courseTemplatesReady) {
+        await sendCourseCustomerEmail(order, orderId, mailersend);
+      } else {
+        await sendOrderConfirmationEmail(order, orderId, mailersend);
+      }
+      result.customerSent = true;
+    } catch (err) {
+      console.error('Customer order email failed:', orderId, err.message);
+      result.errors.customer = err.message;
+    }
+  }
+
+  if (!order.adminEmailSentAt) {
+    try {
+      if (courseTemplatesReady) {
+        await sendCourseAdminEmail(order, orderId, mailersend);
+      } else {
+        await sendAdminOrderNotificationEmail(order, orderId, adminOptions, mailersend);
+      }
+      result.adminSent = true;
+    } catch (err) {
+      console.error('Admin order email failed:', orderId, err.message);
+      result.errors.admin = err.message;
+    }
+  }
+
+  return result;
+}
+
 async function sendAdminOrderNotificationEmail(order, orderId, options = {}, mailersend = {}) {
   const adminTo = mailersend.adminTo || 'info@afrohornan.com';
   const html = renderAdminOrderNotificationEmail(order, orderId, options.paymentMethod, options);
@@ -474,6 +527,7 @@ module.exports = {
   sendCourseCustomerEmail,
   sendCourseAdminEmail,
   sendPaidOrderEmails,
+  sendOrderEmailsIfNeeded,
   isCourseOrder,
   formatOrderNumber,
 };
