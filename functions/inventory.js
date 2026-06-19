@@ -85,6 +85,28 @@ function deductFromStoreStock(stock, storeId, qty) {
   };
 }
 
+function restoreToStoreStock(stock, storeId, qty) {
+  const nextStock = {
+    fittja: Math.max(0, Number(stock?.fittja) || 0),
+    marsta: Math.max(0, Number(stock?.marsta) || 0),
+    [storeId]: Math.max(0, Number(stock?.[storeId]) || 0) + qty,
+  };
+
+  return {
+    stock: nextStock,
+    inventory: nextStock.fittja + nextStock.marsta,
+  };
+}
+
+function restoreToStockObject(stock, qty) {
+  const fittja = Math.max(0, Number(stock?.fittja) || 0) + qty;
+  const marsta = Math.max(0, Number(stock?.marsta) || 0);
+  return {
+    stock: { fittja, marsta },
+    inventory: fittja + marsta,
+  };
+}
+
 function sumColorInventory(colors) {
   return colors.reduce((sum, color) => sum + Math.max(0, Number(color.inventory) || 0), 0);
 }
@@ -202,8 +224,84 @@ async function deductOrderStock(db, orderId) {
   });
 }
 
+async function releaseOrderStock(db, orderId) {
+  const orderRef = db.collection('orders').doc(orderId);
+
+  return db.runTransaction(async (tx) => {
+    const orderSnap = await tx.get(orderRef);
+    if (!orderSnap.exists) {
+      return { skipped: true, reason: 'order_not_found' };
+    }
+
+    const order = orderSnap.data();
+    if (!order.stockDeductedAt || order.stockReleasedAt) {
+      return { skipped: true, reason: 'nothing_to_release' };
+    }
+    if (order.status === 'paid') {
+      return { skipped: true, reason: 'already_paid' };
+    }
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const storeId = order.fulfillment === 'pickup' ? order.pickupStore : null;
+
+    for (const item of items) {
+      if (isCourseItem(item)) continue;
+
+      const productId = item.slug;
+      const qty = Number(item.qty) || 1;
+      if (!productId || qty < 1) continue;
+
+      const productRef = db.collection('products').doc(productId);
+      const productSnap = await tx.get(productRef);
+      if (!productSnap.exists) continue;
+
+      const data = productSnap.data();
+      if (isCourseProduct(data)) continue;
+
+      const colors = Array.isArray(data.colors) ? data.colors.map((color) => ({ ...color })) : [];
+      const updates = {
+        totalSold: admin.firestore.FieldValue.increment(-qty),
+      };
+
+      if (item.colorId && colors.length) {
+        const colorIndex = colors.findIndex((entry) => entry.id === item.colorId);
+        if (colorIndex < 0) continue;
+
+        const color = { ...colors[colorIndex] };
+        const stock = color.stock || { fittja: 0, marsta: 0 };
+        const result = storeId
+          ? restoreToStoreStock(stock, storeId, qty)
+          : restoreToStockObject(stock, qty);
+
+        color.stock = result.stock;
+        color.inventory = result.inventory;
+        colors[colorIndex] = color;
+        updates.colors = colors;
+        updates.inventory = sumColorInventory(colors);
+      } else if (!colors.length) {
+        const stock = data.stock || { fittja: 0, marsta: 0 };
+        const result = storeId
+          ? restoreToStoreStock(stock, storeId, qty)
+          : restoreToStockObject(stock, qty);
+
+        updates.stock = result.stock;
+        updates.inventory = result.inventory;
+      }
+
+      tx.update(productRef, updates);
+    }
+
+    tx.update(orderRef, {
+      stockReleasedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { skipped: false };
+  });
+}
+
 module.exports = {
   deductOrderStock,
+  releaseOrderStock,
   getProductStoreStock,
   getTotalStock,
   validateOrderStock,

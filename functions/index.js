@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 const Stripe = require('stripe');
 const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder, sendOrderEmailsIfNeeded } = require('./order-email');
 const { resolveOrGenerateOrderNumber } = require('./order-number');
-const { deductOrderStock, validateOrderStock } = require('./inventory');
+const { deductOrderStock, releaseOrderStock, validateOrderStock } = require('./inventory');
 
 setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 
@@ -21,6 +21,7 @@ const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
 const mailerSendApiKey = defineSecret('MAILERSEND_API_KEY');
 const mailFrom = defineString('SMTP_FROM', { default: 'Afrohörnan <info@afrohornan.com>' });
 const adminOrderEmail = defineString('ADMIN_ORDER_EMAIL', { default: 'info@afrohornan.com' });
+const adminEmails = defineString('ADMIN_EMAILS', { default: 'info@afrohornan.com' });
 const courseCustomerTemplateId = defineString('MAILERSEND_COURSE_CUSTOMER_TEMPLATE_ID', { default: '' });
 const courseAdminTemplateId = defineString('MAILERSEND_COURSE_ADMIN_TEMPLATE_ID', { default: '' });
 const coursePortalUrl = defineString('MAILERSEND_COURSE_PORTAL_URL', { default: 'https://afrohornan.com/profile.html' });
@@ -34,6 +35,64 @@ function orderSubtotal(items) {
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
+}
+
+function getAdminEmailSet() {
+  const raw = adminEmails.value() || '';
+  return new Set(
+    raw.split(/[,;]/).map((entry) => normalizeEmail(entry)).filter(Boolean),
+  );
+}
+
+async function verifyAdminAccess(decoded) {
+  const admins = getAdminEmailSet();
+  if (!admins.size || !decoded?.uid) return false;
+
+  const emails = new Set();
+  if (decoded.email) emails.add(normalizeEmail(decoded.email));
+
+  const firebaseUser = await admin.auth().getUser(decoded.uid).catch(() => null);
+  if (firebaseUser?.email) emails.add(normalizeEmail(firebaseUser.email));
+  for (const provider of firebaseUser?.providerData || []) {
+    if (provider.email) emails.add(normalizeEmail(provider.email));
+  }
+
+  for (const email of emails) {
+    if (admins.has(email)) return true;
+  }
+  return false;
+}
+
+function serializeTimestamp(value) {
+  if (!value) return null;
+  if (value.toDate) return value.toDate().toISOString();
+  if (value.seconds) return new Date(value.seconds * 1000).toISOString();
+  return null;
+}
+
+function serializeOrderDoc(doc) {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    orderNumber: data.orderNumber || null,
+    status: data.status || 'pending',
+    fulfillment: data.fulfillment || 'delivery',
+    pickupStore: data.pickupStore || null,
+    customer: data.customer || {},
+    items: Array.isArray(data.items) ? data.items : [],
+    subtotal: data.subtotal ?? null,
+    shipping: data.shipping ?? null,
+    total: data.total ?? null,
+    paymentMethod: data.paymentMethod || null,
+    paymentIntentId: data.paymentIntentId || null,
+    stockIssue: Boolean(data.stockIssue),
+    stockIssueMessage: data.stockIssueMessage || null,
+    emailError: data.emailError || null,
+    createdAt: serializeTimestamp(data.createdAt),
+    paidAt: serializeTimestamp(data.paidAt),
+    emailSentAt: serializeTimestamp(data.emailSentAt),
+    adminEmailSentAt: serializeTimestamp(data.adminEmailSentAt),
+  };
 }
 
 function mailerSendConfig() {
@@ -227,6 +286,18 @@ exports.createPaymentIntent = onRequest(
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
+        try {
+          await deductOrderStock(db, orderRef.id);
+        } catch (stockErr) {
+          console.error('Stock reservation failed for order', orderRef.id, stockErr.message);
+          await orderRef.delete().catch(() => {});
+          res.status(409).json({
+            error: 'En eller flera produkter är slut i lager.',
+            code: 'out_of_stock',
+          });
+          return;
+        }
+
         const intentMetadata = {
           order_id: orderRef.id,
           fulfillment: isPickup ? 'pickup' : 'delivery',
@@ -410,7 +481,7 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
   const orderNumber = await resolveOrGenerateOrderNumber(db, orderRef, order);
   const orderWithNumber = { ...order, orderNumber };
 
-  if (order.status !== 'paid') {
+  if (!order.stockDeductedAt) {
     try {
       await deductOrderStock(db, orderId);
     } catch (stockErr) {
@@ -420,7 +491,9 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
         stockIssueMessage: stockErr.message,
       });
     }
+  }
 
+  if (order.status !== 'paid') {
     await orderRef.update({
       status: 'paid',
       paidAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -513,6 +586,79 @@ async function verifyOrderAccess(decoded, order) {
   return emails.has(orderEmail);
 }
 
+function verifyGuestOrderAccess(order, customerEmail) {
+  const provided = normalizeEmail(customerEmail);
+  const stored = normalizeEmail(order.customer?.email);
+  return Boolean(provided && stored && provided === stored);
+}
+
+async function runOrderPaymentSync(orderId, options = {}) {
+  const { decoded = null, customerEmail = '' } = options;
+  const orderRef = db.collection('orders').doc(orderId);
+  const orderSnap = await orderRef.get();
+
+  if (!orderSnap.exists) {
+    const err = new Error('Order not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const order = orderSnap.data();
+
+  if (decoded) {
+    if (!(await verifyOrderAccess(decoded, order))) {
+      const err = new Error('Forbidden');
+      err.status = 403;
+      throw err;
+    }
+  } else if (!verifyGuestOrderAccess(order, customerEmail)) {
+    const err = new Error('Ogiltig e-post för denna order');
+    err.status = 403;
+    throw err;
+  }
+
+  const stripe = new Stripe(stripeSecret.value().trim());
+
+  if (order.status === 'paid') {
+    let paymentIntent = null;
+    if (order.paymentIntentId) {
+      paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+    }
+    const result = await handlePaidOrder(
+      orderId,
+      paymentIntent || { id: order.paymentIntentId, metadata: { order_id: orderId } },
+      stripe,
+    );
+    const updated = await orderRef.get();
+    return {
+      ok: true,
+      status: 'paid',
+      orderNumber: updated.data()?.orderNumber || null,
+      emails: result.emails,
+    };
+  }
+
+  if (!order.paymentIntentId) {
+    const err = new Error('Order has no payment intent');
+    err.status = 400;
+    throw err;
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+  if (paymentIntent.status !== 'succeeded') {
+    return { ok: true, status: paymentIntent.status };
+  }
+
+  const result = await handlePaidOrder(orderId, paymentIntent, stripe);
+  const updated = await orderRef.get();
+  return {
+    ok: true,
+    status: 'paid',
+    orderNumber: updated.data()?.orderNumber || null,
+    emails: result.emails,
+  };
+}
+
 exports.syncOrderPayment = onRequest(
   { secrets: [stripeSecret, stripeWebhookSecret, mailerSendApiKey], invoker: 'public' },
   (req, res) => {
@@ -528,84 +674,85 @@ exports.syncOrderPayment = onRequest(
       }
 
       try {
+        const { orderId, customerEmail } = req.body || {};
+        if (!orderId || typeof orderId !== 'string') {
+          res.status(400).json({ error: 'Missing orderId' });
+          return;
+        }
+
+        let decoded = null;
+        const authHeader = req.headers.authorization || '';
+        if (authHeader.startsWith('Bearer ')) {
+          try {
+            decoded = await admin.auth().verifyIdToken(authHeader.slice(7).trim());
+          } catch (tokenErr) {
+            console.warn('syncOrderPayment: invalid auth token', tokenErr.message);
+          }
+        }
+
+        if (!decoded && !customerEmail) {
+          res.status(400).json({ error: 'customerEmail krävs för gästköp' });
+          return;
+        }
+
+        const result = await runOrderPaymentSync(orderId, { decoded, customerEmail });
+        res.json(result);
+      } catch (err) {
+        console.error('syncOrderPayment failed:', err);
+        const status = err.status || 500;
+        res.status(status).json({ error: err.message || 'Sync failed' });
+      }
+    });
+  },
+);
+
+exports.listAdminOrders = onRequest(
+  { invoker: 'public' },
+  (req, res) => {
+    cors(req, res, async () => {
+      if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+      }
+
+      if (req.method !== 'GET') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+      }
+
+      try {
         const authHeader = req.headers.authorization || '';
         if (!authHeader.startsWith('Bearer ')) {
           res.status(401).json({ error: 'Inloggning krävs' });
           return;
         }
 
-        const { orderId } = req.body || {};
-        if (!orderId || typeof orderId !== 'string') {
-          res.status(400).json({ error: 'Missing orderId' });
-          return;
-        }
-
         const decoded = await admin.auth().verifyIdToken(authHeader.slice(7).trim());
-        const orderRef = db.collection('orders').doc(orderId);
-        const orderSnap = await orderRef.get();
-
-        if (!orderSnap.exists) {
-          res.status(404).json({ error: 'Order not found' });
-          return;
-        }
-
-        const order = orderSnap.data();
-        if (!(await verifyOrderAccess(decoded, order))) {
+        if (!(await verifyAdminAccess(decoded))) {
           res.status(403).json({ error: 'Forbidden' });
           return;
         }
 
-        if (order.status === 'paid') {
-          const stripe = new Stripe(stripeSecret.value().trim());
-          let paymentIntent = null;
-          if (order.paymentIntentId) {
-            paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
-          }
-          const result = await handlePaidOrder(
-            orderId,
-            paymentIntent || { id: order.paymentIntentId, metadata: { order_id: orderId } },
-            stripe,
-          );
-          const updated = await orderRef.get();
-          res.json({
-            ok: true,
-            status: 'paid',
-            orderNumber: updated.data()?.orderNumber || null,
-            emails: result.emails,
+        const snap = await db.collection('orders').get();
+        const orders = snap.docs
+          .map(serializeOrderDoc)
+          .sort((a, b) => {
+            const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return tb - ta;
           });
-          return;
-        }
 
-        if (!order.paymentIntentId) {
-          res.status(400).json({ error: 'Order has no payment intent' });
-          return;
-        }
-
-        const stripe = new Stripe(stripeSecret.value().trim());
-        const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
-
-        if (paymentIntent.status !== 'succeeded') {
-          res.json({ ok: true, status: paymentIntent.status });
-          return;
-        }
-
-        await handlePaidOrder(orderId, paymentIntent, stripe);
-        const updated = await orderRef.get();
-        res.json({
-          ok: true,
-          status: 'paid',
-          orderNumber: updated.data()?.orderNumber || null,
-        });
+        res.json({ ok: true, orders });
       } catch (err) {
-        console.error('syncOrderPayment failed:', err);
-        res.status(500).json({ error: err.message || 'Sync failed' });
+        console.error('listAdminOrders failed:', err);
+        res.status(500).json({ error: err.message || 'Could not load orders' });
       }
     });
   },
 );
 
 exports.adminResendOrderEmails = onRequest(
-  { secrets: [mailerSendApiKey], invoker: 'public' },
+  { secrets: [mailerSendApiKey, stripeSecret], invoker: 'public' },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });
@@ -621,12 +768,38 @@ exports.adminResendOrderEmails = onRequest(
 
     try {
       const mailersend = mailerSendConfig();
-      const snap = await db.collection('orders').where('status', '==', 'paid').get();
+      const stripe = new Stripe(stripeSecret.value().trim());
+      const [paidSnap, pendingSnap] = await Promise.all([
+        db.collection('orders').where('status', '==', 'paid').get(),
+        db.collection('orders').where('status', '==', 'pending').get(),
+      ]);
+      const seen = new Set();
+      const docs = [...paidSnap.docs, ...pendingSnap.docs].filter((doc) => {
+        if (seen.has(doc.id)) return false;
+        seen.add(doc.id);
+        return true;
+      });
       const results = [];
 
-      for (const doc of snap.docs) {
-        const order = doc.data();
+      for (const doc of docs) {
+        let order = doc.data();
         if (order.emailSentAt && order.adminEmailSentAt) continue;
+
+        if (order.status === 'pending' && order.paymentIntentId) {
+          const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+          if (paymentIntent.status === 'succeeded') {
+            const handled = await handlePaidOrder(doc.id, paymentIntent, stripe);
+            results.push({
+              orderId: doc.id,
+              email: order.customer?.email || null,
+              status: 'paid',
+              emails: handled.emails,
+            });
+            continue;
+          }
+        }
+
+        if (order.status !== 'paid') continue;
 
         const pickupStore = order.pickupStore === 'fittja'
           ? 'Fittja'
@@ -713,6 +886,21 @@ exports.stripeWebhook = onRequest(
           }
         } else {
           console.warn('payment_intent.succeeded without matching order', paymentIntent.id);
+        }
+      }
+
+      if (
+        event.type === 'payment_intent.payment_failed'
+        || event.type === 'payment_intent.canceled'
+      ) {
+        const paymentIntent = event.data.object;
+        const orderId = await resolveOrderIdFromPaymentIntent(paymentIntent);
+        if (orderId) {
+          try {
+            await releaseOrderStock(db, orderId);
+          } catch (releaseErr) {
+            console.error('releaseOrderStock failed for', orderId, releaseErr.message);
+          }
         }
       }
 

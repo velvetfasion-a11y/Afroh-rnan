@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ordrar – Admin – Afrohörnan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="admin.css?v=13">
+</head>
+<body class="admin-body">
+
+<header class="admin-nav">
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <div class="admin-nav-right">
+    <span class="admin-email" id="adminEmail"></span>
+    <button type="button" class="admin-logout" id="adminLogout">Logga ut</button>
+  </div>
+</header>
+
+<main class="admin-main admin-main-wide">
+  <p class="admin-loading" id="adminLoading">Verifierar behörighet…</p>
+
+  <div id="adminContent" hidden>
+    <nav class="admin-tabs" aria-label="Admin-navigation">
+      <a href="admin.html">Översikt</a>
+      <a href="admin-products.html">Produkter</a>
+      <a href="admin-orders.html" class="active">Ordrar</a>
+    </nav>
+
+    <div class="admin-page-head">
+      <div>
+        <h1>Ordrar</h1>
+        <p class="admin-sub">Alla kundbeställningar och kontaktuppgifter</p>
+      </div>
+      <button type="button" class="admin-btn-outline" id="refreshOrders">Uppdatera</button>
+    </div>
+
+    <p class="admin-error" id="ordersError" hidden></p>
+    <p class="admin-loading" id="ordersLoading">Hämtar ordrar…</p>
+
+    <div class="admin-toolbar" id="ordersToolbar" hidden>
+      <div class="admin-search-wrap">
+        <input type="search" id="orderSearch" class="admin-search" placeholder="Sök namn, e-post, telefon, ordernummer…" autocomplete="off">
+      </div>
+      <div class="admin-toolbar-meta">
+        <label class="admin-filter-label">
+          Status
+          <select id="orderStatusFilter" class="admin-select">
+            <option value="all">Alla</option>
+            <option value="paid">Betalda</option>
+            <option value="pending">Väntar</option>
+            <option value="pickup_requested">Hämtning</option>
+          </select>
+        </label>
+        <span class="admin-count"><strong id="ordersCount">0</strong> ordrar</span>
+      </div>
+    </div>
+
+    <div class="admin-table-wrap" id="ordersTableWrap" hidden>
+      <table class="admin-table admin-orders-table">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Datum</th>
+            <th>Kund</th>
+            <th>E-post</th>
+            <th>Telefon</th>
+            <th>Typ</th>
+            <th>Status</th>
+            <th>Summa</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="admin-empty" id="ordersEmpty" hidden>
+      <p>Inga ordrar ännu.</p>
+    </div>
+  </div>
+</main>
+
+<script src="js/firebase-config.js?v=11"></script>
+<script src="js/admin-gate.js?v=11"></script>
+<script type="module" src="js/admin-orders.js"></script>
+</body>
+</html>

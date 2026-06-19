@@ -86,6 +86,7 @@ const output = `// Auto-generated from .env — do not edit manually.
     checkoutApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/createPaymentIntent',
     syncOrderApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/syncOrderPayment',
     pickupApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/createPickupOrder',
+    adminOrdersApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/listAdminOrders',
     useFirebaseEmulators: false,
     clearEmulatorDefaults: clearEmulatorDefaults,
   };

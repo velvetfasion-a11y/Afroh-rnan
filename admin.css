@@ -976,3 +976,130 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.admin-filter-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .78rem;
+  color: rgba(245, 239, 228, 0.65);
+}
+
+.admin-select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(212, 148, 26, 0.25);
+  border-radius: 6px;
+  color: #f5efe4;
+  font-family: 'Outfit', sans-serif;
+  font-size: .82rem;
+  padding: .45rem .65rem;
+}
+
+.admin-btn-text {
+  background: none;
+  border: none;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.admin-btn-text:hover {
+  text-decoration: underline;
+}
+
+.admin-orders-table td a {
+  color: #f5efe4;
+  text-decoration: none;
+}
+
+.admin-orders-table td a:hover {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
+.admin-order-number {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-order-detail-row td {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.admin-order-detail h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  margin: 0 0 .35rem;
+  color: var(--gold);
+}
+
+.admin-order-detail p {
+  margin: 0 0 .35rem;
+  font-size: .84rem;
+  line-height: 1.5;
+  color: rgba(245, 239, 228, 0.85);
+}
+
+.admin-order-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-order-meta {
+  color: rgba(245, 239, 228, 0.55) !important;
+  font-size: .78rem !important;
+}
+
+.admin-order-warning {
+  color: #ffb4a2 !important;
+  font-size: .78rem !important;
+}
+
+.admin-order-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: .75rem;
+}
+
+.admin-order-items th,
+.admin-order-items td {
+  text-align: left;
+  padding: .45rem .5rem;
+  border-bottom: 1px solid rgba(212, 148, 26, 0.15);
+  font-size: .82rem;
+}
+
+.admin-order-items th {
+  color: rgba(245, 239, 228, 0.5);
+  font-weight: 600;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.admin-order-variant {
+  color: rgba(245, 239, 228, 0.55);
+  font-size: .78rem;
+}
+
+.admin-order-total {
+  margin: 0;
+  font-size: .9rem;
+}
+
+@media (max-width: 900px) {
+  .admin-order-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-orders-table .admin-order-row td:nth-child(4),
+  .admin-orders-table .admin-order-row td:nth-child(5) {
+    display: none;
+  }
+}

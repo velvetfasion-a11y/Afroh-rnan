@@ -186,6 +186,9 @@
     if (currentOrderId) {
       try {
         sessionStorage.setItem('afroPendingOrderId', currentOrderId);
+        if (customer?.email) {
+          sessionStorage.setItem('afroPendingOrderEmail', customer.email);
+        }
       } catch {
         /* ignore */
       }
@@ -193,7 +196,7 @@
     return data;
   }
 
-  async function syncOrderAfterPayment() {
+  async function syncOrderAfterPayment(customerEmail) {
     let orderId = currentOrderId;
     if (!orderId) {
       try {
@@ -202,24 +205,40 @@
         orderId = null;
       }
     }
-    if (!orderId || !window.AfroCheckoutAuth?.getIdToken) return;
+    if (!orderId) return;
+
     const syncUrl = window.AfroSite?.syncOrderApiUrl;
     if (!syncUrl) return;
 
-    const token = await window.AfroCheckoutAuth.getIdToken();
-    if (!token) return;
+    let email = customerEmail || '';
+    if (!email) {
+      try {
+        email = sessionStorage.getItem('afroPendingOrderEmail') || '';
+      } catch {
+        email = '';
+      }
+    }
+
+    const headers = { 'Content-Type': 'application/json' };
+    const token = await window.AfroCheckoutAuth?.getIdToken?.();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const body = { orderId };
+    if (email) body.customerEmail = email;
 
     try {
-      await fetch(syncUrl, {
+      const response = await fetch(syncUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ orderId }),
+        headers,
+        body: JSON.stringify(body),
       });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.warn('Order sync after payment failed:', data.error || response.status);
+      }
       try {
         sessionStorage.removeItem('afroPendingOrderId');
+        sessionStorage.removeItem('afroPendingOrderEmail');
       } catch {
         /* ignore */
       }
@@ -353,7 +372,7 @@
     }
 
     if (paymentIntent?.status === 'succeeded') {
-      await syncOrderAfterPayment();
+      await syncOrderAfterPayment(customer?.email);
       AfroCart.clear();
       showOrderSuccessBanner(options.fulfillment === 'pickup' ? 'pickup' : 'delivery');
       return true;
