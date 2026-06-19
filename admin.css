@@ -1166,3 +1166,87 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.admin-btn-danger {
+  background: #8b2e2e;
+  color: #fff;
+}
+
+.admin-btn-danger:hover {
+  background: #a33a3a;
+}
+
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.admin-modal[hidden] {
+  display: none !important;
+}
+
+.admin-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.admin-modal-card {
+  position: relative;
+  width: min(100%, 440px);
+  background: #1c1610;
+  border: 1px solid rgba(212, 148, 26, 0.28);
+  border-radius: 12px;
+  padding: 1.35rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+
+.admin-modal-card h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  margin: 0 0 .5rem;
+  color: #f5efe4;
+}
+
+.admin-modal-lead,
+.admin-modal-warning {
+  font-size: .84rem;
+  line-height: 1.5;
+  color: rgba(245, 239, 228, 0.75);
+  margin: 0 0 .85rem;
+}
+
+.admin-modal-warning {
+  color: #ffb4a2;
+}
+
+.admin-modal-details {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(212, 148, 26, 0.14);
+  border-radius: 8px;
+  padding: .85rem;
+  margin-bottom: .85rem;
+}
+
+.admin-modal-details p {
+  margin: 0 0 .35rem;
+  font-size: .84rem;
+  color: rgba(245, 239, 228, 0.9);
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .65rem;
+  flex-wrap: wrap;
+}
+
+.admin-modal-error {
+  margin: .75rem 0 0;
+  font-size: .8rem;
+  color: #ffb4a2;
+}

@@ -18,8 +18,12 @@
   const expressMount = document.getElementById('express-checkout-element');
   const paymentMount = document.getElementById('payment-element');
   const cartActions = document.querySelector('.cart-actions');
+  const checkoutPickupStores = document.getElementById('checkout-pickup-stores');
+  const postnordLabelEl = document.getElementById('checkout-postnord-label');
 
   if (!panel || !checkoutBtn || !form) return;
+
+  const shippingApi = () => window.AfroShipping;
 
   let stripe = null;
   let elements = null;
@@ -80,6 +84,80 @@
     return productsCache;
   }
 
+  function getSubtotal() {
+    return AfroCart.getTotal();
+  }
+
+  function readDeliveryShipping() {
+    const method = form?.querySelector('input[name="checkout-shipping"]:checked')?.value || 'postnord';
+    const store = form?.querySelector('input[name="checkout-pickup-store"]:checked')?.value || '';
+    return { method, store };
+  }
+
+  function getCheckoutTotals() {
+    const subtotal = getSubtotal();
+    const { method } = readDeliveryShipping();
+    const shippingFee = shippingApi()?.calculateShipping(subtotal, method) ?? 0;
+    return { subtotal, shipping: shippingFee, total: subtotal + shippingFee, method };
+  }
+
+  function updateCheckoutTotals() {
+    const { subtotal, shipping, total, method } = getCheckoutTotals();
+    const postnordFee = shippingApi()?.calculatePostnordShipping(subtotal) ?? 0;
+
+    if (postnordLabelEl && shippingApi()) {
+      postnordLabelEl.textContent = shippingApi().postnordOptionLabel(subtotal);
+    }
+
+    if (checkoutPickupStores) {
+      checkoutPickupStores.hidden = method !== 'pickup';
+    }
+
+    const itemsTotalEl = document.getElementById('checkout-items-total');
+    const shippingTotalEl = document.getElementById('checkout-shipping-total');
+    const grandTotalEl = document.getElementById('checkout-grand-total');
+
+    if (itemsTotalEl) itemsTotalEl.textContent = formatKr(subtotal);
+    if (shippingTotalEl) {
+      shippingTotalEl.textContent = shipping === 0 ? 'Gratis' : formatKr(shipping);
+    }
+    if (grandTotalEl) grandTotalEl.textContent = formatKr(total);
+  }
+
+  function buildDeliveryPaymentOptions(customer) {
+    const { method, store } = readDeliveryShipping();
+    const totals = getCheckoutTotals();
+
+    if (method === 'pickup') {
+      if (!store) throw new Error('Välj butik för hämtning.');
+      const storeLabel = window.AfroStores?.STORES?.[store]?.label || store;
+      return {
+        fulfillment: 'pickup',
+        pickupStore: store,
+        shippingMethod: 'pickup',
+        amount: totals.total,
+        subtotal: totals.subtotal,
+        shipping: 0,
+        customer: {
+          ...customer,
+          name: customer.name || `Hämtning ${storeLabel}`,
+          address: `Hämtning i butik – ${storeLabel}`,
+          city: storeLabel,
+        },
+      };
+    }
+
+    return {
+      fulfillment: 'delivery',
+      pickupStore: '',
+      shippingMethod: 'postnord',
+      amount: totals.total,
+      subtotal: totals.subtotal,
+      shipping: totals.shipping,
+      customer,
+    };
+  }
+
   function readCustomer() {
     return {
       name: document.getElementById('checkout-name')?.value.trim() || '',
@@ -98,9 +176,10 @@
     return { phone, email, store };
   }
 
-  function validateCustomer(customer) {
+  function validateCustomer(customer, options = {}) {
     if (!customer.email || !customer.email.includes('@')) return 'Ange en giltig e-postadress.';
     if (!customer.phone || customer.phone.length < 6) return 'Ange ett telefonnummer.';
+    if (options.fulfillment === 'pickup') return '';
     if (!customer.address) return 'Ange din adress.';
     if (!customer.postal) return 'Ange postnummer.';
     if (!customer.city) return 'Ange ort.';
@@ -157,8 +236,11 @@
         headers,
         body: JSON.stringify({
           items: AfroCart.getItems(),
-          amount: AfroCart.getTotal(),
-          customer,
+          amount: options.amount ?? getCheckoutTotals().total,
+          subtotal: options.subtotal ?? getSubtotal(),
+          shipping: options.shipping ?? getCheckoutTotals().shipping,
+          shippingMethod: options.shippingMethod || 'postnord',
+          customer: options.customer || customer,
           fulfillment: options.fulfillment || 'delivery',
           pickupStore: options.pickupStore || '',
           customerUid: window.AfroCheckoutAuth?.getUid?.() || null,
@@ -264,29 +346,30 @@
 
   function buildConfirmParams(customer, options = {}) {
     const isPickup = options.fulfillment === 'pickup';
+    const paymentCustomer = options.customer || customer;
     const params = {
       return_url: buildReturnUrl(options),
-      receipt_email: customer.email,
+      receipt_email: paymentCustomer.email,
     };
 
     if (isPickup) {
       params.payment_method_data = {
         billing_details: {
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
+          name: paymentCustomer.name,
+          email: paymentCustomer.email,
+          phone: paymentCustomer.phone,
         },
       };
     } else {
       params.payment_method_data = {
         billing_details: {
-          name: customer.name || undefined,
-          email: customer.email,
-          phone: customer.phone,
+          name: paymentCustomer.name || undefined,
+          email: paymentCustomer.email,
+          phone: paymentCustomer.phone,
           address: {
-            line1: customer.address,
-            postal_code: customer.postal,
-            city: customer.city,
+            line1: paymentCustomer.address,
+            postal_code: paymentCustomer.postal,
+            city: paymentCustomer.city,
             country: 'SE',
           },
         },
@@ -467,7 +550,10 @@
 
     await loadStripeScript();
     const stripeClient = window.Stripe(config.publishableKey);
-    const paymentData = await createPaymentIntent(customer, options);
+    const paymentData = await createPaymentIntent(
+      options.customer || customer,
+      options,
+    );
     const clientSecret = paymentData.clientSecret;
 
     const stripeElements = stripeClient.elements({
@@ -487,7 +573,8 @@
       else showError(message);
     };
 
-    mountExpressCheckout(stripeClient, stripeElements, expressTarget, customer, options, onPaymentError);
+    const paymentCustomer = options.customer || customer;
+    mountExpressCheckout(stripeClient, stripeElements, expressTarget, paymentCustomer, options, onPaymentError);
     mountPaymentElement(stripeElements, paymentTarget);
 
     if (isPickup) {
@@ -515,6 +602,7 @@
       continueBtn.textContent = 'Fortsätt till betalning';
     }
     if (payBtn) payBtn.hidden = true;
+    updateCheckoutTotals();
     openPanel(panel);
   });
 
@@ -535,20 +623,55 @@
     openPanel(pickupPanel);
   });
 
+  form?.addEventListener('change', (event) => {
+    if (
+      event.target.matches('input[name="checkout-shipping"]')
+      || event.target.matches('input[name="checkout-pickup-store"]')
+    ) {
+      resetDeliveryPayment();
+      updateCheckoutTotals();
+    }
+  });
+
+  document.addEventListener('cart:updated', () => {
+    updateCheckoutTotals();
+  });
+
   continueBtn?.addEventListener('click', async () => {
     showError('');
     const customer = readCustomer();
-    const validationError = validateCustomer(customer);
+    const paymentOptions = buildDeliveryPaymentOptions(customer);
+    const validationError = validateCustomer(
+      paymentOptions.customer,
+      { fulfillment: paymentOptions.fulfillment },
+    );
     if (validationError) {
       showError(validationError);
       return;
+    }
+
+    if (paymentOptions.fulfillment === 'pickup') {
+      try {
+        const products = await ensureProducts();
+        const unavailable = window.AfroStores.checkCartAvailability(
+          AfroCart.getItems(),
+          products,
+          paymentOptions.pickupStore,
+        );
+        if (unavailable.length) {
+          showError('En eller flera produkter finns inte i vald butik.');
+          return;
+        }
+      } catch {
+        /* continue */
+      }
     }
 
     continueBtn.disabled = true;
     continueBtn.textContent = 'Laddar betalning…';
 
     try {
-      const ready = await setupPayment(customer);
+      const ready = await setupPayment(paymentOptions.customer, paymentOptions);
       if (!ready) return;
 
       paymentWrap.hidden = false;
@@ -577,7 +700,11 @@
     showError('');
 
     const customer = readCustomer();
-    const validationError = validateCustomer(customer);
+    const paymentOptions = buildDeliveryPaymentOptions(customer);
+    const validationError = validateCustomer(
+      paymentOptions.customer,
+      { fulfillment: paymentOptions.fulfillment },
+    );
     if (validationError) {
       showError(validationError);
       return;
@@ -592,7 +719,13 @@
     payBtn.textContent = 'Betalar…';
 
     try {
-      await processPayment(stripe, elements, customer, { fulfillment: 'delivery' }, showError);
+      await processPayment(
+        stripe,
+        elements,
+        paymentOptions.customer,
+        paymentOptions,
+        showError,
+      );
     } catch (err) {
       showError(err.message || 'Något gick fel.');
     } finally {
@@ -645,6 +778,10 @@
         const ready = await setupPayment(customer, {
           fulfillment: 'pickup',
           pickupStore: pickup.store,
+          shippingMethod: 'pickup',
+          amount: getSubtotal(),
+          subtotal: getSubtotal(),
+          shipping: 0,
         });
         if (!ready) return;
 
@@ -709,4 +846,5 @@
   }
 
   handlePaymentReturn();
+  updateCheckoutTotals();
 })();

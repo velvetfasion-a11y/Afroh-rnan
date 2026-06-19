@@ -23,6 +23,7 @@
     pickupApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/createPickupOrder',
     adminOrdersApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/listAdminOrders',
     adminSendOrderEmailApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/adminSendOrderEmail',
+    adminRefundOrderApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/adminRefundOrder',
     useFirebaseEmulators: false,
     clearEmulatorDefaults: clearEmulatorDefaults,
   };

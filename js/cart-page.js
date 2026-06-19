@@ -4,7 +4,13 @@
   const contentEl = document.getElementById('cart-content');
   const countEl = document.getElementById('cart-item-count');
   const subtotalEl = document.getElementById('cart-subtotal');
+  const shippingEl = document.getElementById('cart-shipping');
+  const shippingLabelEl = document.getElementById('cart-shipping-label');
   const totalEl = document.getElementById('cart-total');
+  const freeShippingBanner = document.getElementById('free-shipping-banner');
+  const freeShippingText = document.getElementById('free-shipping-text');
+  const freeShippingFill = document.getElementById('free-shipping-fill');
+  const shipping = window.AfroShipping;
 
   if (!listEl) return;
 
@@ -20,20 +26,41 @@
       .replace(/"/g, '&quot;');
   }
 
+  function updateSummary(subtotal) {
+    const estimatedShipping = shipping?.calculatePostnordShipping(subtotal) ?? 0;
+
+    if (subtotalEl) subtotalEl.textContent = formatKr(subtotal);
+    if (shippingEl) {
+      shippingEl.textContent = estimatedShipping === 0 ? 'Gratis' : formatKr(estimatedShipping);
+    }
+    if (shippingLabelEl) {
+      shippingLabelEl.textContent = estimatedShipping === 0 ? 'Frakt (PostNord)' : 'Frakt (PostNord, uppskattat)';
+    }
+    if (totalEl) totalEl.textContent = formatKr(subtotal + estimatedShipping);
+
+    if (freeShippingBanner && freeShippingText && freeShippingFill && shipping) {
+      const remaining = shipping.amountUntilFreeShipping(subtotal);
+      freeShippingBanner.hidden = false;
+      freeShippingText.textContent = shipping.freeShippingMessage(subtotal);
+      freeShippingFill.style.width = `${shipping.freeShippingProgress(subtotal)}%`;
+      freeShippingBanner.classList.toggle('is-free', remaining <= 0);
+    }
+  }
+
   function render() {
     const items = AfroCart.getItems();
     const totalQty = AfroCart.getCount();
-    const total = AfroCart.getTotal();
+    const subtotal = AfroCart.getTotal();
 
     if (countEl) {
       countEl.textContent = totalQty === 1 ? '1 produkt' : totalQty + ' produkter';
     }
-    if (subtotalEl) subtotalEl.textContent = formatKr(total);
-    if (totalEl) totalEl.textContent = formatKr(total);
+    updateSummary(subtotal);
 
     if (!items.length) {
       if (emptyEl) emptyEl.hidden = false;
       if (contentEl) contentEl.hidden = true;
+      if (freeShippingBanner) freeShippingBanner.hidden = true;
       listEl.innerHTML = '';
       return;
     }

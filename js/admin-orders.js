@@ -1,6 +1,11 @@
 import { requireAdmin, signOut, getFirebaseAuth } from './firebase-auth.js';
 
 let allOrders = [];
+let pendingRefundOrderId = null;
+
+function getOrderById(orderId) {
+  return allOrders.find((order) => order.id === orderId) || null;
+}
 
 function escapeHtml(str) {
   return String(str ?? '')
@@ -44,14 +49,22 @@ function statusLabel(status) {
     paid: 'Betald',
     pending: 'Väntar',
     pickup_requested: 'Hämtning',
+    refunded: 'Återbetald',
   };
   return labels[status] || status || '—';
 }
 
 function statusClass(status) {
   if (status === 'paid') return 'ok';
+  if (status === 'refunded') return 'out';
   if (status === 'pickup_requested') return 'low';
   return 'unknown';
+}
+
+function canRefundOrder(order) {
+  if (!order || order.status === 'refunded') return false;
+  if (!order.paymentIntentId) return false;
+  return order.status === 'paid';
 }
 
 function fulfillmentLabel(order) {
@@ -129,6 +142,7 @@ function cardHtml(order) {
           <p class="admin-order-block-text">${escapeHtml(fulfillmentLabel(order))}</p>
           <p class="admin-order-block-text">${escapeHtml(addressText(order))}</p>
           <p class="admin-order-block-meta">Betalning: ${escapeHtml(order.paymentMethod || '—')}</p>
+          ${order.shippingMethod === 'postnord' ? '<p class="admin-order-block-meta">Frakt: PostNord - Spårbart Ombud</p>' : ''}
           ${order.stockIssue ? `<p class="admin-order-warning">Lagerproblem: ${escapeHtml(order.stockIssueMessage || 'Ja')}</p>` : ''}
         </div>
 
@@ -141,11 +155,15 @@ function cardHtml(order) {
           <h3 class="admin-order-block-title">Mejl</h3>
           <p class="admin-order-block-meta admin-order-email-status">${escapeHtml(emailStatusText(order))}</p>
           ${order.adminEmailSentAt ? `<p class="admin-order-block-meta">Adminmejl skickat ${escapeHtml(formatDate(order.adminEmailSentAt))}</p>` : ''}
+          ${order.refundedAt ? `<p class="admin-order-block-meta">Återbetald ${escapeHtml(formatDate(order.refundedAt))}</p>` : ''}
+          ${order.refundEmailSentAt ? `<p class="admin-order-block-meta">Återbetalningsmejl skickat ${escapeHtml(formatDate(order.refundEmailSentAt))}</p>` : ''}
+          ${order.refundEmailError ? `<p class="admin-order-warning">Återbetalningsmejl: ${escapeHtml(order.refundEmailError)}</p>` : ''}
         </div>
       </div>
 
       <div class="admin-order-card-actions">
-        <button type="button" class="admin-btn admin-order-send-email" data-order-id="${escapeHtml(order.id)}">
+        ${canRefundOrder(order) ? `<button type="button" class="admin-btn-outline admin-order-refund" data-order-id="${escapeHtml(order.id)}">Återbetala</button>` : ''}
+        <button type="button" class="admin-btn admin-order-send-email" data-order-id="${escapeHtml(order.id)}" ${order.status === 'refunded' ? 'hidden' : ''}>
           Skicka mejl
         </button>
         <span class="admin-order-send-feedback" hidden></span>
@@ -310,11 +328,128 @@ async function sendOrderEmail(orderId, button) {
 function wireGrid() {
   const grid = document.getElementById('ordersGrid');
   grid?.addEventListener('click', (event) => {
-    const btn = event.target.closest('.admin-order-send-email');
-    if (!btn || btn.disabled) return;
-    const orderId = btn.dataset.orderId;
-    if (!orderId) return;
-    void sendOrderEmail(orderId, btn);
+    const emailBtn = event.target.closest('.admin-order-send-email');
+    if (emailBtn && !emailBtn.disabled) {
+      const orderId = emailBtn.dataset.orderId;
+      if (orderId) void sendOrderEmail(orderId, emailBtn);
+      return;
+    }
+
+    const refundBtn = event.target.closest('.admin-order-refund');
+    if (refundBtn && !refundBtn.disabled) {
+      const orderId = refundBtn.dataset.orderId;
+      if (orderId) openRefundModal(orderId);
+    }
+  });
+}
+
+function openRefundModal(orderId) {
+  const order = getOrderById(orderId);
+  const modal = document.getElementById('refund-modal');
+  const details = document.getElementById('refund-modal-details');
+  const errorEl = document.getElementById('refund-modal-error');
+  const confirmBtn = document.getElementById('refund-confirm-btn');
+
+  if (!order || !modal || !details) return;
+
+  pendingRefundOrderId = orderId;
+  const customer = order.customer || {};
+  const total = orderTotal(order);
+
+  details.innerHTML = `
+    <p><strong>Order:</strong> ${escapeHtml(displayOrderNumber(order))}</p>
+    <p><strong>Kund:</strong> ${escapeHtml(customer.name || 'Kund')}</p>
+    <p><strong>E-post:</strong> ${escapeHtml(customer.email || '—')}</p>
+    <p><strong>Belopp:</strong> ${total.toLocaleString('sv-SE')} kr</p>
+  `;
+
+  if (errorEl) {
+    errorEl.hidden = true;
+    errorEl.textContent = '';
+  }
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Återbetala';
+  }
+
+  modal.hidden = false;
+}
+
+function closeRefundModal() {
+  const modal = document.getElementById('refund-modal');
+  if (modal) modal.hidden = true;
+  pendingRefundOrderId = null;
+}
+
+async function confirmRefund() {
+  const orderId = pendingRefundOrderId;
+  const apiUrl = window.AfroSite?.adminRefundOrderApiUrl;
+  const confirmBtn = document.getElementById('refund-confirm-btn');
+  const errorEl = document.getElementById('refund-modal-error');
+
+  if (!orderId || !apiUrl) return;
+
+  const auth = getFirebaseAuth();
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('Inloggning krävs');
+
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Återbetalar…';
+  }
+  if (errorEl) {
+    errorEl.hidden = true;
+    errorEl.textContent = '';
+  }
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ orderId }),
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Kunde inte återbetala ordern');
+    }
+
+    const now = new Date().toISOString();
+    updateOrderInList(orderId, {
+      status: 'refunded',
+      refundedAt: now,
+      refundId: data.refundId || null,
+      refundEmailSentAt: data.emailSent ? now : null,
+      refundEmailError: data.emailError || null,
+    });
+    closeRefundModal();
+    renderOrders();
+  } catch (err) {
+    if (errorEl) {
+      errorEl.hidden = false;
+      errorEl.textContent = err.message || 'Kunde inte återbetala ordern';
+    }
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Återbetala';
+    }
+  }
+}
+
+function wireRefundModal() {
+  document.querySelectorAll('[data-close-refund-modal]').forEach((el) => {
+    el.addEventListener('click', closeRefundModal);
+  });
+
+  document.getElementById('refund-confirm-btn')?.addEventListener('click', () => {
+    void confirmRefund();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeRefundModal();
   });
 }
 
@@ -352,3 +487,4 @@ document.getElementById('refreshOrders')?.addEventListener('click', () => {
 document.getElementById('orderSearch')?.addEventListener('input', renderOrders);
 document.getElementById('orderStatusFilter')?.addEventListener('change', renderOrders);
 wireGrid();
+wireRefundModal();

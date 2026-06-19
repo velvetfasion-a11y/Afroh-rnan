@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="admin.css?v=14">
+<link rel="stylesheet" href="admin.css?v=15">
 </head>
 <body class="admin-body">
 
@@ -48,10 +48,11 @@
         <label class="admin-filter-label">
           Status
           <select id="orderStatusFilter" class="admin-select">
+            <option value="paid" selected>Betalda</option>
             <option value="all">Alla</option>
-            <option value="paid">Betalda</option>
             <option value="pending">Väntar</option>
             <option value="pickup_requested">Hämtning</option>
+            <option value="refunded">Återbetald</option>
           </select>
         </label>
         <span class="admin-count"><strong id="ordersCount">0</strong> ordrar</span>
@@ -66,7 +67,22 @@
   </div>
 </main>
 
-<script src="js/firebase-config.js?v=11"></script>
+<div class="admin-modal" id="refund-modal" hidden>
+  <div class="admin-modal-backdrop" data-close-refund-modal></div>
+  <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="refund-modal-title">
+    <h2 id="refund-modal-title">Bekräfta återbetalning</h2>
+    <p class="admin-modal-lead">Du håller på att återbetala kunden via Stripe. Detta kan inte ångras.</p>
+    <div class="admin-modal-details" id="refund-modal-details"></div>
+    <p class="admin-modal-warning">Kunden får ett bekräftelsemejl när återbetalningen är genomförd.</p>
+    <div class="admin-modal-actions">
+      <button type="button" class="admin-btn-outline" data-close-refund-modal>Avbryt</button>
+      <button type="button" class="admin-btn admin-btn-danger" id="refund-confirm-btn">Återbetala</button>
+    </div>
+    <p class="admin-modal-error" id="refund-modal-error" hidden></p>
+  </div>
+</div>
+
+<script src="js/firebase-config.js?v=12"></script>
 <script src="js/admin-gate.js?v=11"></script>
 <script type="module" src="js/admin-orders.js"></script>
 </body>

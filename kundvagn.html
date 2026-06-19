@@ -51,12 +51,23 @@
   </div>
 
   <div id="cart-content" hidden>
+    <div id="free-shipping-banner" class="free-shipping-banner" hidden>
+      <p id="free-shipping-text" class="free-shipping-text"></p>
+      <div class="free-shipping-track" aria-hidden="true">
+        <div class="free-shipping-fill" id="free-shipping-fill"></div>
+      </div>
+    </div>
+
     <div id="cart-items" class="cart-list"></div>
 
     <aside class="cart-summary">
       <div class="cart-summary-row">
         <span>Delsumma</span>
         <span id="cart-subtotal">0 kr</span>
+      </div>
+      <div class="cart-summary-row">
+        <span id="cart-shipping-label">Frakt</span>
+        <span id="cart-shipping">79 kr</span>
       </div>
       <div class="cart-summary-row total">
         <span>Totalt</span>
@@ -70,8 +81,8 @@
     </aside>
 
     <section id="checkout-panel" class="checkout-panel" hidden>
-      <h2>Leverans till brevlåda</h2>
-      <p class="checkout-lead">Fyll i dina uppgifter och betala med Apple Pay eller kort. Vi skickar till din brevlåda.</p>
+      <h2>Leverans &amp; frakt</h2>
+      <p class="checkout-lead">Fyll i dina uppgifter, välj frakt och betala med Apple Pay eller kort.</p>
 
       <form id="checkout-form" class="checkout-form" novalidate>
         <div class="checkout-grid">
@@ -99,6 +110,57 @@
             <span>Ort</span>
             <input type="text" id="checkout-city" name="city" autocomplete="address-level2" required placeholder="Stockholm">
           </label>
+        </div>
+
+        <fieldset class="checkout-shipping-fieldset">
+          <legend class="checkout-shipping-legend">Fraktmetod</legend>
+          <label class="pickup-store-option checkout-shipping-option">
+            <input type="radio" name="checkout-shipping" value="postnord" checked>
+            <span>
+              <strong id="checkout-postnord-label">PostNord - Spårbart Ombud (79 kr)</strong>
+              <small>Leverans till ombud</small>
+            </span>
+          </label>
+          <label class="pickup-store-option checkout-shipping-option">
+            <input type="radio" name="checkout-shipping" value="pickup">
+            <span>
+              <strong>Hämta i butik</strong>
+              <small>0 kr</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset class="pickup-store-fieldset" id="checkout-pickup-stores" hidden>
+          <legend class="pickup-store-legend">Välj butik för hämtning</legend>
+          <label class="pickup-store-option">
+            <input type="radio" name="checkout-pickup-store" value="fittja">
+            <span>
+              <strong>Fittja</strong>
+              <small>Stockholm Fittja</small>
+            </span>
+          </label>
+          <label class="pickup-store-option">
+            <input type="radio" name="checkout-pickup-store" value="marsta">
+            <span>
+              <strong>Märsta</strong>
+              <small>Stockholm Märsta</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <div class="checkout-order-summary" id="checkout-order-summary">
+          <div class="checkout-order-summary-row">
+            <span>Varor</span>
+            <span id="checkout-items-total">0 kr</span>
+          </div>
+          <div class="checkout-order-summary-row">
+            <span>Frakt</span>
+            <span id="checkout-shipping-total">79 kr</span>
+          </div>
+          <div class="checkout-order-summary-row checkout-order-summary-total">
+            <span>Totalt</span>
+            <strong id="checkout-grand-total">0 kr</strong>
+          </div>
         </div>
 
         <div id="checkout-payment" class="checkout-payment" hidden>
@@ -175,11 +237,12 @@
 </footer>
 
 <script src="js/cart.js"></script>
+<script src="js/shipping.js"></script>
 <script src="js/cart-page.js"></script>
 <script src="js/firebase-config.js?v=10"></script>
 <script src="js/store-stock.js"></script>
 <script src="js/stripe-config.js"></script>
-<script src="js/checkout.js?v=16"></script>
+<script src="js/checkout.js?v=17"></script>
 <script src="js/admin-gate.js?v=11"></script>
 <script type="module" src="js/checkout-auth.js?v=1"></script>
 <script type="module" src="js/nav-auth.js?v=20"></script>

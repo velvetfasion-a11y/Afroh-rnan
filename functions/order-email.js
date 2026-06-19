@@ -5,6 +5,7 @@ const { resolveOrderNumber } = require('./order-number');
 
 const CUSTOMER_TEMPLATE_PATH = path.join(__dirname, 'templates', 'order-confirmation.html');
 const ADMIN_TEMPLATE_PATH = path.join(__dirname, 'templates', 'afrohörnan_admin_order_notification.html');
+const REFUND_TEMPLATE_PATH = path.join(__dirname, 'templates', 'refund-email.html');
 
 const templateCache = new Map();
 
@@ -160,13 +161,16 @@ function buildCourseTemplateData(order, orderId, options = {}) {
 function buildShippingSection(order) {
   if (order.fulfillment === 'pickup') return '';
   const shipping = Number.isFinite(Number(order.shipping)) ? Number(order.shipping) : 0;
+  const method = order.shippingMethod === 'postnord' || !order.shippingMethod
+    ? 'PostNord - Spårbart Ombud'
+    : 'Frakt';
   return `
       <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e8dcc8;">
         <div>
           <p style="color: #2b1810; font-size: 14px; margin: 0; font-weight: 500;">Frakt</p>
-          <p style="color: #8a6a3e; font-size: 12px; margin: 2px 0 0;">Leverans till brevlåda</p>
+          <p style="color: #8a6a3e; font-size: 12px; margin: 2px 0 0;">${escapeHtml(method)}</p>
         </div>
-        <p style="color: #2b1810; font-size: 14px; margin: 0;">${escapeHtml(formatPrice(shipping))} kr</p>
+        <p style="color: #2b1810; font-size: 14px; margin: 0;">${shipping === 0 ? 'Gratis' : `${escapeHtml(formatPrice(shipping))} kr`}</p>
       </div>`;
 }
 
@@ -184,7 +188,7 @@ function buildDeliverySection(order) {
   return `
     <div style="margin: 1rem 2rem 1.5rem; background: #2b1810; border-left: 3px solid #c9a84c; border-radius: 0 8px 8px 0; padding: 0.85rem 1rem;">
       <p style="color: #c9a84c; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 4px;">Leveransstatus</p>
-      <p style="color: #f9f3eb; font-size: 13px; line-height: 1.6; margin: 0;">Vi packar din order och skickar den till din brevlåda. Du får besked när den är på väg.</p>
+      <p style="color: #f9f3eb; font-size: 13px; line-height: 1.6; margin: 0;">Vi packar din order och skickar den med PostNord. Du får besked när den är på väg.</p>
     </div>
     <div style="padding: 0 2rem 1.5rem;">
       <p style="color: #8a6a3e; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 6px; border-bottom: 1px solid #d4b483; padding-bottom: 6px;">Leveransadress</p>
@@ -210,7 +214,7 @@ function buildCustomerEmailCopy(order) {
   return {
     payment_confirmation: 'Din betalning har gått igenom och din beställning är nu bekräftad. Vi är så glada över att ha dig som kund!',
     next_steps_title: 'Vad händer nu?',
-    next_steps_body: 'Vi packar din order och skickar den till adressen du angav vid köpet. Du kan följa din order och se dina uppgifter på ditt konto.',
+    next_steps_body: 'Vi packar din order och skickar den med PostNord till adressen du angav vid köpet. Du kan följa din order och se dina uppgifter på ditt konto.',
     account_link: accountLink,
     account_link_label: 'Gå till mitt konto',
   };
@@ -245,6 +249,84 @@ function buildOrderSummary(items) {
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]}, ${names[1]}`;
   return `${names[0]} + ${names.length - 1} till`;
+}
+
+function orderItemsSubtotal(items) {
+  return (items || []).reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.qty) || 1),
+    0,
+  );
+}
+
+function buildRefundEmailData(order, orderId, refundAmount) {
+  const customer = order.customer || {};
+  const items = Array.isArray(order.items) ? order.items : [];
+  const orderNumber = formatOrderNumber(order, orderId);
+  const refundTotal = Number(refundAmount) || 0;
+  const itemsSubtotal = Number.isFinite(Number(order.subtotal))
+    ? Number(order.subtotal)
+    : orderItemsSubtotal(items);
+
+  let productName = buildOrderSummary(items);
+  let productPrice = itemsSubtotal;
+
+  if (items.length === 1) {
+    const item = items[0];
+    productName = item.name || 'Produkt';
+    if (item.colorName) productName += ` (${item.colorName})`;
+    productPrice = (Number(item.price) || 0) * (Number(item.qty) || 1);
+  }
+
+  return {
+    customer_name: customer.name || 'Kund',
+    product_name: productName,
+    order_number: orderNumber,
+    product_price: formatPrice(productPrice),
+    refund_total: formatPrice(refundTotal),
+  };
+}
+
+function renderRefundEmail(order, orderId, refundAmount) {
+  const data = buildRefundEmailData(order, orderId, refundAmount);
+  return applyReplacements(loadTemplate(REFUND_TEMPLATE_PATH), {
+    customer_name: escapeHtml(data.customer_name),
+    product_name: escapeHtml(data.product_name),
+    order_number: escapeHtml(data.order_number),
+    product_price: escapeHtml(data.product_price),
+    refund_total: escapeHtml(data.refund_total),
+  });
+}
+
+async function sendRefundEmail(order, orderId, refundAmount, mailersend) {
+  const customer = order.customer || {};
+  const toEmail = String(customer.email || '').trim();
+  if (!toEmail || !toEmail.includes('@')) {
+    throw new Error('Order saknar kundens e-postadress');
+  }
+
+  const data = buildRefundEmailData(order, orderId, refundAmount);
+  const html = renderRefundEmail(order, orderId, refundAmount);
+
+  await deliverEmail({
+    mailersend,
+    toEmail,
+    toName: customer.name || toEmail,
+    subject: `Återbetalning bekräftad | Order ${data.order_number}`,
+    html,
+    text: [
+      `Hej ${data.customer_name},`,
+      '',
+      'Din återbetalning har behandlats och är på väg tillbaka till dig. Pengarna bör synas inom 3–5 bankdagar.',
+      '',
+      'Återbetalningsdetaljer',
+      `Produkt: ${data.product_name}`,
+      `Order: ${data.order_number}`,
+      `Belopp: ${data.refund_total} kr`,
+      '',
+      'Frågor? Kontakta oss på info@afrohornan.com',
+      'https://afrohornan.com',
+    ].join('\n'),
+  });
 }
 
 function buildAdminAddressSection(order, pickupStore) {
@@ -528,6 +610,7 @@ module.exports = {
   sendCourseAdminEmail,
   sendPaidOrderEmails,
   sendOrderEmailsIfNeeded,
+  sendRefundEmail,
   isCourseOrder,
   formatOrderNumber,
 };

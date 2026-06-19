@@ -4,9 +4,10 @@ const { defineSecret, defineString } = require('firebase-functions/params');
 const cors = require('cors')({ origin: true });
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
-const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder, sendOrderEmailsIfNeeded } = require('./order-email');
+const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder, sendOrderEmailsIfNeeded, sendRefundEmail } = require('./order-email');
 const { resolveOrGenerateOrderNumber } = require('./order-number');
-const { deductOrderStock, releaseOrderStock, validateOrderStock } = require('./inventory');
+const { deductOrderStock, releaseOrderStock, restoreOrderStock, validateOrderStock } = require('./inventory');
+const { calculateShipping } = require('./shipping');
 
 setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 
@@ -80,6 +81,7 @@ function serializeOrderDoc(doc) {
     pickupStore: data.pickupStore || null,
     customer: data.customer || {},
     items: Array.isArray(data.items) ? data.items : [],
+    shippingMethod: data.shippingMethod || null,
     subtotal: data.subtotal ?? null,
     shipping: data.shipping ?? null,
     total: data.total ?? null,
@@ -92,6 +94,10 @@ function serializeOrderDoc(doc) {
     paidAt: serializeTimestamp(data.paidAt),
     emailSentAt: serializeTimestamp(data.emailSentAt),
     adminEmailSentAt: serializeTimestamp(data.adminEmailSentAt),
+    refundedAt: serializeTimestamp(data.refundedAt),
+    refundId: data.refundId || null,
+    refundEmailSentAt: serializeTimestamp(data.refundEmailSentAt),
+    refundEmailError: data.refundEmailError || null,
   };
 }
 
@@ -188,8 +194,9 @@ exports.createPaymentIntent = onRequest(
 
       try {
         const stripe = new Stripe(stripeSecret.value().trim());
-        const { items, customer, amount, fulfillment, pickupStore, customerUid: bodyUid } = req.body || {};
+        const { items, customer, amount, fulfillment, pickupStore, customerUid: bodyUid, shippingMethod } = req.body || {};
         const isPickup = fulfillment === 'pickup';
+        const resolvedShippingMethod = isPickup ? 'pickup' : (shippingMethod === 'pickup' ? 'pickup' : 'postnord');
         let customerUid = typeof bodyUid === 'string' && bodyUid.trim() ? bodyUid.trim() : null;
 
         const authHeader = req.headers.authorization || '';
@@ -229,6 +236,30 @@ exports.createPaymentIntent = onRequest(
             });
             return;
           }
+        } else if (resolvedShippingMethod === 'pickup') {
+          if (!pickupStore || !STORE_LABELS[pickupStore]) {
+            res.status(400).json({ error: 'Välj butik för hämtning' });
+            return;
+          }
+          if (
+            !customer?.email ||
+            !customer?.phone ||
+            !customer?.address ||
+            !customer?.postal ||
+            !customer?.city
+          ) {
+            res.status(400).json({ error: 'Missing customer details' });
+            return;
+          }
+          const unavailable = await validateOrderStock(db, items, { storeId: pickupStore });
+          if (unavailable.length) {
+            res.status(409).json({
+              error: 'En eller flera produkter finns inte i vald butik.',
+              code: 'unavailable_in_store',
+              items: unavailable.map((item) => item.name || item.slug),
+            });
+            return;
+          }
         } else if (
           !customer?.email ||
           !customer?.phone ||
@@ -255,27 +286,36 @@ exports.createPaymentIntent = onRequest(
         }
 
         const subtotal = orderSubtotal(items);
-        const shipping = 0;
-        const total = Number.isFinite(Number(amount)) ? Number(amount) : subtotal + shipping;
+        const effectiveFulfillment = isPickup || resolvedShippingMethod === 'pickup' ? 'pickup' : 'delivery';
+        const shipping = calculateShipping(subtotal, {
+          fulfillment: effectiveFulfillment,
+          shippingMethod: resolvedShippingMethod,
+        });
+        const total = subtotal + shipping;
+
+        if (Number.isFinite(Number(amount)) && Number(amount) !== total) {
+          console.warn('createPaymentIntent amount mismatch', { client: amount, server: total });
+        }
 
         if (!total || total < 1) {
           res.status(400).json({ error: 'Invalid order amount' });
           return;
         }
 
-        const storeLabel = isPickup ? STORE_LABELS[pickupStore] : '';
+        const storeLabel = effectiveFulfillment === 'pickup' ? STORE_LABELS[pickupStore] : '';
 
         const orderRef = await db.collection('orders').add({
-          fulfillment: isPickup ? 'pickup' : 'delivery',
-          pickupStore: isPickup ? pickupStore : null,
+          fulfillment: effectiveFulfillment,
+          pickupStore: effectiveFulfillment === 'pickup' ? pickupStore : null,
+          shippingMethod: resolvedShippingMethod,
           ...(customerUid ? { customerUid } : {}),
           customer: {
-            name: customer.name || (isPickup ? `Hämtning ${storeLabel}` : ''),
+            name: customer.name || (effectiveFulfillment === 'pickup' ? `Hämtning ${storeLabel}` : ''),
             email: normalizeEmail(customer.email),
             phone: customer.phone,
-            address: isPickup ? `Hämtning i butik – ${storeLabel}` : customer.address,
+            address: effectiveFulfillment === 'pickup' ? `Hämtning i butik – ${storeLabel}` : customer.address,
             postal: customer.postal || '',
-            city: customer.city || (isPickup ? storeLabel : ''),
+            city: customer.city || (effectiveFulfillment === 'pickup' ? storeLabel : ''),
             country: customer.country || 'Sverige',
           },
           items: enrichedItems.map(mapOrderItem),
@@ -300,13 +340,14 @@ exports.createPaymentIntent = onRequest(
 
         const intentMetadata = {
           order_id: orderRef.id,
-          fulfillment: isPickup ? 'pickup' : 'delivery',
+          fulfillment: effectiveFulfillment,
           customer_name: customer.name || '',
           customer_email: customer.email || '',
           customer_phone: customer.phone,
+          shipping_method: resolvedShippingMethod,
         };
 
-        if (isPickup) {
+        if (effectiveFulfillment === 'pickup') {
           intentMetadata.pickup_store = pickupStore;
         } else {
           intentMetadata.customer_address = customer.address;
@@ -854,6 +895,133 @@ exports.adminSendOrderEmail = onRequest(
       } catch (err) {
         console.error('adminSendOrderEmail failed:', err);
         res.status(500).json({ error: err.message || 'Could not send email' });
+      }
+    });
+  },
+);
+
+exports.adminRefundOrder = onRequest(
+  { secrets: [mailerSendApiKey, stripeSecret], invoker: 'public' },
+  (req, res) => {
+    cors(req, res, async () => {
+      if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+      }
+
+      try {
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+          res.status(401).json({ error: 'Inloggning krävs' });
+          return;
+        }
+
+        const decoded = await admin.auth().verifyIdToken(authHeader.slice(7).trim());
+        if (!(await verifyAdminAccess(decoded))) {
+          res.status(403).json({ error: 'Forbidden' });
+          return;
+        }
+
+        const { orderId } = req.body || {};
+        if (!orderId || typeof orderId !== 'string') {
+          res.status(400).json({ error: 'Missing orderId' });
+          return;
+        }
+
+        const orderRef = db.collection('orders').doc(orderId);
+        const orderSnap = await orderRef.get();
+        if (!orderSnap.exists) {
+          res.status(404).json({ error: 'Order not found' });
+          return;
+        }
+
+        const order = orderSnap.data();
+        if (order.status === 'refunded') {
+          res.status(409).json({ error: 'Ordern är redan återbetald' });
+          return;
+        }
+
+        if (!order.paymentIntentId) {
+          res.status(400).json({ error: 'Ordern har ingen Stripe-betalning att återbetala' });
+          return;
+        }
+
+        const customerEmail = normalizeEmail(order.customer?.email);
+        if (!customerEmail) {
+          res.status(400).json({ error: 'Ordern saknar kundens e-postadress för återbetalningsmejl' });
+          return;
+        }
+
+        const stripe = new Stripe(stripeSecret.value().trim());
+        const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+
+        if (paymentIntent.status !== 'succeeded') {
+          res.status(400).json({ error: 'Betalningen är inte genomförd och kan inte återbetalas' });
+          return;
+        }
+
+        const refundAmountKr = Number.isFinite(Number(order.total))
+          ? Number(order.total)
+          : orderSubtotal(order.items || []) + (Number(order.shipping) || 0);
+
+        const refund = await stripe.refunds.create({
+          payment_intent: order.paymentIntentId,
+          reason: 'requested_by_customer',
+        });
+
+        if (refund.status === 'failed') {
+          res.status(422).json({ error: 'Stripe-återbetalningen misslyckades' });
+          return;
+        }
+
+        try {
+          await restoreOrderStock(db, orderId);
+        } catch (stockErr) {
+          console.error('restoreOrderStock on refund failed:', orderId, stockErr.message);
+        }
+
+        const mailersend = mailerSendConfig();
+        let refundEmailSent = false;
+        let refundEmailError = null;
+
+        try {
+          await sendRefundEmail(order, orderId, refundAmountKr, mailersend);
+          refundEmailSent = true;
+        } catch (emailErr) {
+          refundEmailError = emailErr.message;
+          console.error('Refund email failed:', orderId, emailErr.message);
+        }
+
+        await orderRef.update({
+          status: 'refunded',
+          refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+          refundId: refund.id,
+          refundAmount: refundAmountKr,
+          ...(refundEmailSent
+            ? {
+              refundEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+              refundEmailError: admin.firestore.FieldValue.delete(),
+            }
+            : {
+              refundEmailError: refundEmailError || 'Unknown email error',
+            }),
+        });
+
+        res.json({
+          ok: true,
+          refundId: refund.id,
+          refundAmount: refundAmountKr,
+          emailSent: refundEmailSent,
+          emailError: refundEmailError,
+        });
+      } catch (err) {
+        console.error('adminRefundOrder failed:', err);
+        res.status(500).json({ error: err.message || 'Refund failed' });
       }
     });
   },
