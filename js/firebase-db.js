@@ -3,6 +3,8 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
+  where,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -141,6 +143,7 @@ export async function saveProduct(productId, fields, imageFiles = [], pendingPre
     category: fields.category,
     subtitle: fields.brand || '',
     description: fields.description || '',
+    productType: fields.isCourse ? 'course' : 'product',
     colors,
   };
 
@@ -165,6 +168,36 @@ export async function saveProduct(productId, fields, imageFiles = [], pendingPre
 export async function deleteProduct(productId) {
   if (!productId) throw new Error('Inget produkt-ID.');
   await deleteDoc(doc(getFirestoreDb(), 'products', productId));
+}
+
+export async function fetchOrdersForEmail(email) {
+  const trimmed = String(email || '').trim();
+  if (!trimmed) return [];
+
+  const candidates = [...new Set([trimmed.toLowerCase(), trimmed])];
+  const byId = new Map();
+
+  await Promise.all(candidates.map(async (candidate) => {
+    const snap = await getDocs(
+      query(
+        collection(getFirestoreDb(), 'orders'),
+        where('customer.email', '==', candidate),
+      ),
+    );
+    snap.docs.forEach((entry) => {
+      byId.set(entry.id, { id: entry.id, ...entry.data() });
+    });
+  }));
+
+  return [...byId.values()].sort((a, b) => orderSortKey(b) - orderSortKey(a));
+}
+
+function orderSortKey(order) {
+  const created = order.paidAt || order.createdAt;
+  if (created?.toMillis) return created.toMillis();
+  if (created?.seconds) return created.seconds * 1000;
+  if (typeof created === 'number') return created;
+  return 0;
 }
 
 function productSortKey(product) {

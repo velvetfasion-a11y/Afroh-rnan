@@ -3,7 +3,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithGoogle,
   updateProfile,
-  authErrorMessage,
+  formatAuthError,
+  logAuthError,
   redirectAfterAuth,
   showAuthError,
   clearAuthError,
@@ -13,28 +14,37 @@ import {
   isFirebaseConfigured,
   ensureAuthPersistence,
   bootstrapAuth,
-} from './firebase-auth.js?v=15';
+  isGoogleRedirectPending,
+} from './firebase-auth.js?v=18';
+
+const googleBtn = document.getElementById('googleSignup');
 
 initAuthPage({ googleButtonId: 'googleSignup' });
 
-document.getElementById('googleSignup').addEventListener('click', async () => {
+googleBtn?.addEventListener('click', async () => {
   clearAuthError();
-  const button = document.getElementById('googleSignup');
+
   if (!isFirebaseConfigured()) {
     showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
-  setGoogleLoading(button, true);
+  setGoogleLoading(googleBtn, true);
   try {
     await bootstrapAuth();
     const user = await signInWithGoogle();
-    if (user) await redirectAfterAuth(user);
+    if (user) {
+      setGoogleLoading(googleBtn, true);
+      await redirectAfterAuth(user);
+    }
   } catch (error) {
-    console.error('Google sign-up failed:', error?.code, error?.message);
-    showAuthError(authErrorMessage(error?.code));
+    logAuthError('Google sign-up click', error);
+    const message = formatAuthError(error);
+    if (message) showAuthError(message);
   } finally {
-    setGoogleLoading(button, false);
+    if (!isGoogleRedirectPending()) {
+      setGoogleLoading(googleBtn, false);
+    }
   }
 });
 
@@ -61,7 +71,9 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     }
     await redirectAfterAuth(credential.user);
   } catch (error) {
-    showAuthError(authErrorMessage(error?.code));
+    logAuthError('Email sign-up', error);
+    const message = formatAuthError(error);
+    if (message) showAuthError(message);
   } finally {
     setButtonLoading(button, false);
   }

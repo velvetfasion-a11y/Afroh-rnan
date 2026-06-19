@@ -1,5 +1,6 @@
 import { fetchProductForSlug } from './products.js';
 import { saveProductPreview } from './product-preview.js?v=12';
+import { isFavorite, toggleFavorite } from './product-catalog.js';
 
 function formatKr(n) {
   return n.toLocaleString('sv-SE') + ' kr';
@@ -80,7 +81,7 @@ function buildProductDescription(product, color) {
   if (color?.name) {
     parts.push(`Variant: ${color.name}.`);
   } else if (product.hasMultipleColors) {
-    parts.push('Finns i flera varianter – välj nedan.');
+    parts.push('Flera varianter – välj nedan.');
   }
   if (Number(product.price) > 0) {
     parts.push(`Pris ${formatKr(product.price)}.`);
@@ -275,9 +276,33 @@ function applyProduct(product) {
     }
   }
 
+  wireFavoriteButton(product);
   wireBuyButton(product);
   document.getElementById('buyBtn')?._refreshPrice?.(view);
   markPageReady();
+}
+
+function wireFavoriteButton(product) {
+  const btn = document.getElementById('productFavBtn');
+  if (!btn || !product?.slug) return;
+
+  btn.hidden = false;
+
+  function syncState() {
+    const saved = isFavorite(product.slug);
+    btn.classList.toggle('active', saved);
+    btn.setAttribute('aria-label', saved ? 'Ta bort från sparade' : 'Spara favorit');
+  }
+
+  syncState();
+
+  if (btn.dataset.wired === '1') return;
+  btn.dataset.wired = '1';
+
+  btn.addEventListener('click', () => {
+    toggleFavorite(product.slug);
+    syncState();
+  });
 }
 
 function wireBuyButton(product) {
@@ -347,6 +372,7 @@ function wireBuyButton(product) {
       image: view.image,
       url: color?.id ? `${current.url}&color=${encodeURIComponent(color.id)}` : current.url,
       inventory: maxStock !== Infinity ? maxStock : undefined,
+      productType: current.productType === 'course' ? 'course' : 'product',
       qty,
     };
     window.AfroCart?.addItem(payload);

@@ -146,6 +146,45 @@
 
 .order-row:last-child { border-bottom: none; }
 
+.order-row-main {
+  flex: 1;
+  min-width: 180px;
+}
+
+.order-number {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2e2210;
+  letter-spacing: 0.02em;
+}
+
+.order-meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: #9b8c78;
+}
+
+.order-total {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2e2210;
+  white-space: nowrap;
+}
+
+.order-items {
+  width: 100%;
+  margin: 0;
+  padding: 0 0 0 2px;
+  list-style: none;
+  font-size: 12.5px;
+  color: #6f5f4a;
+}
+
+.order-items li {
+  padding: 2px 0;
+}
+
 .order-empty {
   text-align: center;
   padding: 28px 16px;

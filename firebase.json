@@ -1,4 +1,18 @@
 {
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "functions",
+      "scripts",
+      ".env",
+      ".env.*",
+      "**/*.md",
+      "terminals"
+    ]
+  },
   "firestore": {
     "rules": "firestore.rules"
   },

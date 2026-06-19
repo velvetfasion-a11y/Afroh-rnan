@@ -120,6 +120,7 @@
       url: card.dataset.url || '#',
       inventory: card.dataset.inventory ? Number(card.dataset.inventory) : undefined,
       hasColors: card.dataset.hasColors === 'true',
+      productType: card.dataset.productType === 'course' ? 'course' : 'product',
     };
   }
 

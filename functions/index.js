@@ -4,7 +4,9 @@ const { defineSecret, defineString } = require('firebase-functions/params');
 const cors = require('cors')({ origin: true });
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
-const { sendOrderConfirmationEmail, sendAdminOrderNotificationEmail } = require('./order-email');
+const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder } = require('./order-email');
+const { resolveOrGenerateOrderNumber } = require('./order-number');
+const { deductOrderStock, validateOrderStock } = require('./inventory');
 
 setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 
@@ -16,12 +18,12 @@ const db = admin.firestore();
 
 const stripeSecret = defineSecret('STRIPE_LIVE_SECRET_KEY');
 const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
-const smtpUser = defineSecret('SMTP_USER');
-const smtpPass = defineSecret('SMTP_PASS');
-const smtpFrom = defineString('SMTP_FROM', { default: 'Afrohörnan <info@afrohornan.com>' });
-const adminOrderEmail = defineString('ADMIN_ORDER_EMAIL', { default: 'info@afrohörnan.se' });
-const smtpHost = defineString('SMTP_HOST', { default: 'smtp.mailersend.net' });
-const smtpPort = defineString('SMTP_PORT', { default: '587' });
+const mailerSendApiKey = defineSecret('MAILERSEND_API_KEY');
+const mailFrom = defineString('SMTP_FROM', { default: 'Afrohörnan <info@afrohornan.com>' });
+const adminOrderEmail = defineString('ADMIN_ORDER_EMAIL', { default: 'info@afrohornan.com' });
+const courseCustomerTemplateId = defineString('MAILERSEND_COURSE_CUSTOMER_TEMPLATE_ID', { default: '' });
+const courseAdminTemplateId = defineString('MAILERSEND_COURSE_ADMIN_TEMPLATE_ID', { default: '' });
+const coursePortalUrl = defineString('MAILERSEND_COURSE_PORTAL_URL', { default: 'https://afrohornan.com/profile.html' });
 
 function orderSubtotal(items) {
   return items.reduce(
@@ -30,15 +32,58 @@ function orderSubtotal(items) {
   );
 }
 
-function smtpConfig() {
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function mailerSendConfig() {
   return {
-    host: smtpHost.value() || 'smtp.mailersend.net',
-    port: smtpPort.value() || '587',
-    user: smtpUser.value(),
-    pass: smtpPass.value(),
-    from: smtpFrom.value() || 'Afrohörnan <info@afrohornan.com>',
-    adminTo: adminOrderEmail.value() || 'info@afrohörnan.se',
+    apiKey: mailerSendApiKey.value() || '',
+    courseCustomerTemplateId: courseCustomerTemplateId.value() || '',
+    courseAdminTemplateId: courseAdminTemplateId.value() || '',
+    coursePortalUrl: coursePortalUrl.value() || 'https://afrohornan.com/profile.html',
+    from: mailFrom.value() || 'Afrohörnan <info@afrohornan.com>',
+    adminTo: adminOrderEmail.value() || 'info@afrohornan.com',
   };
+}
+
+function mapOrderItem(item) {
+  return {
+    slug: item.slug || '',
+    colorId: item.colorId || '',
+    colorName: item.colorName || '',
+    name: item.name || 'Produkt',
+    brand: item.brand || '',
+    price: Number(item.price) || 0,
+    qty: Number(item.qty) || 1,
+    image: item.image || '',
+    url: item.url || '',
+    productType: item.productType === 'course' ? 'course' : 'product',
+  };
+}
+
+async function enrichOrderItems(items) {
+  const enriched = [];
+
+  for (const item of items) {
+    let productType = item.productType === 'course' ? 'course' : 'product';
+    const productId = item.slug;
+
+    if (productType !== 'course' && productId) {
+      try {
+        const snap = await db.collection('products').doc(productId).get();
+        if (snap.exists && snap.data().productType === 'course') {
+          productType = 'course';
+        }
+      } catch (err) {
+        console.warn('Could not resolve product type for', productId, err.message);
+      }
+    }
+
+    enriched.push({ ...item, productType });
+  }
+
+  return enriched;
 }
 
 async function resolvePaymentMethodLabel(stripe, paymentIntent) {
@@ -105,7 +150,7 @@ exports.createPaymentIntent = onRequest(
             res.status(400).json({ error: 'Missing email' });
             return;
           }
-          const unavailable = await validatePickupStock(items, pickupStore);
+          const unavailable = await validateOrderStock(db, items, { storeId: pickupStore });
           if (unavailable.length) {
             res.status(409).json({
               error: 'En eller flera produkter finns inte i vald butik.',
@@ -125,6 +170,20 @@ exports.createPaymentIntent = onRequest(
           return;
         }
 
+        const enrichedItems = await enrichOrderItems(items);
+
+        if (!isPickup) {
+          const unavailable = await validateOrderStock(db, enrichedItems);
+          if (unavailable.length) {
+            res.status(409).json({
+              error: 'En eller flera produkter är slut i lager.',
+              code: 'out_of_stock',
+              items: unavailable.map((item) => item.name || item.slug),
+            });
+            return;
+          }
+        }
+
         const subtotal = orderSubtotal(items);
         const shipping = 0;
         const total = Number.isFinite(Number(amount)) ? Number(amount) : subtotal + shipping;
@@ -141,24 +200,14 @@ exports.createPaymentIntent = onRequest(
           pickupStore: isPickup ? pickupStore : null,
           customer: {
             name: customer.name || (isPickup ? `Hämtning ${storeLabel}` : ''),
-            email: customer.email || '',
+            email: normalizeEmail(customer.email),
             phone: customer.phone,
             address: isPickup ? `Hämtning i butik – ${storeLabel}` : customer.address,
             postal: customer.postal || '',
             city: customer.city || (isPickup ? storeLabel : ''),
             country: customer.country || 'Sverige',
           },
-          items: items.map((item) => ({
-            slug: item.slug || '',
-            colorId: item.colorId || '',
-            colorName: item.colorName || '',
-            name: item.name || 'Produkt',
-            brand: item.brand || '',
-            price: Number(item.price) || 0,
-            qty: Number(item.qty) || 1,
-            image: item.image || '',
-            url: item.url || '',
-          })),
+          items: enrichedItems.map(mapOrderItem),
           subtotal,
           shipping,
           total,
@@ -224,51 +273,8 @@ const STORE_LABELS = {
   marsta: 'Märsta',
 };
 
-function getProductStoreStock(productData, colorId, storeId) {
-  const colors = Array.isArray(productData.colors) ? productData.colors : [];
-  if (colorId && colors.length) {
-    const color = colors.find((entry) => entry.id === colorId);
-    if (!color) return 0;
-    if (color.stock && typeof color.stock === 'object') {
-      return Number(color.stock[storeId]) || 0;
-    }
-    return Number(color.inventory) || 0;
-  }
-
-  if (productData.stock && typeof productData.stock === 'object') {
-    return Number(productData.stock[storeId]) || 0;
-  }
-
-  return Number(productData.inventory) || 0;
-}
-
-async function validatePickupStock(items, storeId) {
-  const unavailable = [];
-
-  for (const item of items) {
-    const productId = item.slug;
-    if (!productId) {
-      unavailable.push(item);
-      continue;
-    }
-
-    const snap = await db.collection('products').doc(productId).get();
-    if (!snap.exists) {
-      unavailable.push(item);
-      continue;
-    }
-
-    const available = getProductStoreStock(snap.data(), item.colorId, storeId);
-    if (available < (Number(item.qty) || 1)) {
-      unavailable.push({ ...item, available });
-    }
-  }
-
-  return unavailable;
-}
-
 exports.createPickupOrder = onRequest(
-  { secrets: [smtpUser, smtpPass], invoker: 'public' },
+  { secrets: [mailerSendApiKey], invoker: 'public' },
   (req, res) => {
     cors(req, res, async () => {
       if (req.method === 'OPTIONS') {
@@ -299,7 +305,7 @@ exports.createPickupOrder = onRequest(
           return;
         }
 
-        const unavailable = await validatePickupStock(items, store);
+        const unavailable = await validateOrderStock(db, items, { storeId: store });
         if (unavailable.length) {
           res.status(409).json({
             error: 'En eller flera produkter finns inte i vald butik.',
@@ -335,6 +341,7 @@ exports.createPickupOrder = onRequest(
             qty: Number(item.qty) || 1,
             image: item.image || '',
             url: item.url || '',
+            productType: item.productType === 'course' ? 'course' : 'product',
           })),
           subtotal,
           shipping: 0,
@@ -343,14 +350,24 @@ exports.createPickupOrder = onRequest(
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
+        try {
+          await deductOrderStock(db, orderRef.id);
+        } catch (stockErr) {
+          console.error('Pickup stock deduction failed:', stockErr.message);
+          await orderRef.update({
+            stockIssue: true,
+            stockIssueMessage: stockErr.message,
+          });
+        }
+
         const orderSnap = await orderRef.get();
         const order = orderSnap.data();
-        const smtp = smtpConfig();
+        const mailersend = mailerSendConfig();
 
-        await sendAdminOrderNotificationEmail(order, orderRef.id, smtp, {
+        await sendAdminOrderNotificationEmail(order, orderRef.id, {
           paymentMethod: `Hämtning i butik – ${storeLabel}`,
           pickupStore: storeLabel,
-        }).catch((emailErr) => {
+        }, mailersend).catch((emailErr) => {
           console.error('Pickup admin email failed:', emailErr.message);
         });
 
@@ -376,38 +393,70 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
 
   const order = orderSnap.data();
   const paymentMethod = await resolvePaymentMethodLabel(stripe, paymentIntent);
-  const smtp = smtpConfig();
+  const mailersend = mailerSendConfig();
 
   if (order.emailSentAt && order.adminEmailSentAt) {
     return { skipped: true, reason: 'already_sent' };
+  }
+
+  const orderNumber = await resolveOrGenerateOrderNumber(db, orderRef, order);
+  const orderWithNumber = { ...order, orderNumber };
+
+  try {
+    await deductOrderStock(db, orderId);
+  } catch (stockErr) {
+    console.error('Stock deduction failed for paid order', orderId, stockErr.message);
+    await orderRef.update({
+      stockIssue: true,
+      stockIssueMessage: stockErr.message,
+    });
   }
 
   await orderRef.update({
     status: 'paid',
     paidAt: admin.firestore.FieldValue.serverTimestamp(),
     paymentMethod,
+    orderNumber,
   });
 
-  if (!order.emailSentAt) {
-    await sendOrderConfirmationEmail(order, orderId, smtp);
-    await orderRef.update({
-      emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  const pickupStore = order.pickupStore === 'fittja'
+    ? 'Fittja'
+    : order.pickupStore === 'marsta'
+      ? 'Märsta'
+      : order.pickupStore || '';
+  const adminOptions = { paymentMethod, pickupStore };
+  const courseTemplatesReady = isCourseOrder(order)
+    && mailersend.apiKey
+    && mailersend.courseCustomerTemplateId
+    && mailersend.courseAdminTemplateId;
+  const updates = {};
+
+  if (!order.emailSentAt && !order.adminEmailSentAt) {
+    await sendPaidOrderEmails(orderWithNumber, orderId, mailersend, adminOptions);
+    updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
+    updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
+  } else {
+    if (!order.emailSentAt) {
+      if (courseTemplatesReady) {
+        await sendCourseCustomerEmail(orderWithNumber, orderId, mailersend);
+      } else {
+        await sendOrderConfirmationEmail(orderWithNumber, orderId, mailersend);
+      }
+      updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+
+    if (!order.adminEmailSentAt) {
+      if (courseTemplatesReady) {
+        await sendCourseAdminEmail(orderWithNumber, orderId, mailersend);
+      } else {
+        await sendAdminOrderNotificationEmail(orderWithNumber, orderId, adminOptions, mailersend);
+      }
+      updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
+    }
   }
 
-  if (!order.adminEmailSentAt) {
-    const pickupStore = order.pickupStore === 'fittja'
-      ? 'Fittja'
-      : order.pickupStore === 'marsta'
-        ? 'Märsta'
-        : order.pickupStore || '';
-    await sendAdminOrderNotificationEmail(order, orderId, smtp, {
-      paymentMethod,
-      pickupStore,
-    });
-    await orderRef.update({
-      adminEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  if (Object.keys(updates).length) {
+    await orderRef.update(updates);
   }
 
   return { skipped: false };
@@ -415,7 +464,7 @@ async function handlePaidOrder(orderId, paymentIntent, stripe) {
 
 exports.stripeWebhook = onRequest(
   {
-    secrets: [stripeSecret, stripeWebhookSecret, smtpUser, smtpPass],
+    secrets: [stripeSecret, stripeWebhookSecret, mailerSendApiKey],
     invoker: 'public',
   },
   async (req, res) => {

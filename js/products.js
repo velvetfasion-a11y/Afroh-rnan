@@ -235,6 +235,7 @@ export function normalizeProduct(raw) {
     badgeGold: !raw.featured,
     description: raw.description || '',
     inventory: inventoryFromColors,
+    productType: raw.productType === 'course' ? 'course' : 'product',
     fromFirestore: true,
     firestoreId,
     sortKey: productSortKey(raw),

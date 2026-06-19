@@ -63,8 +63,9 @@
             <button type="button" class="link-btn" data-go-tab="orders">Visa alla →</button>
           </div>
           <div class="order-empty" id="overviewOrderEmpty">
-            Inga beställningar ännu — webbshoppen öppnar snart.
+            Inga beställningar ännu.
           </div>
+          <div id="overviewOrderList" hidden></div>
         </div>
 
         <div class="card">
@@ -141,11 +142,13 @@
           <h1>Mina beställningar</h1>
           <p>Följ dina ordrar och se din köphistorik</p>
         </div>
-        <div class="card">
-          <div class="order-empty">
-            Webbshoppen öppnar snart. Dina beställningar visas här när du handlat online.<br><br>
-            <a href="index.html#butiker" style="color:#c8892a">Besök våra butiker</a> under tiden.
+        <div class="card" id="ordersCard">
+          <div class="order-empty" id="ordersEmpty" hidden>
+            Du har inga beställningar ännu.<br><br>
+            <a href="har.html" style="color:#c8892a">Utforska sortimentet</a>
           </div>
+          <p class="profile-loading" id="ordersLoading">Hämtar dina beställningar…</p>
+          <div id="ordersList" hidden></div>
         </div>
       </section>
 
@@ -259,6 +262,6 @@
 <script src="js/cart.js"></script>
 <script src="js/firebase-config.js?v=10"></script>
 <script src="js/admin-gate.js?v=11"></script>
-<script type="module" src="js/profile.js?v=10"></script>
+<script type="module" src="js/profile.js?v=11"></script>
 </body>
 </html>

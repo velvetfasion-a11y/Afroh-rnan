@@ -49,6 +49,9 @@ function createProductCard(product) {
   if (Number.isFinite(product.inventory)) {
     card.dataset.inventory = String(product.inventory);
   }
+  if (product.productType === 'course') {
+    card.dataset.productType = 'course';
+  }
   if (product.hasMultipleColors) {
     card.dataset.hasColors = 'true';
   }
@@ -74,7 +77,7 @@ function createProductCard(product) {
   body.innerHTML = `
     <div class="pcard-brand">${escapeHtml(product.brand || 'Produkt')}</div>
     <div class="pcard-name">${escapeHtml(product.name)}</div>
-    ${product.hasMultipleColors ? '<div class="pcard-colors-hint">Finns i fler färger</div>' : ''}
+    ${product.hasMultipleColors ? '<div class="pcard-colors-hint">Flera varianter</div>' : ''}
     <div class="pcard-price">${product.price.toLocaleString('sv-SE')} kr</div>`;
 
   link.append(imgWrap, body);

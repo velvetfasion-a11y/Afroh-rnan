@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="products/product.css?v=12">
+<link rel="stylesheet" href="products/product.css?v=13">
 </head>
 <body class="product-page-loading" data-product-slug="">
 
@@ -43,6 +43,9 @@
         <div class="product-img-placeholder" id="productImgPlaceholder" aria-hidden="true"></div>
         <img id="productMainImage" src="" alt="" hidden decoding="async">
         <span class="product-badge" id="productBadge" hidden></span>
+        <button type="button" class="product-fav" id="productFavBtn" hidden aria-label="Spara favorit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
       </div>
     </div>
 
@@ -51,7 +54,7 @@
       <h1 id="productTitle">Produkt</h1>
       <p class="product-price" id="productPrice">&nbsp;</p>
 
-      <p class="product-colors-hint" id="productColorsHint" hidden>Finns i fler varianter</p>
+      <p class="product-colors-hint" id="productColorsHint" hidden>Flera varianter</p>
 
       <div class="product-variant-skeleton" id="productVariantSkeleton" hidden aria-hidden="true">
         <p class="product-colors-label">Varianter</p>
@@ -96,7 +99,7 @@
 <script src="js/firebase-config.js?v=10"></script>
 <script src="js/admin-gate.js?v=11"></script>
 <script src="js/cart.js"></script>
-<script type="module" src="js/product-detail.js?v=12"></script>
+<script type="module" src="js/product-detail.js?v=13"></script>
 <script type="module" src="js/nav-auth.js"></script>
 </body>
 </html>

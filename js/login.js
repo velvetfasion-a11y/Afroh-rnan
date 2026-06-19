@@ -2,7 +2,8 @@ import {
   signInWithEmailPassword,
   signInWithGoogle,
   sendPasswordReset,
-  authErrorMessage,
+  formatAuthError,
+  logAuthError,
   redirectAfterAuth,
   showAuthError,
   showAuthSuccess,
@@ -12,10 +13,12 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   bootstrapAuth,
-} from './firebase-auth.js?v=15';
+  isGoogleRedirectPending,
+} from './firebase-auth.js?v=18';
 
 const forgotWrap = document.getElementById('forgotPasswordWrap');
 const forgotBtn = document.getElementById('forgotPasswordBtn');
+const googleBtn = document.getElementById('googleLogin');
 
 function showForgotPassword() {
   forgotWrap?.removeAttribute('hidden');
@@ -23,24 +26,31 @@ function showForgotPassword() {
 
 initAuthPage();
 
-document.getElementById('googleLogin').addEventListener('click', async () => {
+googleBtn?.addEventListener('click', async () => {
   clearAuthError();
-  const button = document.getElementById('googleLogin');
+
   if (!isFirebaseConfigured()) {
     showAuthError('Firebase är inte konfigurerat ännu. Kör node scripts/generate-firebase-config.mjs');
     return;
   }
 
-  setGoogleLoading(button, true);
+  setGoogleLoading(googleBtn, true);
   try {
     await bootstrapAuth();
     const user = await signInWithGoogle();
-    if (user) await redirectAfterAuth(user);
+    if (user) {
+      setGoogleLoading(googleBtn, true);
+      await redirectAfterAuth(user);
+    }
   } catch (error) {
-    console.error('Google sign-in failed:', error?.code, error?.message);
-    showAuthError(authErrorMessage(error?.code));
+    logAuthError('Google sign-in click', error);
+    const message = formatAuthError(error);
+    if (message) showAuthError(message);
   } finally {
-    setGoogleLoading(button, false);
+    // Vid redirect lämnar sidan – ingen visuell effekt. Vid popup/popup-blocker återställs knappen.
+    if (!isGoogleRedirectPending()) {
+      setGoogleLoading(googleBtn, false);
+    }
   }
 });
 
@@ -58,8 +68,9 @@ forgotBtn?.addEventListener('click', async () => {
     await sendPasswordReset(email);
     showAuthSuccess('Vi har skickat en länk för att återställa lösenordet om kontot finns.');
   } catch (error) {
-    console.error('Password reset failed:', error?.code, error?.message);
-    showAuthError(authErrorMessage(error?.code));
+    logAuthError('Password reset', error);
+    const message = formatAuthError(error);
+    if (message) showAuthError(message);
   } finally {
     forgotBtn.disabled = false;
   }
@@ -83,8 +94,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const result = await signInWithEmailPassword(email, password);
     await redirectAfterAuth(result.user);
   } catch (error) {
-    console.error('Email sign-in failed:', error?.code, error?.message);
-    showAuthError(authErrorMessage(error?.code));
+    logAuthError('Email sign-in', error);
+    const message = formatAuthError(error);
+    if (message) showAuthError(message);
     showForgotPassword();
   } finally {
     setButtonLoading(button, false);

@@ -9,7 +9,6 @@
     "cors": "^2.8.5",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^5.1.1",
-    "nodemailer": "^6.10.0",
     "stripe": "^17.5.0"
   }
 }

@@ -11,11 +11,13 @@ import {
   removeFavorite,
 } from './product-catalog.js';
 import { fetchProductsForSlugs } from './products.js';
+import { fetchOrdersForEmail } from './firebase-db.js';
 
 let currentUser = null;
 let favFilter = 'alla';
 let currentTab = 'overview';
 let mergedProducts = [];
+let customerOrders = [];
 
 const HEART_FILLED =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -58,6 +60,158 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function orderTimestamp(order) {
+  const value = order.paidAt || order.createdAt;
+  if (value?.toDate) return value.toDate();
+  if (value?.seconds) return new Date(value.seconds * 1000);
+  return value ? new Date(value) : null;
+}
+
+function formatOrderDate(order) {
+  const date = orderTimestamp(order);
+  if (!date || Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('sv-SE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+}
+
+function displayOrderNumber(order) {
+  if (order.orderNumber) return order.orderNumber;
+  if (order.id) return `AFH-${order.id.slice(0, 8).toUpperCase()}`;
+  return '—';
+}
+
+function orderTotal(order) {
+  if (Number.isFinite(Number(order.total))) return Number(order.total);
+  const items = Array.isArray(order.items) ? order.items : [];
+  const shipping = Number(order.shipping) || 0;
+  return items.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.qty) || 1),
+    0,
+  ) + shipping;
+}
+
+function orderItemCount(items) {
+  return (Array.isArray(items) ? items : []).reduce(
+    (sum, item) => sum + (Number(item.qty) || 1),
+    0,
+  );
+}
+
+function orderItemSummary(order) {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const count = orderItemCount(items);
+  if (!count) return 'Inga produkter';
+  if (count === 1) return items[0]?.name || '1 produkt';
+  return `${count} produkter`;
+}
+
+function orderStatusLabel(status) {
+  const labels = {
+    paid: 'Betald',
+    pending: 'Väntar på betalning',
+    pickup_requested: 'Hämtning',
+  };
+  return labels[status] || 'Registrerad';
+}
+
+function orderStatusBadgeClass(status) {
+  if (status === 'paid') return 'delivered';
+  if (status === 'pickup_requested') return 'processing';
+  return 'processing';
+}
+
+function visibleCustomerOrders(orders) {
+  return (orders || []).filter((order) => order.status !== 'pending' || order.orderNumber);
+}
+
+function orderRowHtml(order, options = {}) {
+  const { compact = false } = options;
+  const items = Array.isArray(order.items) ? order.items : [];
+  const fulfillment = order.fulfillment === 'pickup'
+    ? `Hämtning${order.pickupStore ? ` · ${order.pickupStore === 'marsta' ? 'Märsta' : 'Fittja'}` : ''}`
+    : 'Leverans';
+
+  const itemsList = compact
+    ? ''
+    : `<ul class="order-items">${items.map((item) => {
+      const qty = Number(item.qty) || 1;
+      const label = qty > 1 ? `${escapeHtml(item.name || 'Produkt')} × ${qty}` : escapeHtml(item.name || 'Produkt');
+      return `<li>${label}</li>`;
+    }).join('')}</ul>`;
+
+  return `
+    <div class="order-row">
+      <div class="order-row-main">
+        <div class="order-number">${escapeHtml(displayOrderNumber(order))}</div>
+        <span class="order-meta">${escapeHtml(formatOrderDate(order))} · ${escapeHtml(orderItemSummary(order))} · ${escapeHtml(fulfillment)}</span>
+        ${itemsList}
+      </div>
+      <span class="badge ${orderStatusBadgeClass(order.status)}">${escapeHtml(orderStatusLabel(order.status))}</span>
+      <div class="order-total">${orderTotal(order).toLocaleString('sv-SE')} kr</div>
+    </div>`;
+}
+
+function renderOrders() {
+  const orders = visibleCustomerOrders(customerOrders);
+  const ordersList = document.getElementById('ordersList');
+  const ordersEmpty = document.getElementById('ordersEmpty');
+  const ordersLoading = document.getElementById('ordersLoading');
+  const overviewList = document.getElementById('overviewOrderList');
+  const overviewEmpty = document.getElementById('overviewOrderEmpty');
+
+  if (ordersLoading) ordersLoading.hidden = true;
+
+  if (!orders.length) {
+    ordersList?.setAttribute('hidden', '');
+    if (ordersList) ordersList.innerHTML = '';
+    ordersEmpty?.removeAttribute('hidden');
+    overviewList?.setAttribute('hidden', '');
+    if (overviewList) overviewList.innerHTML = '';
+    overviewEmpty?.removeAttribute('hidden');
+    return;
+  }
+
+  ordersEmpty?.setAttribute('hidden', '');
+  if (ordersList) {
+    ordersList.hidden = false;
+    ordersList.innerHTML = orders.map((order) => orderRowHtml(order)).join('');
+  }
+
+  overviewEmpty?.setAttribute('hidden', '');
+  if (overviewList) {
+    overviewList.hidden = false;
+    overviewList.innerHTML = orderRowHtml(orders[0], { compact: true });
+  }
+}
+
+async function refreshCustomerOrders() {
+  if (!currentUser?.email) {
+    customerOrders = [];
+    renderOrders();
+    return;
+  }
+
+  const ordersLoading = document.getElementById('ordersLoading');
+  if (ordersLoading) ordersLoading.hidden = false;
+
+  try {
+    customerOrders = await fetchOrdersForEmail(currentUser.email);
+    renderOrders();
+  } catch (err) {
+    console.error('Could not load customer orders:', err);
+    customerOrders = [];
+    renderOrders();
+    const ordersEmpty = document.getElementById('ordersEmpty');
+    if (ordersEmpty) {
+      ordersEmpty.hidden = false;
+      ordersEmpty.innerHTML = 'Kunde inte hämta dina beställningar just nu. Försök igen senare.';
+    }
+  }
 }
 
 function favImageHtml(product) {
@@ -258,6 +412,7 @@ function populateUser(user) {
   updateFavCounts();
   renderOverviewFavorites();
   renderFavoritesGrid();
+  refreshCustomerOrders();
 }
 
 function showProfileError(message) {

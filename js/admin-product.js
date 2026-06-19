@@ -462,6 +462,7 @@ function readForm() {
   const stockFittja = Number.parseInt(document.getElementById('fieldStockFittja')?.value, 10) || 0;
   const stockMarsta = Number.parseInt(document.getElementById('fieldStockMarsta')?.value, 10) || 0;
   const inventory = Number.parseInt(document.getElementById('fieldInventory').value, 10);
+  const isCourse = document.getElementById('fieldIsCourse')?.checked === true;
 
   if (!title) throw new Error('Ange ett produktnamn.');
   if (!category) throw new Error('Välj en kategori.');
@@ -488,6 +489,7 @@ function readForm() {
     inventory,
     stock: { fittja: stockFittja, marsta: stockMarsta },
     colors,
+    isCourse,
   };
 }
 
@@ -523,6 +525,7 @@ async function loadProduct() {
     document.getElementById('fieldInventory').value = totalFromStock(stock);
     document.getElementById('fieldBrand').value = product.subtitle || product.brand || '';
     document.getElementById('fieldDescription').value = product.description || '';
+    document.getElementById('fieldIsCourse').checked = product.productType === 'course';
 
     const category =
       product.category ||
@@ -601,6 +604,7 @@ async function handleSubmit(event) {
         category: fields.category,
         brand: fields.brand,
         description: fields.description,
+        isCourse: fields.isCourse,
         existingImages,
         colors: fields.colors,
       },

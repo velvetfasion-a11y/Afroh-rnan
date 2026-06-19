@@ -26,4 +26,21 @@ export function getCatalogProduct(slug) {
 
 export function removeFavorite(slug) {
   localStorage.removeItem('fav-' + slug);
+  document.dispatchEvent(new CustomEvent('favorites:updated'));
+}
+
+export function isFavorite(slug) {
+  if (!slug) return false;
+  return Boolean(localStorage.getItem('fav-' + slug));
+}
+
+export function toggleFavorite(slug) {
+  if (!slug) return false;
+  if (isFavorite(slug)) {
+    removeFavorite(slug);
+    return false;
+  }
+  localStorage.setItem('fav-' + slug, '1');
+  document.dispatchEvent(new CustomEvent('favorites:updated'));
+  return true;
 }

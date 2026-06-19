@@ -103,7 +103,7 @@
     const img = p.image
       ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" referrerpolicy="no-referrer">'
       : '<span class="pcard-emoji" aria-hidden="true">📦</span>';
-    const colorsHint = p.hasMultipleColors ? '<div class="pcard-colors-hint">Finns i fler färger</div>' : '';
+    const colorsHint = p.hasMultipleColors ? '<div class="pcard-colors-hint">Flera varianter</div>' : '';
     const cartLabel = p.hasMultipleColors ? 'Välj färg' : 'Lägg i kundvagn';
     return (
       '<div class="pcard" data-slug="' + esc(p.id) + '" data-name="' + esc(p.name) + '" data-brand="' + esc(p.brand) + '" data-price="' + p.price + '" data-image="' + esc(p.image) + '" data-url="' + esc(url) + '" data-emoji="📦"' + inventoryAttr + hasColorsAttr + '>' +

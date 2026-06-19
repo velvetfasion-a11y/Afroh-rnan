@@ -67,6 +67,32 @@
   flex-shrink: 0;
 }
 
+.btn-google.is-loading {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.btn-google.is-loading svg:first-of-type {
+  opacity: 0.35;
+}
+
+.btn-google.is-loading .btn-google-label::after {
+  content: '';
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.45em;
+  border: 2px solid #dadce0;
+  border-top-color: #4285F4;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
