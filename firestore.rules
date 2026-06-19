@@ -8,7 +8,10 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       allow read: if request.auth != null
-        && resource.data.customer.email.lower() == request.auth.token.email.lower();
+        && (
+          resource.data.customerUid == request.auth.uid
+          || resource.data.customer.email == request.auth.token.email
+        );
       allow create: if true;
       allow update, delete: if false;
     }

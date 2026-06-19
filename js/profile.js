@@ -11,7 +11,7 @@ import {
   removeFavorite,
 } from './product-catalog.js';
 import { fetchProductsForSlugs } from './products.js';
-import { fetchOrdersForEmail } from './firebase-db.js';
+import { fetchOrdersForUser } from './firebase-db.js';
 
 let currentUser = null;
 let favFilter = 'alla';
@@ -126,7 +126,11 @@ function orderStatusBadgeClass(status) {
 }
 
 function visibleCustomerOrders(orders) {
-  return (orders || []).filter((order) => order.status !== 'pending' || order.orderNumber);
+  return (orders || []).filter((order) => {
+    if (order.status === 'paid' || order.status === 'pickup_requested') return true;
+    if (order.orderNumber) return true;
+    return false;
+  });
 }
 
 function orderRowHtml(order, options = {}) {
@@ -189,8 +193,34 @@ function renderOrders() {
   }
 }
 
+async function syncPendingPaidOrders(orders) {
+  const syncUrl = window.AfroSite?.syncOrderApiUrl;
+  const auth = getFirebaseAuth();
+  const user = auth.currentUser;
+  if (!syncUrl || !user) return orders;
+
+  const pending = (orders || []).filter(
+    (order) => order.status === 'pending' && order.paymentIntentId,
+  );
+  if (!pending.length) return orders;
+
+  const token = await user.getIdToken();
+  await Promise.all(pending.map((order) => fetch(syncUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ orderId: order.id }),
+  }).catch((err) => {
+    console.warn('Could not sync order', order.id, err);
+  })));
+
+  return fetchOrdersForUser(user);
+}
+
 async function refreshCustomerOrders() {
-  if (!currentUser?.email) {
+  if (!currentUser) {
     customerOrders = [];
     renderOrders();
     return;
@@ -200,7 +230,9 @@ async function refreshCustomerOrders() {
   if (ordersLoading) ordersLoading.hidden = false;
 
   try {
-    customerOrders = await fetchOrdersForEmail(currentUser.email);
+    let orders = await fetchOrdersForUser(currentUser);
+    orders = await syncPendingPaidOrders(orders);
+    customerOrders = orders;
     renderOrders();
   } catch (err) {
     console.error('Could not load customer orders:', err);

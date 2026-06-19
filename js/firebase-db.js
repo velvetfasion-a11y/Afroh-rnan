@@ -18,6 +18,7 @@ import {
   getDownloadURL,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js';
 import { getFirebaseApp, getFirestoreDb, isFirebaseConfigured } from './firebase-auth.js';
+import { collectUserEmails } from './admin-check.js?v=11';
 
 export { isFirebaseConfigured };
 
@@ -171,19 +172,44 @@ export async function deleteProduct(productId) {
 }
 
 export async function fetchOrdersForEmail(email) {
-  const trimmed = String(email || '').trim();
+  const trimmed = String(email || '').trim().toLowerCase();
   if (!trimmed) return [];
+  return fetchOrdersByQueries([query(
+    collection(getFirestoreDb(), 'orders'),
+    where('customer.email', '==', trimmed),
+  )]);
+}
 
-  const candidates = [...new Set([trimmed.toLowerCase(), trimmed])];
+export async function fetchOrdersForUser(user) {
+  if (!user) return [];
+
+  const queries = [];
+
+  if (user.uid) {
+    queries.push(query(
+      collection(getFirestoreDb(), 'orders'),
+      where('customerUid', '==', user.uid),
+    ));
+  }
+
+  const emails = collectUserEmails(user);
+  for (const email of emails) {
+    queries.push(query(
+      collection(getFirestoreDb(), 'orders'),
+      where('customer.email', '==', email),
+    ));
+  }
+
+  if (!queries.length) return [];
+  return fetchOrdersByQueries(queries);
+}
+
+async function fetchOrdersByQueries(queries) {
+  const list = Array.isArray(queries) ? queries : [queries];
   const byId = new Map();
 
-  await Promise.all(candidates.map(async (candidate) => {
-    const snap = await getDocs(
-      query(
-        collection(getFirestoreDb(), 'orders'),
-        where('customer.email', '==', candidate),
-      ),
-    );
+  await Promise.all(list.map(async (orderQuery) => {
+    const snap = await getDocs(orderQuery);
     snap.docs.forEach((entry) => {
       byId.set(entry.id, { id: entry.id, ...entry.data() });
     });

@@ -28,6 +28,7 @@
   let pickupElements = null;
   let pickupPaymentReady = false;
   let productsCache = null;
+  let currentOrderId = null;
 
   function formatKr(n) {
     return n.toLocaleString('sv-SE') + ' kr';
@@ -145,17 +146,22 @@
     const url = config.checkoutApiUrl || window.AfroSite?.checkoutApiUrl;
     if (!url) throw new Error('Betalnings-API saknas.');
 
+    const headers = { 'Content-Type': 'application/json' };
+    const token = await window.AfroCheckoutAuth?.getIdToken?.();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     let response;
     try {
       response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           items: AfroCart.getItems(),
           amount: AfroCart.getTotal(),
           customer,
           fulfillment: options.fulfillment || 'delivery',
           pickupStore: options.pickupStore || '',
+          customerUid: window.AfroCheckoutAuth?.getUid?.() || null,
         }),
       });
     } catch (err) {
@@ -176,7 +182,50 @@
     if (!data.clientSecret) {
       throw new Error('Ogiltigt svar från betalningsservern.');
     }
-    return data.clientSecret;
+    currentOrderId = data.orderId || null;
+    if (currentOrderId) {
+      try {
+        sessionStorage.setItem('afroPendingOrderId', currentOrderId);
+      } catch {
+        /* ignore */
+      }
+    }
+    return data;
+  }
+
+  async function syncOrderAfterPayment() {
+    let orderId = currentOrderId;
+    if (!orderId) {
+      try {
+        orderId = sessionStorage.getItem('afroPendingOrderId');
+      } catch {
+        orderId = null;
+      }
+    }
+    if (!orderId || !window.AfroCheckoutAuth?.getIdToken) return;
+    const syncUrl = window.AfroSite?.syncOrderApiUrl;
+    if (!syncUrl) return;
+
+    const token = await window.AfroCheckoutAuth.getIdToken();
+    if (!token) return;
+
+    try {
+      await fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId }),
+      });
+      try {
+        sessionStorage.removeItem('afroPendingOrderId');
+      } catch {
+        /* ignore */
+      }
+    } catch (err) {
+      console.warn('Order sync after payment failed:', err);
+    }
   }
 
   function openMailtoOrder(customer) {
@@ -304,6 +353,7 @@
     }
 
     if (paymentIntent?.status === 'succeeded') {
+      await syncOrderAfterPayment();
       AfroCart.clear();
       showOrderSuccessBanner(options.fulfillment === 'pickup' ? 'pickup' : 'delivery');
       return true;
@@ -398,7 +448,8 @@
 
     await loadStripeScript();
     const stripeClient = window.Stripe(config.publishableKey);
-    const clientSecret = await createPaymentIntent(customer, options);
+    const paymentData = await createPaymentIntent(customer, options);
+    const clientSecret = paymentData.clientSecret;
 
     const stripeElements = stripeClient.elements({
       clientSecret,
@@ -634,6 +685,7 @@
     }
 
     AfroCart.clear();
+    void syncOrderAfterPayment();
     showOrderSuccessBanner(fulfillment);
   }
 

@@ -84,6 +84,7 @@ const output = `// Auto-generated from .env — do not edit manually.
     hostname: hostname,
     origin: window.location.origin,
     checkoutApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/createPaymentIntent',
+    syncOrderApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/syncOrderPayment',
     pickupApiUrl: isLocalDev ? null : 'https://europe-west1-afrohornan.cloudfunctions.net/createPickupOrder',
     useFirebaseEmulators: false,
     clearEmulatorDefaults: clearEmulatorDefaults,
