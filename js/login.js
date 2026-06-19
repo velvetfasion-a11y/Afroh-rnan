@@ -14,7 +14,7 @@ import {
   isFirebaseConfigured,
   bootstrapAuth,
   isGoogleRedirectPending,
-} from './firebase-auth.js?v=18';
+} from './firebase-auth.js?v=19';
 
 const forgotWrap = document.getElementById('forgotPasswordWrap');
 const forgotBtn = document.getElementById('forgotPasswordBtn');

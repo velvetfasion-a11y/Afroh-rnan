@@ -130,7 +130,7 @@ export function bootstrapAuth() {
   authBootstrapPromise = (async () => {
     if (!isFirebaseConfigured()) return { auth: null, redirectHandled: false };
 
-    const authInstance = getFirebaseAuth();
+    const authInstance = await ensureAuthPersistence();
     let redirectHandled = false;
 
     try {
@@ -159,7 +159,7 @@ function prefersGoogleRedirect() {
 
 export async function signInWithGoogle() {
   await bootstrapAuth();
-  const authInstance = getFirebaseAuth();
+  const authInstance = await ensureAuthPersistence();
 
   if (prefersGoogleRedirect()) {
     markGoogleRedirectPending();
@@ -343,7 +343,6 @@ export {
 };
 
 export function authErrorMessage(code, error) {
-  const hostname = window.location.hostname;
   const messages = {
     'auth/invalid-email': 'Ogiltig e-postadress.',
     'auth/user-disabled': 'Det här kontot är inaktiverat.',
@@ -354,19 +353,19 @@ export function authErrorMessage(code, error) {
     'auth/weak-password': 'Lösenordet måste vara minst 6 tecken.',
     'auth/popup-closed-by-user': 'Google-inloggningen avbröts.',
     'auth/popup-blocked':
-      'Popup-fönstret blockerades av webbläsaren. Tillåt popups för afrohornan.com och försök igen.',
+      'Popup-fönstret blockerades av webbläsaren. Tillåt popups och försök igen.',
     'auth/cancelled-popup-request': 'Google-inloggningen avbröts.',
     'auth/account-exists-with-different-credential':
       'E-postadressen är redan kopplad till ett annat inloggningssätt. Prova e-post och lösenord i stället.',
     'auth/operation-not-allowed':
-      'Google-inloggning är inte aktiverad för tillfället. Kontakta support om felet kvarstår.',
+      'Google-inloggning är inte aktiverad för tillfället.',
     'auth/too-many-requests': 'För många försök. Vänta en stund och försök igen.',
     'auth/unauthorized-domain':
-      `Inloggning fungerar inte från ${hostname}. Lägg till domänen i Firebase Console → Authentication → Settings → Authorized domains.`,
+      'Inloggning fungerar inte från den här webbadressen. Kontakta support.',
     'auth/invalid-api-key':
-      'Firebase API-nyckeln är ogiltig eller begränsad. Kontrollera js/firebase-config.js och API-nyckelns referer-begränsningar i Google Cloud Console.',
+      'Firebase API-nyckeln är ogiltig eller begränsad. Kontakta support.',
     'auth/app-not-authorized':
-      'Appen är inte auktoriserad för den här domänen. Kontrollera Authorized domains i Firebase Console.',
+      'Appen är inte auktoriserad för den här domänen. Kontakta support.',
     'auth/network-request-failed':
       'Kunde inte nå inloggningstjänsten. Kontrollera internetanslutningen, stäng av adblocker och försök igen.',
     'auth/internal-error':
@@ -380,12 +379,18 @@ export function authErrorMessage(code, error) {
     'auth/missing-email': 'Ange din e-postadress först.',
     'auth/credential-already-in-use':
       'Det här Google-kontot är redan kopplat till ett annat konto.',
+    'auth/no-auth-event':
+      'Google-inloggningen kunde inte slutföras. Försök igen.',
   };
 
   if (messages[code]) return messages[code];
 
   if (AUTH_DEBUG && error?.message) {
     return `Något gick fel. Försök igen. (${code || error.message})`;
+  }
+
+  if (code) {
+    return `Något gick fel. Försök igen. (Felkod: ${code.replace(/^auth\//, '')})`;
   }
 
   return 'Något gick fel. Försök igen.';
