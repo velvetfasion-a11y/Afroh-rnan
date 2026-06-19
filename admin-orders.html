@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="admin.css?v=13">
+<link rel="stylesheet" href="admin.css?v=14">
 </head>
 <body class="admin-body">
 
@@ -58,24 +58,7 @@
       </div>
     </div>
 
-    <div class="admin-table-wrap" id="ordersTableWrap" hidden>
-      <table class="admin-table admin-orders-table">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Datum</th>
-            <th>Kund</th>
-            <th>E-post</th>
-            <th>Telefon</th>
-            <th>Typ</th>
-            <th>Status</th>
-            <th>Summa</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="ordersTableBody"></tbody>
-      </table>
-    </div>
+    <div class="admin-orders-grid" id="ordersGrid" hidden></div>
 
     <div class="admin-empty" id="ordersEmpty" hidden>
       <p>Inga ordrar ännu.</p>

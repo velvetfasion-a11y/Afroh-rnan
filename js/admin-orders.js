@@ -62,98 +62,95 @@ function fulfillmentLabel(order) {
   return 'Leverans';
 }
 
-function itemRowsHtml(items) {
-  return (items || []).map((item) => {
+function addressText(order) {
+  const customer = order.customer || {};
+  if (order.fulfillment === 'pickup') {
+    const store = order.pickupStore === 'marsta' ? 'Märsta' : order.pickupStore === 'fittja' ? 'Fittja' : order.pickupStore || '';
+    return store ? `Hämtning i butik – ${store}` : 'Hämtning i butik';
+  }
+  return [
+    customer.address,
+    [customer.postal, customer.city].filter(Boolean).join(' '),
+    customer.country,
+  ].filter(Boolean).join(', ') || '—';
+}
+
+function itemsListHtml(items) {
+  if (!items?.length) return '<p class="admin-order-block-text">Inga produkter</p>';
+  return `<ul class="admin-order-items-list">${items.map((item) => {
     const qty = Number(item.qty) || 1;
     const lineTotal = (Number(item.price) || 0) * qty;
-    const variant = item.colorName ? ` <span class="admin-order-variant">(${escapeHtml(item.colorName)})</span>` : '';
-    return `
-      <tr>
-        <td>${escapeHtml(item.name || 'Produkt')}${variant}</td>
-        <td>${qty} st</td>
-        <td>${lineTotal.toLocaleString('sv-SE')} kr</td>
-      </tr>`;
-  }).join('');
+    const variant = item.colorName ? ` (${item.colorName})` : '';
+    return `<li><span>${escapeHtml(item.name || 'Produkt')}${escapeHtml(variant)}</span><span>${qty} st · ${lineTotal.toLocaleString('sv-SE')} kr</span></li>`;
+  }).join('')}</ul>`;
 }
 
-function detailHtml(order) {
+function emailStatusText(order) {
+  if (order.emailSentAt) return `Kundmejl skickat ${formatDate(order.emailSentAt)}`;
+  if (order.emailError) return `Kundmejl misslyckades: ${order.emailError}`;
+  return 'Kundmejl ej skickat';
+}
+
+function cardHtml(order) {
   const customer = order.customer || {};
   const items = Array.isArray(order.items) ? order.items : [];
-  const address = order.fulfillment === 'pickup'
-    ? `Hämtning i butik${order.pickupStore ? ` – ${escapeHtml(order.pickupStore === 'marsta' ? 'Märsta' : 'Fittja')}` : ''}`
-    : [
-      customer.address,
-      [customer.postal, customer.city].filter(Boolean).join(' '),
-      customer.country,
-    ].filter(Boolean).map(escapeHtml).join('<br>');
-
-  const emailStatus = order.emailSentAt
-    ? `Skickat ${formatDate(order.emailSentAt)}`
-    : order.emailError
-      ? `Fel: ${escapeHtml(order.emailError)}`
-      : 'Ej skickat';
 
   return `
-    <div class="admin-order-detail">
-      <div class="admin-order-detail-grid">
-        <div>
-          <h3>Kund</h3>
-          <p><strong>${escapeHtml(customer.name || '—')}</strong></p>
-          <p><a href="mailto:${escapeHtml(customer.email || '')}">${escapeHtml(customer.email || '—')}</a></p>
-          <p><a href="tel:${escapeHtml(customer.phone || '')}">${escapeHtml(customer.phone || '—')}</a></p>
+    <article class="admin-order-card" data-order-id="${escapeHtml(order.id)}">
+      <div class="admin-order-card-top">
+        <div class="admin-order-mini">
+          <span class="admin-order-mini-label">Order</span>
+          <span class="admin-order-mini-value">${escapeHtml(displayOrderNumber(order))}</span>
         </div>
-        <div>
-          <h3>Leverans</h3>
-          <p>${address || '—'}</p>
-          <p class="admin-order-meta">Betalning: ${escapeHtml(order.paymentMethod || '—')}</p>
-          ${order.stockIssue ? `<p class="admin-order-warning">Lagerproblem: ${escapeHtml(order.stockIssueMessage || 'Ja')}</p>` : ''}
+        <div class="admin-order-mini">
+          <span class="admin-order-mini-label">Datum</span>
+          <span class="admin-order-mini-value">${escapeHtml(formatDate(order.paidAt || order.createdAt))}</span>
         </div>
-        <div>
-          <h3>Mejl</h3>
-          <p>Kund: ${emailStatus}</p>
-          <p>Admin: ${order.adminEmailSentAt ? `Skickat ${formatDate(order.adminEmailSentAt)}` : 'Ej skickat'}</p>
+        <div class="admin-order-mini">
+          <span class="admin-order-mini-label">Status</span>
+          <span class="admin-stock ${statusClass(order.status)}">${escapeHtml(statusLabel(order.status))}</span>
+        </div>
+        <div class="admin-order-mini">
+          <span class="admin-order-mini-label">Summa</span>
+          <span class="admin-order-mini-value admin-order-mini-total">${orderTotal(order).toLocaleString('sv-SE')} kr</span>
         </div>
       </div>
-      <h3>Produkter</h3>
-      <table class="admin-order-items">
-        <thead>
-          <tr>
-            <th>Produkt</th>
-            <th>Antal</th>
-            <th>Radsumma</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemRowsHtml(items)}
-        </tbody>
-      </table>
-      <p class="admin-order-total">Totalt: <strong>${orderTotal(order).toLocaleString('sv-SE')} kr</strong></p>
-    </div>`;
-}
 
-function rowHtml(order) {
-  const customer = order.customer || {};
-  const detailId = `order-detail-${order.id}`;
+      <div class="admin-order-card-body">
+        <div class="admin-order-block">
+          <h3 class="admin-order-block-title">Kund</h3>
+          <p class="admin-order-block-text"><strong>${escapeHtml(customer.name || '—')}</strong></p>
+          <p class="admin-order-block-text">${escapeHtml(customer.email || '—')}</p>
+          <p class="admin-order-block-text">${escapeHtml(customer.phone || '—')}</p>
+        </div>
 
-  return `
-    <tr class="admin-order-row" data-order-id="${escapeHtml(order.id)}">
-      <td class="admin-order-number">${escapeHtml(displayOrderNumber(order))}</td>
-      <td>${escapeHtml(formatDate(order.paidAt || order.createdAt))}</td>
-      <td>${escapeHtml(customer.name || '—')}</td>
-      <td><a href="mailto:${escapeHtml(customer.email || '')}">${escapeHtml(customer.email || '—')}</a></td>
-      <td>${escapeHtml(customer.phone || '—')}</td>
-      <td>${escapeHtml(fulfillmentLabel(order))}</td>
-      <td><span class="admin-stock ${statusClass(order.status)}">${escapeHtml(statusLabel(order.status))}</span></td>
-      <td>${orderTotal(order).toLocaleString('sv-SE')} kr</td>
-      <td>
-        <button type="button" class="admin-btn-text admin-order-toggle" aria-expanded="false" aria-controls="${detailId}" data-target="${detailId}">
-          Visa
+        <div class="admin-order-block">
+          <h3 class="admin-order-block-title">${order.fulfillment === 'pickup' ? 'Hämtning' : 'Leverans'}</h3>
+          <p class="admin-order-block-text">${escapeHtml(fulfillmentLabel(order))}</p>
+          <p class="admin-order-block-text">${escapeHtml(addressText(order))}</p>
+          <p class="admin-order-block-meta">Betalning: ${escapeHtml(order.paymentMethod || '—')}</p>
+          ${order.stockIssue ? `<p class="admin-order-warning">Lagerproblem: ${escapeHtml(order.stockIssueMessage || 'Ja')}</p>` : ''}
+        </div>
+
+        <div class="admin-order-block">
+          <h3 class="admin-order-block-title">Produkter</h3>
+          ${itemsListHtml(items)}
+        </div>
+
+        <div class="admin-order-block">
+          <h3 class="admin-order-block-title">Mejl</h3>
+          <p class="admin-order-block-meta admin-order-email-status">${escapeHtml(emailStatusText(order))}</p>
+          ${order.adminEmailSentAt ? `<p class="admin-order-block-meta">Adminmejl skickat ${escapeHtml(formatDate(order.adminEmailSentAt))}</p>` : ''}
+        </div>
+      </div>
+
+      <div class="admin-order-card-actions">
+        <button type="button" class="admin-btn admin-order-send-email" data-order-id="${escapeHtml(order.id)}">
+          Skicka mejl
         </button>
-      </td>
-    </tr>
-    <tr class="admin-order-detail-row" id="${detailId}" hidden>
-      <td colspan="9">${detailHtml(order)}</td>
-    </tr>`;
+        <span class="admin-order-send-feedback" hidden></span>
+      </div>
+    </article>`;
 }
 
 function filteredOrders() {
@@ -185,26 +182,35 @@ function filteredOrders() {
 
 function renderOrders() {
   const orders = filteredOrders();
-  const tbody = document.getElementById('ordersTableBody');
+  const grid = document.getElementById('ordersGrid');
   const countEl = document.getElementById('ordersCount');
-  const tableWrap = document.getElementById('ordersTableWrap');
   const emptyEl = document.getElementById('ordersEmpty');
   const toolbar = document.getElementById('ordersToolbar');
 
   if (countEl) countEl.textContent = String(orders.length);
 
   if (!orders.length) {
-    if (tbody) tbody.innerHTML = '';
-    tableWrap?.setAttribute('hidden', '');
+    if (grid) {
+      grid.innerHTML = '';
+      grid.hidden = true;
+    }
     emptyEl?.removeAttribute('hidden');
     toolbar?.removeAttribute('hidden');
     return;
   }
 
   emptyEl?.setAttribute('hidden', '');
-  tableWrap?.removeAttribute('hidden');
   toolbar?.removeAttribute('hidden');
-  if (tbody) tbody.innerHTML = orders.map(rowHtml).join('');
+  if (grid) {
+    grid.hidden = false;
+    grid.innerHTML = orders.map(cardHtml).join('');
+  }
+}
+
+function updateOrderInList(orderId, patch) {
+  const index = allOrders.findIndex((order) => order.id === orderId);
+  if (index < 0) return;
+  allOrders[index] = { ...allOrders[index], ...patch };
 }
 
 async function fetchOrders() {
@@ -242,20 +248,73 @@ async function fetchOrders() {
   renderOrders();
 }
 
-function wireTable() {
-  const tbody = document.getElementById('ordersTableBody');
-  tbody?.addEventListener('click', (event) => {
-    const btn = event.target.closest('.admin-order-toggle');
-    if (!btn) return;
+async function sendOrderEmail(orderId, button) {
+  const apiUrl = window.AfroSite?.adminSendOrderEmailApiUrl;
+  if (!apiUrl) throw new Error('Mejl-API saknas');
 
-    const targetId = btn.dataset.target;
-    const row = document.getElementById(targetId);
-    if (!row) return;
+  const auth = getFirebaseAuth();
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('Inloggning krävs');
 
-    const expanded = btn.getAttribute('aria-expanded') === 'true';
-    row.hidden = expanded;
-    btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-    btn.textContent = expanded ? 'Visa' : 'Dölj';
+  const card = button.closest('.admin-order-card');
+  const feedback = card?.querySelector('.admin-order-send-feedback');
+  const originalLabel = button.textContent;
+
+  button.disabled = true;
+  button.textContent = 'Skickar…';
+  if (feedback) {
+    feedback.hidden = true;
+    feedback.textContent = '';
+    feedback.className = 'admin-order-send-feedback';
+  }
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ orderId, force: true }),
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Kunde inte skicka mejl');
+    }
+
+    const now = new Date().toISOString();
+    updateOrderInList(orderId, {
+      emailSentAt: data.emails?.customerSent ? now : allOrders.find((o) => o.id === orderId)?.emailSentAt,
+      adminEmailSentAt: data.emails?.adminSent ? now : allOrders.find((o) => o.id === orderId)?.adminEmailSentAt,
+      emailError: data.emails?.errors?.customer || null,
+    });
+    renderOrders();
+
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.classList.add('success');
+      feedback.textContent = 'Mejl skickat!';
+    }
+  } catch (err) {
+    if (feedback) {
+      feedback.hidden = false;
+      feedback.classList.add('error');
+      feedback.textContent = err.message || 'Kunde inte skicka mejl';
+    }
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
+}
+
+function wireGrid() {
+  const grid = document.getElementById('ordersGrid');
+  grid?.addEventListener('click', (event) => {
+    const btn = event.target.closest('.admin-order-send-email');
+    if (!btn || btn.disabled) return;
+    const orderId = btn.dataset.orderId;
+    if (!orderId) return;
+    void sendOrderEmail(orderId, btn);
   });
 }
 
@@ -292,4 +351,4 @@ document.getElementById('refreshOrders')?.addEventListener('click', () => {
 
 document.getElementById('orderSearch')?.addEventListener('input', renderOrders);
 document.getElementById('orderStatusFilter')?.addEventListener('change', renderOrders);
-wireTable();
+wireGrid();

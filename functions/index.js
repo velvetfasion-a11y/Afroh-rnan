@@ -751,6 +751,114 @@ exports.listAdminOrders = onRequest(
   },
 );
 
+exports.adminSendOrderEmail = onRequest(
+  { secrets: [mailerSendApiKey, stripeSecret], invoker: 'public' },
+  (req, res) => {
+    cors(req, res, async () => {
+      if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+      }
+
+      if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+      }
+
+      try {
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+          res.status(401).json({ error: 'Inloggning krävs' });
+          return;
+        }
+
+        const decoded = await admin.auth().verifyIdToken(authHeader.slice(7).trim());
+        if (!(await verifyAdminAccess(decoded))) {
+          res.status(403).json({ error: 'Forbidden' });
+          return;
+        }
+
+        const { orderId, force } = req.body || {};
+        if (!orderId || typeof orderId !== 'string') {
+          res.status(400).json({ error: 'Missing orderId' });
+          return;
+        }
+
+        const orderRef = db.collection('orders').doc(orderId);
+        const orderSnap = await orderRef.get();
+        if (!orderSnap.exists) {
+          res.status(404).json({ error: 'Order not found' });
+          return;
+        }
+
+        const stripe = new Stripe(stripeSecret.value().trim());
+        let order = orderSnap.data();
+
+        if (order.status === 'pending' && order.paymentIntentId) {
+          const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+          if (paymentIntent.status === 'succeeded') {
+            const handled = await handlePaidOrder(orderId, paymentIntent, stripe);
+            res.json({ ok: true, emails: handled.emails });
+            return;
+          }
+        }
+
+        const mailersend = mailerSendConfig();
+        const pickupStore = order.pickupStore === 'fittja'
+          ? 'Fittja'
+          : order.pickupStore === 'marsta'
+            ? 'Märsta'
+            : order.pickupStore || '';
+
+        const orderForEmail = { ...order };
+        if (force) {
+          orderForEmail.emailSentAt = null;
+          orderForEmail.adminEmailSentAt = null;
+        }
+
+        const emailResult = await sendOrderEmailsIfNeeded(orderForEmail, orderId, mailersend, {
+          paymentMethod: order.paymentMethod || 'Kort',
+          pickupStore,
+        });
+
+        const updates = {};
+        if (emailResult.customerSent && (!order.emailSentAt || force)) {
+          updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
+          updates.emailError = admin.firestore.FieldValue.delete();
+        } else if (emailResult.errors.customer) {
+          updates.emailError = emailResult.errors.customer;
+          updates.emailLastAttemptAt = admin.firestore.FieldValue.serverTimestamp();
+        }
+
+        if (emailResult.adminSent && (!order.adminEmailSentAt || force)) {
+          updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
+          updates.adminEmailError = admin.firestore.FieldValue.delete();
+        } else if (emailResult.errors.admin) {
+          updates.adminEmailError = emailResult.errors.admin;
+        }
+
+        if (Object.keys(updates).length) {
+          await orderRef.update(updates);
+        }
+
+        if (emailResult.errors.customer && !emailResult.customerSent) {
+          res.status(422).json({
+            ok: false,
+            error: emailResult.errors.customer,
+            emails: emailResult,
+          });
+          return;
+        }
+
+        res.json({ ok: true, emails: emailResult });
+      } catch (err) {
+        console.error('adminSendOrderEmail failed:', err);
+        res.status(500).json({ error: err.message || 'Could not send email' });
+      }
+    });
+  },
+);
+
 exports.adminResendOrderEmails = onRequest(
   { secrets: [mailerSendApiKey, stripeSecret], invoker: 'public' },
   async (req, res) => {
