@@ -7,21 +7,21 @@ import {
   logAuthError,
   redirectAfterAuth,
   showAuthError,
+  showAuthSuccess,
   clearAuthError,
   setButtonLoading,
   setGoogleLoading,
   initAuthPage,
   isFirebaseConfigured,
-  ensureAuthPersistence,
-  bootstrapAuth,
+  ensureAuthReady,
   isGoogleRedirectPending,
-} from './firebase-auth.js?v=19';
+} from './firebase-auth.js?v=20';
 
 const googleBtn = document.getElementById('googleSignup');
 
 initAuthPage({ googleButtonId: 'googleSignup' });
 
-googleBtn?.addEventListener('click', async () => {
+googleBtn?.addEventListener('click', () => {
   clearAuthError();
 
   if (!isFirebaseConfigured()) {
@@ -30,22 +30,25 @@ googleBtn?.addEventListener('click', async () => {
   }
 
   setGoogleLoading(googleBtn, true);
-  try {
-    await bootstrapAuth();
-    const user = await signInWithGoogle();
-    if (user) {
-      setGoogleLoading(googleBtn, true);
-      await redirectAfterAuth(user);
-    }
-  } catch (error) {
-    logAuthError('Google sign-up click', error);
-    const message = formatAuthError(error);
-    if (message) showAuthError(message);
-  } finally {
-    if (!isGoogleRedirectPending()) {
-      setGoogleLoading(googleBtn, false);
-    }
-  }
+
+  signInWithGoogle()
+    .then(async (user) => {
+      if (user) {
+        showAuthSuccess('Konto skapat! Omdirigerar…');
+        setGoogleLoading(googleBtn, true);
+        await redirectAfterAuth(user);
+      }
+    })
+    .catch((error) => {
+      logAuthError('Google sign-up click', error);
+      const message = formatAuthError(error);
+      if (message) showAuthError(message);
+    })
+    .finally(() => {
+      if (!isGoogleRedirectPending()) {
+        setGoogleLoading(googleBtn, false);
+      }
+    });
 });
 
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
@@ -64,11 +67,12 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
 
   setButtonLoading(button, true, 'Skapar konto…');
   try {
-    await ensureAuthPersistence();
+    await ensureAuthReady();
     const credential = await createUserWithEmailAndPassword(getFirebaseAuth(), email, password);
     if (name) {
       await updateProfile(credential.user, { displayName: name });
     }
+    showAuthSuccess('Konto skapat! Omdirigerar…');
     await redirectAfterAuth(credential.user);
   } catch (error) {
     logAuthError('Email sign-up', error);

@@ -10,19 +10,21 @@
  *    • afrohornan.firebaseapp.com
  *    • localhost (för lokal utveckling)
  *
- * ── Google Cloud Console (om Google-inloggning fortfarande misslyckas) ──
+ * ── Google Cloud Console ─────────────────────────────────────────────────
  * APIs & Services → Credentials → "Web client (auto created by Google Service)"
- * Under "Authorized JavaScript origins", lägg till samma https://-domäner som ovan.
+ * Under "Authorized JavaScript origins", lägg till samma https://-domäner.
+ * Kontrollera att API-nyckeln INTE har HTTP referrer-begränsningar som blockerar
+ * identitytoolkit.googleapis.com (Firebase Auth).
  *
- * ── Tips ─────────────────────────────────────────────────────────────────
- * • På egen domän (GitHub Pages) använder vi popup på desktop – tillåt popups.
- * • På mobil används redirect; domänen måste finnas i Authorized domains.
- * • Kör `node scripts/generate-firebase-config.mjs` om firebase-config.js saknas.
+ * ── Hosting ──────────────────────────────────────────────────────────────
+ * • afrohornan.com (GitHub Pages): använd signInWithPopup – redirect blockeras i Safari.
+ * • För redirect på mobil: peka domänen till Firebase Hosting och sätt authDomain.
+ *
+ * Felsökning: lägg till ?authDebug=1 i URL:en för felkoder i bannern.
  */
 import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {
   getAuth,
-  initializeAuth,
   connectAuthEmulator,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -34,10 +36,6 @@ import {
   onAuthStateChanged,
   signOut,
   sendPasswordResetEmail,
-  indexedDBLocalPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence,
-  browserPopupRedirectResolver,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import { isAdminUser } from './admin-check.js?v=11';
@@ -59,10 +57,9 @@ let app = null;
 let auth = null;
 let db = null;
 let emulatorsWired = false;
-let persistenceReady = false;
+let authReadyPromise = null;
 
-/** Domäner där Firebase-popup brukar fungera utan redirect. */
-const GOOGLE_POPUP_OK_HOSTS = new Set([
+const GOOGLE_REDIRECT_OK_HOSTS = new Set([
   'afrohornan.web.app',
   'afrohornan.firebaseapp.com',
   'localhost',
@@ -70,11 +67,11 @@ const GOOGLE_POPUP_OK_HOSTS = new Set([
 ]);
 
 const GOOGLE_REDIRECT_KEY = 'afroPendingGoogleRedirect';
+const GOOGLE_FORCE_POPUP_KEY = 'afroForceGooglePopup';
 const AUTH_DEBUG = isLocalDev() || window.location.search.includes('authDebug=1');
 
 let authBootstrapPromise = null;
 
-/** Logga hela Firebase-felobjektet i konsolen (särskilt vid felsökning). */
 export function logAuthError(context, error) {
   const payload = {
     context,
@@ -89,7 +86,6 @@ export function logAuthError(context, error) {
   return payload;
 }
 
-/** Extrahera Firebase-felkod även när .code saknas. */
 export function resolveAuthErrorCode(error) {
   if (!error) return '';
   if (typeof error === 'string') return error.startsWith('auth/') ? error : '';
@@ -98,8 +94,8 @@ export function resolveAuthErrorCode(error) {
   const message = String(error.message || '');
   const server = error.customData?.serverResponse;
   const serverText = typeof server === 'string' ? server : JSON.stringify(server || '');
-
   const combined = `${message} ${serverText}`;
+
   const codeMatch = combined.match(/\b(auth\/[a-z0-9_-]+)\b/i);
   if (codeMatch) return codeMatch[1].toLowerCase();
 
@@ -107,17 +103,15 @@ export function resolveAuthErrorCode(error) {
   if (/referer.*blocked|requests from referer/i.test(combined)) return 'auth/unauthorized-domain';
   if (/OPERATION_NOT_ALLOWED/i.test(combined)) return 'auth/operation-not-allowed';
   if (/UNAUTHORIZED_DOMAIN/i.test(combined)) return 'auth/unauthorized-domain';
+  if (/Failed to fetch|NetworkError|Load failed|network/i.test(combined)) return 'auth/network-request-failed';
   return '';
 }
 
-/** Returnerar svenskt felmeddelande, eller null om användaren avbröt (ingen banner). */
 export function formatAuthError(error) {
   const code = resolveAuthErrorCode(error);
+  logAuthError('formatAuthError', error);
 
-  if (
-    code === 'auth/popup-closed-by-user' ||
-    code === 'auth/cancelled-popup-request'
-  ) {
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
     return null;
   }
 
@@ -130,7 +124,7 @@ export function bootstrapAuth() {
   authBootstrapPromise = (async () => {
     if (!isFirebaseConfigured()) return { auth: null, redirectHandled: false };
 
-    const authInstance = await ensureAuthPersistence();
+    const authInstance = await ensureAuthReady();
     let redirectHandled = false;
 
     try {
@@ -145,44 +139,39 @@ export function bootstrapAuth() {
   return authBootstrapPromise;
 }
 
-function prefersGoogleRedirect() {
-  const ua = navigator.userAgent;
-  // Mobil: helskärms-redirect.
-  if (/iPhone|iPad|iPod|Android/i.test(ua)) return true;
-  // Safari (inkl. macOS) har ofta problem med popup-inloggning.
-  if (/Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR|Firefox/i.test(ua)) return true;
-  // Egen domän (t.ex. afrohornan.com via GitHub Pages) – redirect är betydligt mer tillförlitligt än popup.
-  const host = window.location.hostname;
-  if (!GOOGLE_POPUP_OK_HOSTS.has(host)) return true;
-  return false;
+function canUseGoogleRedirect() {
+  return GOOGLE_REDIRECT_OK_HOSTS.has(window.location.hostname);
 }
 
-export async function signInWithGoogle() {
-  await bootstrapAuth();
-  const authInstance = await ensureAuthPersistence();
+/**
+ * Popup måste startas direkt från klick – inget await före signInWithPopup (iOS Safari).
+ * bootstrapAuth() körs redan vid sidladdning via initAuthPage().
+ */
+export function signInWithGoogle() {
+  const authInstance = getFirebaseAuth();
 
-  if (prefersGoogleRedirect()) {
-    markGoogleRedirectPending();
-    await signInWithRedirect(authInstance, googleProvider);
-    return null;
-  }
+  return signInWithPopup(authInstance, googleProvider)
+    .then((result) => {
+      try {
+        sessionStorage.removeItem(GOOGLE_FORCE_POPUP_KEY);
+      } catch {
+        /* ignore */
+      }
+      return result.user;
+    })
+    .catch((error) => {
+      const code = resolveAuthErrorCode(error);
+      const tryRedirect =
+        canUseGoogleRedirect() &&
+        (code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment' ||
+          code === 'auth/internal-error');
 
-  try {
-    const result = await signInWithPopup(authInstance, googleProvider);
-    return result.user;
-  } catch (error) {
-    const code = resolveAuthErrorCode(error);
-    const useRedirect =
-      code === 'auth/popup-blocked' ||
-      code === 'auth/operation-not-supported-in-this-environment' ||
-      code === 'auth/internal-error';
+      if (!tryRedirect) throw error;
 
-    if (!useRedirect) throw error;
-
-    markGoogleRedirectPending();
-    await signInWithRedirect(authInstance, googleProvider);
-    return null;
-  }
+      markGoogleRedirectPending();
+      return signInWithRedirect(authInstance, googleProvider).then(() => null);
+    });
 }
 
 export function resetGoogleButton(buttonId = 'googleLogin') {
@@ -258,20 +247,7 @@ export function getFirebaseApp() {
 
 export function getFirebaseAuth() {
   if (!auth) {
-    const firebaseApp = getFirebaseApp();
-    try {
-      // initializeAuth kräver popupRedirectResolver – utan den misslyckas Google popup/redirect tyst.
-      auth = initializeAuth(firebaseApp, {
-        persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
-        popupRedirectResolver: browserPopupRedirectResolver,
-      });
-    } catch (err) {
-      if (err?.code === 'auth/already-initialized') {
-        auth = getAuth(firebaseApp);
-      } else {
-        throw err;
-      }
-    }
+    auth = getAuth(getFirebaseApp());
   }
   return auth;
 }
@@ -283,20 +259,29 @@ export function getFirestoreDb() {
   return db;
 }
 
+export async function ensureAuthReady() {
+  if (authReadyPromise) return authReadyPromise;
+
+  authReadyPromise = (async () => {
+    const authInstance = getFirebaseAuth();
+    try {
+      await authInstance.authStateReady();
+    } catch {
+      /* äldre SDK */
+    }
+    return authInstance;
+  })();
+
+  return authReadyPromise;
+}
+
+/** @deprecated */
 export async function ensureAuthPersistence() {
-  if (persistenceReady) return getFirebaseAuth();
-  const authInstance = getFirebaseAuth();
-  try {
-    await authInstance.authStateReady();
-  } catch {
-    /* authStateReady kan saknas i äldre builds */
-  }
-  persistenceReady = true;
-  return authInstance;
+  return ensureAuthReady();
 }
 
 export async function signInWithEmailPassword(email, password) {
-  const authInstance = getFirebaseAuth();
+  const authInstance = await ensureAuthReady();
   let lastError;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -313,7 +298,7 @@ export async function signInWithEmailPassword(email, password) {
 }
 
 export async function sendPasswordReset(email) {
-  const authInstance = getFirebaseAuth();
+  const authInstance = await ensureAuthReady();
   const trimmed = String(email || '').trim();
   if (!trimmed) {
     const err = new Error('Missing email');
@@ -353,7 +338,7 @@ export function authErrorMessage(code, error) {
     'auth/weak-password': 'Lösenordet måste vara minst 6 tecken.',
     'auth/popup-closed-by-user': 'Google-inloggningen avbröts.',
     'auth/popup-blocked':
-      'Popup-fönstret blockerades av webbläsaren. Tillåt popups och försök igen.',
+      'Popup-fönstret blockerades av webbläsaren. Tillåt popups för afrohornan.com och försök igen.',
     'auth/cancelled-popup-request': 'Google-inloggningen avbröts.',
     'auth/account-exists-with-different-credential':
       'E-postadressen är redan kopplad till ett annat inloggningssätt. Prova e-post och lösenord i stället.',
@@ -367,7 +352,7 @@ export function authErrorMessage(code, error) {
     'auth/app-not-authorized':
       'Appen är inte auktoriserad för den här domänen. Kontakta support.',
     'auth/network-request-failed':
-      'Kunde inte nå inloggningstjänsten. Kontrollera internetanslutningen, stäng av adblocker och försök igen.',
+      'Kunde inte nå inloggningstjänsten. Kontrollera internetanslutningen och stäng av adblocker.',
     'auth/internal-error':
       'Inloggningen kunde inte slutföras. Ladda om sidan och försök igen.',
     'auth/missing-or-invalid-nonce':
@@ -410,21 +395,12 @@ function loginUrl(nextPage) {
 
 export async function redirectAfterAuth(user) {
   const authInstance = getFirebaseAuth();
-  let authUser = user || authInstance.currentUser;
+  const authUser = user || authInstance.currentUser;
 
   try {
-    if (authUser) {
-      if (await isAdminUser(authUser)) {
-        window.location.replace('admin.html');
-        return;
-      }
-      const refreshed = authInstance.currentUser;
-      if (refreshed && refreshed.uid === authUser.uid && refreshed !== authUser) {
-        if (await isAdminUser(refreshed)) {
-          window.location.replace('admin.html');
-          return;
-        }
-      }
+    if (authUser && (await isAdminUser(authUser))) {
+      window.location.replace('admin.html');
+      return;
     }
   } catch (err) {
     console.warn('Admin check failed after login:', err);
@@ -466,9 +442,7 @@ export function wireNavProfile(options = {}) {
         });
       });
     })
-    .catch((err) => {
-      logAuthError('Nav profile auth init', err);
-    });
+    .catch((err) => logAuthError('Nav profile auth init', err));
 }
 
 export function showAuthError(message) {
@@ -541,17 +515,52 @@ export function setGoogleLoading(button, loading) {
   }
 }
 
-function shouldShowRedirectError(error, pendingGoogle) {
-  if (!pendingGoogle) return false;
-  const code = resolveAuthErrorCode(error);
-  if (!code) return true;
-  if (code === 'auth/no-auth-event') return false;
-  return true;
+function customDomainRedirectHelp() {
+  if (canUseGoogleRedirect()) {
+    return 'Google-inloggningen kunde inte slutföras. Försök igen.';
+  }
+  return (
+    'Google-inloggningen kunde inte slutföras. Tillåt popups för sidan och försök igen, ' +
+    'eller öppna afrohornan.web.app/login.html.'
+  );
+}
+
+function markForceGooglePopup() {
+  try {
+    sessionStorage.setItem(GOOGLE_FORCE_POPUP_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
+async function waitForAuthUser(authInstance, maxMs = 3000) {
+  if (authInstance.currentUser) return authInstance.currentUser;
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (user) => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
+      resolve(user);
+    };
+
+    const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+      if (user) finish(user);
+    });
+
+    const interval = window.setInterval(() => {
+      if (authInstance.currentUser) finish(authInstance.currentUser);
+    }, 200);
+
+    const timeout = window.setTimeout(() => finish(authInstance.currentUser || null), maxMs);
+  });
 }
 
 async function finishGoogleRedirect(authInstance) {
   const pendingGoogle = hasGoogleRedirectPending();
-
   await authInstance.authStateReady();
 
   try {
@@ -560,8 +569,7 @@ async function finishGoogleRedirect(authInstance) {
 
     let user = result?.user || null;
     if (!user && pendingGoogle) {
-      await new Promise((resolve) => window.setTimeout(resolve, 500));
-      user = authInstance.currentUser;
+      user = await waitForAuthUser(authInstance, 3000);
     }
 
     if (user) {
@@ -570,27 +578,24 @@ async function finishGoogleRedirect(authInstance) {
     }
 
     if (pendingGoogle) {
-      showAuthError(
-        'Google-inloggningen kunde inte slutföras. Försök igen eller testa i en annan webbläsare.',
-      );
+      markForceGooglePopup();
+      showAuthError(customDomainRedirectHelp());
     }
     return false;
   } catch (error) {
     if (pendingGoogle) consumeGoogleRedirectPending();
     logAuthError('Google redirect result', error);
 
-    if (authInstance.currentUser) {
-      await redirectAfterAuth(authInstance.currentUser);
+    const user = authInstance.currentUser || (await waitForAuthUser(authInstance, 1500));
+    if (user) {
+      await redirectAfterAuth(user);
       return true;
     }
 
-    if (shouldShowRedirectError(error, pendingGoogle)) {
-      const message = formatAuthError(error);
-      if (message) showAuthError(message);
-    } else if (pendingGoogle) {
-      showAuthError(
-        'Google-inloggningen kunde inte slutföras. Försök igen eller testa i en annan webbläsare.',
-      );
+    if (pendingGoogle) {
+      markForceGooglePopup();
+      const message = formatAuthError(error) || customDomainRedirectHelp();
+      showAuthError(message);
     }
     return false;
   }
@@ -612,22 +617,12 @@ export async function initAuthPage(options = {}) {
 
     if (authInstance?.currentUser) {
       await redirectAfterAuth(authInstance.currentUser);
-      return;
     }
-
-    onAuthStateChanged(authInstance, async (user) => {
-      if (user) await redirectAfterAuth(user);
-    });
   } catch (err) {
     logAuthError('Auth page init', err);
     showAuthError('Kunde inte ansluta till inloggningen. Ladda om sidan och försök igen.');
     resetGoogleButton(googleButtonId);
   }
-}
-
-/** @deprecated Use initAuthPage */
-export function guardAuthPage() {
-  initAuthPage();
 }
 
 export function requireAuth(onUser, options = {}) {
@@ -638,7 +633,7 @@ export function requireAuth(onUser, options = {}) {
     return;
   }
 
-  ensureAuthPersistence()
+  ensureAuthReady()
     .then(() => {
       onAuthStateChanged(getFirebaseAuth(), async (user) => {
         if (onStateKnown) onStateKnown(user);
@@ -665,7 +660,7 @@ export function requireAuth(onUser, options = {}) {
 export function requireAdmin(onUser) {
   if (!isFirebaseConfigured()) return;
 
-  ensureAuthPersistence()
+  ensureAuthReady()
     .then(() => {
       onAuthStateChanged(getFirebaseAuth(), async (user) => {
         if (!user) {
@@ -679,7 +674,5 @@ export function requireAdmin(onUser) {
         if (onUser) await onUser(user);
       });
     })
-    .catch((err) => {
-      logAuthError('requireAdmin init', err);
-    });
+    .catch((err) => logAuthError('requireAdmin init', err));
 }

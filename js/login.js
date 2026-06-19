@@ -12,9 +12,8 @@ import {
   setGoogleLoading,
   initAuthPage,
   isFirebaseConfigured,
-  bootstrapAuth,
   isGoogleRedirectPending,
-} from './firebase-auth.js?v=19';
+} from './firebase-auth.js?v=20';
 
 const forgotWrap = document.getElementById('forgotPasswordWrap');
 const forgotBtn = document.getElementById('forgotPasswordBtn');
@@ -26,7 +25,8 @@ function showForgotPassword() {
 
 initAuthPage();
 
-googleBtn?.addEventListener('click', async () => {
+// Synkront klick → popup startar direkt (krävs för iOS Safari).
+googleBtn?.addEventListener('click', () => {
   clearAuthError();
 
   if (!isFirebaseConfigured()) {
@@ -35,23 +35,25 @@ googleBtn?.addEventListener('click', async () => {
   }
 
   setGoogleLoading(googleBtn, true);
-  try {
-    await bootstrapAuth();
-    const user = await signInWithGoogle();
-    if (user) {
-      setGoogleLoading(googleBtn, true);
-      await redirectAfterAuth(user);
-    }
-  } catch (error) {
-    logAuthError('Google sign-in click', error);
-    const message = formatAuthError(error);
-    if (message) showAuthError(message);
-  } finally {
-    // Vid redirect lämnar sidan – ingen visuell effekt. Vid popup/popup-blocker återställs knappen.
-    if (!isGoogleRedirectPending()) {
-      setGoogleLoading(googleBtn, false);
-    }
-  }
+
+  signInWithGoogle()
+    .then(async (user) => {
+      if (user) {
+        showAuthSuccess('Inloggad! Omdirigerar…');
+        setGoogleLoading(googleBtn, true);
+        await redirectAfterAuth(user);
+      }
+    })
+    .catch((error) => {
+      logAuthError('Google sign-in click', error);
+      const message = formatAuthError(error);
+      if (message) showAuthError(message);
+    })
+    .finally(() => {
+      if (!isGoogleRedirectPending()) {
+        setGoogleLoading(googleBtn, false);
+      }
+    });
 });
 
 forgotBtn?.addEventListener('click', async () => {
@@ -92,6 +94,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   setButtonLoading(button, true, 'Loggar in…');
   try {
     const result = await signInWithEmailPassword(email, password);
+    showAuthSuccess('Inloggad! Omdirigerar…');
     await redirectAfterAuth(result.user);
   } catch (error) {
     logAuthError('Email sign-in', error);
