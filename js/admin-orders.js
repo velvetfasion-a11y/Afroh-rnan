@@ -2,6 +2,14 @@ import { requireAdmin, signOut, getFirebaseAuth } from './firebase-auth.js';
 
 let allOrders = [];
 let pendingRefundOrderId = null;
+/** Order IDs where admin turned leveransmejl off to allow resend on next toggle on */
+const deliverySwitchReset = new Set();
+const deliverySending = new Set();
+
+function isDeliverySwitchChecked(order) {
+  if (!order?.deliveryEmailSentAt) return false;
+  return !deliverySwitchReset.has(order.id);
+}
 
 function getOrderById(orderId) {
   return allOrders.find((order) => order.id === orderId) || null;
@@ -50,15 +58,78 @@ function statusLabel(status) {
     pending: 'Väntar',
     pickup_requested: 'Hämtning',
     refunded: 'Återbetald',
+    shipped: 'Skickad',
   };
   return labels[status] || status || '—';
+}
+
+function orderDisplayStatus(order) {
+  if (order.deliveryEmailSentAt) {
+    return { label: 'Skickad', className: 'shipped' };
+  }
+  return { label: statusLabel(order.status), className: statusClass(order.status) };
 }
 
 function statusClass(status) {
   if (status === 'paid') return 'ok';
   if (status === 'refunded') return 'out';
   if (status === 'pickup_requested') return 'low';
+  if (status === 'shipped') return 'shipped';
   return 'unknown';
+}
+
+function matchesStatusFilter(order, status) {
+  if (status === 'all') return true;
+  if (status === 'shipped') return Boolean(order.deliveryEmailSentAt);
+  if (status === 'paid') {
+    return order.status === 'paid' && !order.deliveryEmailSentAt;
+  }
+  return order.status === status;
+}
+
+function getOrdersView() {
+  const view = new URLSearchParams(window.location.search).get('view');
+  return view === 'shipped' ? 'shipped' : 'paid';
+}
+
+function syncOrdersPageChrome() {
+  const filter = document.getElementById('orderStatusFilter')?.value || 'paid';
+  const title = document.getElementById('ordersPageTitle');
+  const sub = document.getElementById('ordersPageSub');
+  const emptyText = document.getElementById('ordersEmptyText');
+  const paidTab = document.querySelector('[data-orders-view="paid"]');
+  const shippedTab = document.querySelector('[data-orders-view="shipped"]');
+
+  if (filter === 'shipped') {
+    if (title) title.textContent = 'Skickade ordrar';
+    if (sub) sub.textContent = 'Ordrar där kunden fått mejlet om att leveransen är på väg';
+    if (emptyText) emptyText.textContent = 'Inga skickade ordrar ännu.';
+    paidTab?.classList.remove('active');
+    shippedTab?.classList.add('active');
+    return;
+  }
+
+  if (filter === 'paid') {
+    if (title) title.textContent = 'Betalda ordrar';
+    if (sub) sub.textContent = 'Betalda ordrar som väntar på leveransmejl';
+    if (emptyText) emptyText.textContent = 'Inga betalda ordrar att skicka ännu.';
+    shippedTab?.classList.remove('active');
+    paidTab?.classList.add('active');
+    return;
+  }
+
+  if (title) title.textContent = 'Ordrar';
+  if (sub) sub.textContent = 'Alla kundbeställningar och kontaktuppgifter';
+  if (emptyText) emptyText.textContent = 'Inga ordrar matchar filtret.';
+  paidTab?.classList.remove('active');
+  shippedTab?.classList.remove('active');
+}
+
+function initOrdersView() {
+  const view = getOrdersView();
+  const filter = document.getElementById('orderStatusFilter');
+  if (filter) filter.value = view === 'shipped' ? 'shipped' : 'paid';
+  syncOrdersPageChrome();
 }
 
 function canRefundOrder(order) {
@@ -113,6 +184,7 @@ function deliveryEmailStatusText(order) {
 function cardHtml(order) {
   const customer = order.customer || {};
   const items = Array.isArray(order.items) ? order.items : [];
+  const displayStatus = orderDisplayStatus(order);
 
   return `
     <article class="admin-order-card" data-order-id="${escapeHtml(order.id)}">
@@ -127,7 +199,7 @@ function cardHtml(order) {
         </div>
         <div class="admin-order-mini">
           <span class="admin-order-mini-label">Status</span>
-          <span class="admin-stock ${statusClass(order.status)}">${escapeHtml(statusLabel(order.status))}</span>
+          <span class="admin-stock ${displayStatus.className}">${escapeHtml(displayStatus.label)}</span>
         </div>
         <div class="admin-order-mini">
           <span class="admin-order-mini-label">Summa</span>
@@ -170,9 +242,19 @@ function cardHtml(order) {
 
       <div class="admin-order-card-actions">
         ${canRefundOrder(order) ? `<button type="button" class="admin-btn-outline admin-order-refund" data-order-id="${escapeHtml(order.id)}">Återbetala</button>` : ''}
-        <button type="button" class="admin-btn admin-order-send-email" data-order-id="${escapeHtml(order.id)}" ${order.status === 'refunded' ? 'hidden' : ''}>
-          Skicka leveransmejl
-        </button>
+        ${order.status !== 'refunded' ? `
+        <label class="admin-delivery-switch">
+          <span class="admin-delivery-switch-label">Leveransmejl</span>
+          <input
+            type="checkbox"
+            class="admin-delivery-switch-input"
+            data-order-id="${escapeHtml(order.id)}"
+            ${isDeliverySwitchChecked(order) ? 'checked' : ''}
+            ${deliverySending.has(order.id) ? 'disabled' : ''}
+            aria-label="Skicka leveransmejl till kunden"
+          />
+          <span class="admin-delivery-switch-track" aria-hidden="true"></span>
+        </label>` : ''}
         <span class="admin-order-send-feedback" hidden></span>
       </div>
     </article>`;
@@ -180,13 +262,14 @@ function cardHtml(order) {
 
 function filteredOrders() {
   const query = document.getElementById('orderSearch')?.value.trim().toLowerCase() || '';
-  const status = document.getElementById('orderStatusFilter')?.value || 'all';
+  const status = document.getElementById('orderStatusFilter')?.value || 'paid';
 
   return allOrders.filter((order) => {
-    if (status !== 'all' && order.status !== status) return false;
+    if (!matchesStatusFilter(order, status)) return false;
     if (!query) return true;
 
     const customer = order.customer || {};
+    const displayStatus = orderDisplayStatus(order);
     const haystack = [
       displayOrderNumber(order),
       order.id,
@@ -197,6 +280,7 @@ function filteredOrders() {
       customer.city,
       customer.postal,
       fulfillmentLabel(order),
+      displayStatus.label,
       statusLabel(order.status),
       ...(order.items || []).map((item) => item.name),
     ].join(' ').toLowerCase();
@@ -273,7 +357,7 @@ async function fetchOrders() {
   renderOrders();
 }
 
-async function sendOrderEmail(orderId, button) {
+async function sendDeliveryEmail(orderId, input, { force = false } = {}) {
   const apiUrl = window.AfroSite?.adminSendOrderEmailApiUrl;
   if (!apiUrl) throw new Error('Mejl-API saknas');
 
@@ -281,66 +365,99 @@ async function sendOrderEmail(orderId, button) {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('Inloggning krävs');
 
-  const card = button.closest('.admin-order-card');
+  const card = input.closest('.admin-order-card');
   const feedback = card?.querySelector('.admin-order-send-feedback');
-  const originalLabel = button.textContent;
 
-  button.disabled = true;
-  button.textContent = 'Skickar…';
   if (feedback) {
     feedback.hidden = true;
     feedback.textContent = '';
     feedback.className = 'admin-order-send-feedback';
   }
 
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ orderId, force: true }),
-    });
-    const data = await response.json().catch(() => ({}));
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ orderId, force }),
+  });
+  const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Kunde inte skicka mejl');
+  if (!response.ok) {
+    throw new Error(data.error || 'Kunde inte skicka leveransmejl');
+  }
+
+  const now = new Date().toISOString();
+  updateOrderInList(orderId, {
+    deliveryEmailSentAt: data.deliverySent ? now : getOrderById(orderId)?.deliveryEmailSentAt,
+    deliveryEmailError: null,
+  });
+  deliverySwitchReset.delete(orderId);
+  renderOrders();
+
+  if (feedback) {
+    feedback.hidden = false;
+    feedback.classList.add('success');
+    feedback.textContent = data.alreadySent ? 'Leveransmejl var redan skickat' : 'Leveransmejl skickat!';
+  }
+}
+
+async function handleDeliverySwitchChange(input) {
+  const orderId = input.dataset.orderId;
+  const order = getOrderById(orderId);
+  if (!orderId || !order) return;
+
+  if (deliverySending.has(orderId)) {
+    input.checked = isDeliverySwitchChecked(order);
+    return;
+  }
+
+  if (input.checked) {
+    if (order.deliveryEmailSentAt && !deliverySwitchReset.has(orderId)) {
+      input.checked = true;
+      return;
     }
 
-    const now = new Date().toISOString();
-    updateOrderInList(orderId, {
-      deliveryEmailSentAt: data.deliverySent ? now : allOrders.find((o) => o.id === orderId)?.deliveryEmailSentAt,
-      deliveryEmailError: data.error || null,
-    });
-    renderOrders();
+    const force = Boolean(order.deliveryEmailSentAt && deliverySwitchReset.has(orderId));
+    deliverySending.add(orderId);
+    input.disabled = true;
 
-    if (feedback) {
-      feedback.hidden = false;
-      feedback.classList.add('success');
-      feedback.textContent = data.alreadySent ? 'Leveransmejl var redan skickat' : 'Leveransmejl skickat!';
+    const card = input.closest('.admin-order-card');
+    const feedback = card?.querySelector('.admin-order-send-feedback');
+
+    try {
+      await sendDeliveryEmail(orderId, input, { force });
+    } catch (err) {
+      input.checked = false;
+      if (feedback) {
+        feedback.hidden = false;
+        feedback.classList.add('error');
+        feedback.textContent = err.message || 'Kunde inte skicka leveransmejl';
+      }
+    } finally {
+      deliverySending.delete(orderId);
+      input.disabled = false;
     }
-  } catch (err) {
-    if (feedback) {
-      feedback.hidden = false;
-      feedback.classList.add('error');
-      feedback.textContent = err.message || 'Kunde inte skicka mejl';
-    }
-    button.disabled = false;
-    button.textContent = originalLabel;
+    return;
+  }
+
+  if (order.deliveryEmailSentAt) {
+    deliverySwitchReset.add(orderId);
   }
 }
 
 function wireGrid() {
   const grid = document.getElementById('ordersGrid');
-  grid?.addEventListener('click', (event) => {
-    const emailBtn = event.target.closest('.admin-order-send-email');
-    if (emailBtn && !emailBtn.disabled) {
-      const orderId = emailBtn.dataset.orderId;
-      if (orderId) void sendOrderEmail(orderId, emailBtn);
+  grid?.addEventListener('change', (event) => {
+    const deliverySwitch = event.target.closest('.admin-delivery-switch-input');
+    if (deliverySwitch) {
+      void handleDeliverySwitchChange(deliverySwitch);
       return;
     }
+  });
 
+  grid?.addEventListener('click', (event) => {
     const refundBtn = event.target.closest('.admin-order-refund');
     if (refundBtn && !refundBtn.disabled) {
       const orderId = refundBtn.dataset.orderId;
@@ -463,6 +580,7 @@ requireAdmin((user) => {
   document.getElementById('adminLoading').hidden = true;
   document.getElementById('adminContent').hidden = false;
   document.getElementById('adminEmail').textContent = user.email || '';
+  initOrdersView();
 
   fetchOrders().catch((err) => {
     const loadingEl = document.getElementById('ordersLoading');
@@ -491,6 +609,17 @@ document.getElementById('refreshOrders')?.addEventListener('click', () => {
 });
 
 document.getElementById('orderSearch')?.addEventListener('input', renderOrders);
-document.getElementById('orderStatusFilter')?.addEventListener('change', renderOrders);
+document.getElementById('orderStatusFilter')?.addEventListener('change', (event) => {
+  const value = event.target.value;
+  const url = new URL(window.location.href);
+  if (value === 'shipped') {
+    url.searchParams.set('view', 'shipped');
+  } else {
+    url.searchParams.delete('view');
+  }
+  window.history.replaceState({}, '', url);
+  syncOrdersPageChrome();
+  renderOrders();
+});
 wireGrid();
 wireRefundModal();

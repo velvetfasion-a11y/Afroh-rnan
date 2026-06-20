@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
-<link rel="stylesheet" href="admin.css?v=15">
+<link rel="stylesheet" href="admin.css?v=17">
 </head>
 <body class="admin-body">
 
@@ -31,11 +31,16 @@
 
     <div class="admin-page-head">
       <div>
-        <h1>Ordrar</h1>
-        <p class="admin-sub">Alla kundbeställningar och kontaktuppgifter</p>
+        <h1 id="ordersPageTitle">Ordrar</h1>
+        <p class="admin-sub" id="ordersPageSub">Betalda ordrar som väntar på leveransmejl</p>
       </div>
       <button type="button" class="admin-btn-outline" id="refreshOrders">Uppdatera</button>
     </div>
+
+    <nav class="admin-subtabs" aria-label="Ordervyer">
+      <a href="admin-orders.html" data-orders-view="paid" class="active">Betalda</a>
+      <a href="admin-orders.html?view=shipped" data-orders-view="shipped">Skickade</a>
+    </nav>
 
     <p class="admin-error" id="ordersError" hidden></p>
     <p class="admin-loading" id="ordersLoading">Hämtar ordrar…</p>
@@ -49,8 +54,8 @@
           Status
           <select id="orderStatusFilter" class="admin-select">
             <option value="paid" selected>Betalda</option>
+            <option value="shipped">Skickade</option>
             <option value="all">Alla</option>
-            <option value="pending">Väntar</option>
             <option value="pickup_requested">Hämtning</option>
             <option value="refunded">Återbetald</option>
           </select>
@@ -62,7 +67,7 @@
     <div class="admin-orders-grid" id="ordersGrid" hidden></div>
 
     <div class="admin-empty" id="ordersEmpty" hidden>
-      <p>Inga ordrar ännu.</p>
+      <p id="ordersEmptyText">Inga ordrar ännu.</p>
     </div>
   </div>
 </main>
@@ -84,6 +89,6 @@
 
 <script src="js/firebase-config.js?v=12"></script>
 <script src="js/admin-gate.js?v=11"></script>
-<script type="module" src="js/admin-orders.js"></script>
+<script type="module" src="js/admin-orders.js?v=4"></script>
 </body>
 </html>

@@ -182,6 +182,35 @@
   background: rgba(212, 148, 26, 0.15);
 }
 
+.admin-subtabs {
+  display: flex;
+  gap: .5rem;
+  margin: -0.5rem 0 1.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-subtabs a {
+  padding: .4rem .9rem;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 500;
+  color: rgba(245, 239, 228, 0.7);
+  text-decoration: none;
+  border: 1px solid rgba(212, 148, 26, 0.2);
+  transition: color .15s, border-color .15s, background .15s;
+}
+
+.admin-subtabs a:hover {
+  color: #fff;
+  border-color: rgba(212, 148, 26, 0.45);
+}
+
+.admin-subtabs a.active {
+  color: #1a0e08;
+  background: #d4941a;
+  border-color: #d4941a;
+}
+
 .admin-page-head {
   display: flex;
   align-items: flex-start;
@@ -471,6 +500,11 @@
 .admin-stock.ok {
   background: rgba(90,158,85,.15);
   color: #8fd489;
+}
+
+.admin-stock.shipped {
+  background: rgba(100, 149, 237, 0.15);
+  color: #9ec5ff;
 }
 
 .admin-stock.low {
@@ -1153,6 +1187,72 @@
 
 .admin-order-send-feedback.error {
   color: #ffb4a2;
+}
+
+.admin-delivery-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-delivery-switch-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(245, 239, 228, 0.75);
+}
+
+.admin-delivery-switch-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.admin-delivery-switch-track {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  background: rgba(245, 239, 228, 0.12);
+  border-radius: 999px;
+  border: 1px solid rgba(212, 148, 26, 0.35);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.admin-delivery-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(245, 239, 228, 0.65);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.admin-delivery-switch-input:checked + .admin-delivery-switch-track {
+  background: rgba(212, 148, 26, 0.45);
+  border-color: #d4941a;
+}
+
+.admin-delivery-switch-input:checked + .admin-delivery-switch-track::after {
+  transform: translateX(20px);
+  background: #f5c842;
+}
+
+.admin-delivery-switch-input:disabled + .admin-delivery-switch-track {
+  opacity: 0.45;
+  cursor: wait;
+}
+
+.admin-delivery-switch-input:focus-visible + .admin-delivery-switch-track {
+  outline: 2px solid #d4941a;
+  outline-offset: 2px;
 }
 
 @media (max-width: 1100px) {
