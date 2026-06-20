@@ -5,11 +5,31 @@ async function sendTemplateEmail({
   toName,
   fromEmail,
   fromName,
+  subject,
   data,
 }) {
   if (!apiKey) throw new Error('MailerSend API key is missing');
   if (!templateId) throw new Error('MailerSend template ID is missing');
   if (!toEmail) throw new Error('Recipient email is missing');
+
+  const payload = {
+    from: {
+      email: fromEmail,
+      name: fromName || fromEmail,
+    },
+    to: [{ email: toEmail, name: toName || toEmail }],
+    template_id: templateId,
+    personalization: [
+      {
+        email: toEmail,
+        data: data || {},
+      },
+    ],
+  };
+
+  if (subject) {
+    payload.subject = subject;
+  }
 
   const response = await fetch('https://api.mailersend.com/v1/email', {
     method: 'POST',
@@ -18,20 +38,7 @@ async function sendTemplateEmail({
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
     },
-    body: JSON.stringify({
-      from: {
-        email: fromEmail,
-        name: fromName || fromEmail,
-      },
-      to: [{ email: toEmail, name: toName || toEmail }],
-      template_id: templateId,
-      personalization: [
-        {
-          email: toEmail,
-          data: data || {},
-        },
-      ],
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {

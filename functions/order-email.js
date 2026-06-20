@@ -258,6 +258,112 @@ function orderItemsSubtotal(items) {
   );
 }
 
+function buildPostNordTrackingLink(trackingNumber) {
+  const value = String(trackingNumber || '').trim();
+  if (!value || value === '—') return 'https://www.postnord.se/track';
+  return `https://www.postnord.se/track#/step1?shipmentId=${encodeURIComponent(value)}`;
+}
+
+function addBusinessDays(date, days) {
+  const result = new Date(date);
+  let added = 0;
+  while (added < days) {
+    result.setDate(result.getDate() + 1);
+    const day = result.getDay();
+    if (day !== 0 && day !== 6) added += 1;
+  }
+  return result;
+}
+
+function formatDeliveryDate(date) {
+  const value = date instanceof Date ? date : new Date(date || Date.now());
+  return new Intl.DateTimeFormat('sv-SE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(value);
+}
+
+function buildDeliveryProductLine(item) {
+  if (!item) {
+    return { name: '—', qty: '—', price: '—' };
+  }
+  const name = item.name || 'Produkt';
+  const displayName = item.colorName ? `${name} (${item.colorName})` : name;
+  const qty = Number(item.qty) || 1;
+  return {
+    name: displayName,
+    qty: String(qty),
+    price: formatPrice((Number(item.price) || 0) * qty),
+  };
+}
+
+function buildDeliveryTemplateData(order, orderId, options = {}) {
+  const customer = order.customer || {};
+  const items = Array.isArray(order.items) ? order.items : [];
+  const orderNumber = formatOrderNumber(order, orderId);
+  const rawTracking = String(options.trackingNumber || order.trackingNumber || '').trim();
+  const trackingNumber = rawTracking || '—';
+  const shippedDate = new Date();
+  const estimatedDelivery = addBusinessDays(shippedDate, 3);
+  const shippingMethod = order.shippingMethod === 'postnord' || !order.shippingMethod
+    ? 'PostNord - Spårbart Ombud'
+    : 'Frakt';
+  const product1 = buildDeliveryProductLine(items[0]);
+  const product2 = buildDeliveryProductLine(items[1]);
+
+  return {
+    customer_name: customer.name || 'Kund',
+    tracking_number: trackingNumber,
+    tracking_url: buildPostNordTrackingLink(rawTracking),
+    carrier_name: 'PostNord',
+    order_number: orderNumber,
+    shipped_date: formatDeliveryDate(shippedDate),
+    estimated_delivery: formatDeliveryDate(estimatedDelivery),
+    shipping_method: shippingMethod,
+    product_1_name: product1.name,
+    product_1_qty: product1.qty,
+    product_1_price: product1.price,
+    product_2_name: product2.name,
+    product_2_qty: product2.qty,
+    product_2_price: product2.price,
+    customer_address: customer.address || '',
+    customer_postal: customer.postal || '',
+    customer_city: customer.city || '',
+  };
+}
+
+async function sendDeliveryCustomerEmail(order, orderId, mailersend, options = {}) {
+  const customer = order.customer || {};
+  const toEmail = String(customer.email || '').trim();
+  if (!toEmail || !toEmail.includes('@')) {
+    throw new Error('Order saknar kundens e-postadress');
+  }
+
+  if (!mailersend?.apiKey) {
+    throw new Error('MailerSend API key is not configured');
+  }
+
+  const templateId = mailersend.deliveryTemplateId;
+  if (!templateId) {
+    throw new Error('MailerSend leveransmall saknas (MAILERSEND_DELIVERY_TEMPLATE_ID)');
+  }
+
+  const from = parseFromAddress(mailersend.from);
+  const data = buildDeliveryTemplateData(order, orderId, options);
+
+  await sendTemplateEmail({
+    apiKey: mailersend.apiKey,
+    templateId,
+    toEmail,
+    toName: customer.name || toEmail,
+    fromEmail: from.email,
+    fromName: from.name,
+    subject: 'Din Leverans är på Väg',
+    data,
+  });
+}
+
 function buildRefundEmailData(order, orderId, refundAmount) {
   const customer = order.customer || {};
   const items = Array.isArray(order.items) ? order.items : [];
@@ -306,7 +412,7 @@ async function sendRefundEmail(order, orderId, refundAmount, mailersend) {
 
   const data = buildRefundEmailData(order, orderId, refundAmount);
 
-  if (mailersend?.refundTemplateId && mailersend?.apiKey) {
+  if (mailersend?.apiKey && mailersend?.refundTemplateId) {
     const from = parseFromAddress(mailersend.from);
     await sendTemplateEmail({
       apiKey: mailersend.apiKey,
@@ -315,6 +421,7 @@ async function sendRefundEmail(order, orderId, refundAmount, mailersend) {
       toName: customer.name || toEmail,
       fromEmail: from.email,
       fromName: from.name,
+      subject: 'Återbetalning Bekräftad',
       data,
     });
     return;
@@ -625,6 +732,7 @@ module.exports = {
   sendCourseAdminEmail,
   sendPaidOrderEmails,
   sendOrderEmailsIfNeeded,
+  sendDeliveryCustomerEmail,
   sendRefundEmail,
   isCourseOrder,
   formatOrderNumber,

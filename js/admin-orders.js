@@ -99,9 +99,15 @@ function itemsListHtml(items) {
 }
 
 function emailStatusText(order) {
-  if (order.emailSentAt) return `Kundmejl skickat ${formatDate(order.emailSentAt)}`;
-  if (order.emailError) return `Kundmejl misslyckades: ${order.emailError}`;
-  return 'Kundmejl ej skickat';
+  if (order.emailSentAt) return `Orderbekräftelse skickad ${formatDate(order.emailSentAt)}`;
+  if (order.emailError) return `Orderbekräftelse misslyckades: ${order.emailError}`;
+  return 'Orderbekräftelse ej skickad';
+}
+
+function deliveryEmailStatusText(order) {
+  if (order.deliveryEmailSentAt) return `Leveransmejl skickat ${formatDate(order.deliveryEmailSentAt)}`;
+  if (order.deliveryEmailError) return `Leveransmejl misslyckades: ${order.deliveryEmailError}`;
+  return 'Leveransmejl ej skickat';
 }
 
 function cardHtml(order) {
@@ -155,6 +161,7 @@ function cardHtml(order) {
           <h3 class="admin-order-block-title">Mejl</h3>
           <p class="admin-order-block-meta admin-order-email-status">${escapeHtml(emailStatusText(order))}</p>
           ${order.adminEmailSentAt ? `<p class="admin-order-block-meta">Adminmejl skickat ${escapeHtml(formatDate(order.adminEmailSentAt))}</p>` : ''}
+          <p class="admin-order-block-meta">${escapeHtml(deliveryEmailStatusText(order))}</p>
           ${order.refundedAt ? `<p class="admin-order-block-meta">Återbetald ${escapeHtml(formatDate(order.refundedAt))}</p>` : ''}
           ${order.refundEmailSentAt ? `<p class="admin-order-block-meta">Återbetalningsmejl skickat ${escapeHtml(formatDate(order.refundEmailSentAt))}</p>` : ''}
           ${order.refundEmailError ? `<p class="admin-order-warning">Återbetalningsmejl: ${escapeHtml(order.refundEmailError)}</p>` : ''}
@@ -164,7 +171,7 @@ function cardHtml(order) {
       <div class="admin-order-card-actions">
         ${canRefundOrder(order) ? `<button type="button" class="admin-btn-outline admin-order-refund" data-order-id="${escapeHtml(order.id)}">Återbetala</button>` : ''}
         <button type="button" class="admin-btn admin-order-send-email" data-order-id="${escapeHtml(order.id)}" ${order.status === 'refunded' ? 'hidden' : ''}>
-          Skicka mejl
+          Skicka leveransmejl
         </button>
         <span class="admin-order-send-feedback" hidden></span>
       </div>
@@ -303,16 +310,15 @@ async function sendOrderEmail(orderId, button) {
 
     const now = new Date().toISOString();
     updateOrderInList(orderId, {
-      emailSentAt: data.emails?.customerSent ? now : allOrders.find((o) => o.id === orderId)?.emailSentAt,
-      adminEmailSentAt: data.emails?.adminSent ? now : allOrders.find((o) => o.id === orderId)?.adminEmailSentAt,
-      emailError: data.emails?.errors?.customer || null,
+      deliveryEmailSentAt: data.deliverySent ? now : allOrders.find((o) => o.id === orderId)?.deliveryEmailSentAt,
+      deliveryEmailError: data.error || null,
     });
     renderOrders();
 
     if (feedback) {
       feedback.hidden = false;
       feedback.classList.add('success');
-      feedback.textContent = 'Mejl skickat!';
+      feedback.textContent = data.alreadySent ? 'Leveransmejl var redan skickat' : 'Leveransmejl skickat!';
     }
   } catch (err) {
     if (feedback) {

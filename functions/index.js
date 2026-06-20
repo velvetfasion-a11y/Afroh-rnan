@@ -4,7 +4,7 @@ const { defineSecret, defineString } = require('firebase-functions/params');
 const cors = require('cors')({ origin: true });
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
-const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder, sendOrderEmailsIfNeeded, sendRefundEmail } = require('./order-email');
+const { sendPaidOrderEmails, sendAdminOrderNotificationEmail, sendOrderConfirmationEmail, sendCourseCustomerEmail, sendCourseAdminEmail, isCourseOrder, sendOrderEmailsIfNeeded, sendRefundEmail, sendDeliveryCustomerEmail } = require('./order-email');
 const { resolveOrGenerateOrderNumber } = require('./order-number');
 const { deductOrderStock, releaseOrderStock, restoreOrderStock, validateOrderStock } = require('./inventory');
 const { calculateShipping } = require('./shipping');
@@ -25,6 +25,7 @@ const adminOrderEmail = defineString('ADMIN_ORDER_EMAIL', { default: 'info@afroh
 const adminEmails = defineString('ADMIN_EMAILS', { default: 'info@afrohornan.com' });
 const courseCustomerTemplateId = defineString('MAILERSEND_COURSE_CUSTOMER_TEMPLATE_ID', { default: '' });
 const courseAdminTemplateId = defineString('MAILERSEND_COURSE_ADMIN_TEMPLATE_ID', { default: '' });
+const deliveryTemplateId = defineString('MAILERSEND_DELIVERY_TEMPLATE_ID', { default: 'jy7zpl9r0o3l5vx6' });
 const refundTemplateId = defineString('MAILERSEND_REFUND_TEMPLATE_ID', { default: '3vz9dley0o74kj50' });
 const coursePortalUrl = defineString('MAILERSEND_COURSE_PORTAL_URL', { default: 'https://afrohornan.com/profile.html' });
 
@@ -95,6 +96,9 @@ function serializeOrderDoc(doc) {
     paidAt: serializeTimestamp(data.paidAt),
     emailSentAt: serializeTimestamp(data.emailSentAt),
     adminEmailSentAt: serializeTimestamp(data.adminEmailSentAt),
+    deliveryEmailSentAt: serializeTimestamp(data.deliveryEmailSentAt),
+    deliveryEmailError: data.deliveryEmailError || null,
+    trackingNumber: data.trackingNumber || null,
     refundedAt: serializeTimestamp(data.refundedAt),
     refundId: data.refundId || null,
     refundEmailSentAt: serializeTimestamp(data.refundEmailSentAt),
@@ -107,6 +111,7 @@ function mailerSendConfig() {
     apiKey: mailerSendApiKey.value() || '',
     courseCustomerTemplateId: courseCustomerTemplateId.value() || '',
     courseAdminTemplateId: courseAdminTemplateId.value() || '',
+    deliveryTemplateId: deliveryTemplateId.value() || '',
     refundTemplateId: refundTemplateId.value() || '',
     coursePortalUrl: coursePortalUrl.value() || 'https://afrohornan.com/profile.html',
     from: mailFrom.value() || 'Afrohörnan <info@afrohornan.com>',
@@ -795,7 +800,7 @@ exports.listAdminOrders = onRequest(
 );
 
 exports.adminSendOrderEmail = onRequest(
-  { secrets: [mailerSendApiKey, stripeSecret], invoker: 'public' },
+  { secrets: [mailerSendApiKey], invoker: 'public' },
   (req, res) => {
     cors(req, res, async () => {
       if (req.method === 'OPTIONS') {
@@ -821,7 +826,7 @@ exports.adminSendOrderEmail = onRequest(
           return;
         }
 
-        const { orderId, force } = req.body || {};
+        const { orderId, force, trackingNumber } = req.body || {};
         if (!orderId || typeof orderId !== 'string') {
           res.status(400).json({ error: 'Missing orderId' });
           return;
@@ -834,16 +839,22 @@ exports.adminSendOrderEmail = onRequest(
           return;
         }
 
-        const stripe = new Stripe(stripeSecret.value().trim());
         let order = orderSnap.data();
 
-        if (order.status === 'pending' && order.paymentIntentId) {
-          const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
-          if (paymentIntent.status === 'succeeded') {
-            const handled = await handlePaidOrder(orderId, paymentIntent, stripe);
-            res.json({ ok: true, emails: handled.emails });
-            return;
-          }
+        if (order.status === 'refunded') {
+          res.status(400).json({ error: 'Återbetalda order kan inte få leveransmejl' });
+          return;
+        }
+
+        if (!force && order.deliveryEmailSentAt) {
+          res.json({ ok: true, deliverySent: true, alreadySent: true });
+          return;
+        }
+
+        const customerEmail = normalizeEmail(order.customer?.email);
+        if (!customerEmail) {
+          res.status(400).json({ error: 'Ordern saknar kundens e-postadress' });
+          return;
         }
 
         const mailersend = mailerSendConfig();
@@ -853,47 +864,35 @@ exports.adminSendOrderEmail = onRequest(
             ? 'Märsta'
             : order.pickupStore || '';
 
-        const orderForEmail = { ...order };
-        if (force) {
-          orderForEmail.emailSentAt = null;
-          orderForEmail.adminEmailSentAt = null;
+        const tracking = typeof trackingNumber === 'string' && trackingNumber.trim()
+          ? trackingNumber.trim()
+          : (order.trackingNumber || '');
+
+        if (tracking && tracking !== order.trackingNumber) {
+          await orderRef.update({ trackingNumber: tracking });
+          order = { ...order, trackingNumber: tracking };
         }
 
-        const emailResult = await sendOrderEmailsIfNeeded(orderForEmail, orderId, mailersend, {
-          paymentMethod: order.paymentMethod || 'Kort',
-          pickupStore,
-        });
-
-        const updates = {};
-        if (emailResult.customerSent && (!order.emailSentAt || force)) {
-          updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
-          updates.emailError = admin.firestore.FieldValue.delete();
-        } else if (emailResult.errors.customer) {
-          updates.emailError = emailResult.errors.customer;
-          updates.emailLastAttemptAt = admin.firestore.FieldValue.serverTimestamp();
-        }
-
-        if (emailResult.adminSent && (!order.adminEmailSentAt || force)) {
-          updates.adminEmailSentAt = admin.firestore.FieldValue.serverTimestamp();
-          updates.adminEmailError = admin.firestore.FieldValue.delete();
-        } else if (emailResult.errors.admin) {
-          updates.adminEmailError = emailResult.errors.admin;
-        }
-
-        if (Object.keys(updates).length) {
-          await orderRef.update(updates);
-        }
-
-        if (emailResult.errors.customer && !emailResult.customerSent) {
-          res.status(422).json({
-            ok: false,
-            error: emailResult.errors.customer,
-            emails: emailResult,
+        try {
+          await sendDeliveryCustomerEmail(order, orderId, mailersend, {
+            pickupStore,
+            trackingNumber: tracking,
           });
+        } catch (emailErr) {
+          await orderRef.update({
+            deliveryEmailError: emailErr.message,
+            deliveryEmailLastAttemptAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          res.status(422).json({ ok: false, error: emailErr.message });
           return;
         }
 
-        res.json({ ok: true, emails: emailResult });
+        await orderRef.update({
+          deliveryEmailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          deliveryEmailError: admin.firestore.FieldValue.delete(),
+        });
+
+        res.json({ ok: true, deliverySent: true });
       } catch (err) {
         console.error('adminSendOrderEmail failed:', err);
         res.status(500).json({ error: err.message || 'Could not send email' });
