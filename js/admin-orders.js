@@ -104,10 +104,14 @@ function emailStatusText(order) {
   return 'Orderbekräftelse ej skickad';
 }
 
-function deliveryEmailStatusText(order) {
-  if (order.deliveryEmailSentAt) return `Leveransmejl skickat ${formatDate(order.deliveryEmailSentAt)}`;
-  if (order.deliveryEmailError) return `Leveransmejl misslyckades: ${order.deliveryEmailError}`;
-  return 'Leveransmejl ej skickat';
+function deliveryEmailStatusHtml(order) {
+  if (order.deliveryEmailSentAt) {
+    return `<p class="admin-order-block-meta admin-order-email-sent">Leveransmejl skickat ${escapeHtml(formatDate(order.deliveryEmailSentAt))}</p>`;
+  }
+  if (order.deliveryEmailError) {
+    return `<p class="admin-order-block-meta admin-order-email-error">Leveransmejl misslyckades: ${escapeHtml(order.deliveryEmailError)}</p>`;
+  }
+  return '<p class="admin-order-block-meta">Leveransmejl ej skickat</p>';
 }
 
 function cardHtml(order) {
@@ -161,7 +165,7 @@ function cardHtml(order) {
           <h3 class="admin-order-block-title">Mejl</h3>
           <p class="admin-order-block-meta admin-order-email-status">${escapeHtml(emailStatusText(order))}</p>
           ${order.adminEmailSentAt ? `<p class="admin-order-block-meta">Adminmejl skickat ${escapeHtml(formatDate(order.adminEmailSentAt))}</p>` : ''}
-          <p class="admin-order-block-meta">${escapeHtml(deliveryEmailStatusText(order))}</p>
+          ${deliveryEmailStatusHtml(order)}
           ${order.refundedAt ? `<p class="admin-order-block-meta">Återbetald ${escapeHtml(formatDate(order.refundedAt))}</p>` : ''}
           ${order.refundEmailSentAt ? `<p class="admin-order-block-meta">Återbetalningsmejl skickat ${escapeHtml(formatDate(order.refundEmailSentAt))}</p>` : ''}
           ${order.refundEmailError ? `<p class="admin-order-warning">Återbetalningsmejl: ${escapeHtml(order.refundEmailError)}</p>` : ''}
@@ -308,10 +312,13 @@ async function sendOrderEmail(orderId, button) {
       throw new Error(data.error || 'Kunde inte skicka mejl');
     }
 
-    const now = new Date().toISOString();
+    const sentAt = data.deliveryEmailSentAt
+      || (data.deliverySent ? new Date().toISOString() : null)
+      || allOrders.find((o) => o.id === orderId)?.deliveryEmailSentAt;
+
     updateOrderInList(orderId, {
-      deliveryEmailSentAt: data.deliverySent ? now : allOrders.find((o) => o.id === orderId)?.deliveryEmailSentAt,
-      deliveryEmailError: data.error || null,
+      deliveryEmailSentAt: sentAt,
+      deliveryEmailError: data.deliverySent ? null : allOrders.find((o) => o.id === orderId)?.deliveryEmailError,
     });
     renderOrders();
 

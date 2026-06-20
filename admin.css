@@ -1097,6 +1097,15 @@
   color: rgba(245, 239, 228, 0.55);
 }
 
+.admin-order-email-sent {
+  color: #8fd489;
+  font-weight: 600;
+}
+
+.admin-order-email-error {
+  color: #ffb4a2;
+}
+
 .admin-order-items-list {
   list-style: none;
   margin: 0;

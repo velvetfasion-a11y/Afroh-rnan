@@ -70,6 +70,10 @@ function serializeTimestamp(value) {
   if (!value) return null;
   if (value.toDate) return value.toDate().toISOString();
   if (value.seconds) return new Date(value.seconds * 1000).toISOString();
+  if (typeof value === 'string') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
   return null;
 }
 
@@ -847,7 +851,12 @@ exports.adminSendOrderEmail = onRequest(
         }
 
         if (!force && order.deliveryEmailSentAt) {
-          res.json({ ok: true, deliverySent: true, alreadySent: true });
+          res.json({
+            ok: true,
+            deliverySent: true,
+            alreadySent: true,
+            deliveryEmailSentAt: serializeTimestamp(order.deliveryEmailSentAt),
+          });
           return;
         }
 
@@ -892,7 +901,7 @@ exports.adminSendOrderEmail = onRequest(
           deliveryEmailError: admin.firestore.FieldValue.delete(),
         });
 
-        res.json({ ok: true, deliverySent: true });
+        res.json({ ok: true, deliverySent: true, deliveryEmailSentAt: new Date().toISOString() });
       } catch (err) {
         console.error('adminSendOrderEmail failed:', err);
         res.status(500).json({ error: err.message || 'Could not send email' });
