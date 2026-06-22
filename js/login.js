@@ -13,7 +13,7 @@ import {
   initAuthPage,
   isFirebaseConfigured,
   isGoogleRedirectPending,
-} from './firebase-auth.js?v=20';
+} from './firebase-auth.js?v=22';
 
 const forgotWrap = document.getElementById('forgotPasswordWrap');
 const forgotBtn = document.getElementById('forgotPasswordBtn');

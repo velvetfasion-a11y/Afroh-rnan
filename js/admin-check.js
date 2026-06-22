@@ -45,6 +45,19 @@ async function resolveUserEmails(user, { retry = true } = {}) {
   return emails;
 }
 
+const DEFAULT_FRISOR_ADMIN_UIDS = ['EvGx87o7khOq6fH4Mgckp1PNiA02'];
+
+function getFrisorAdminUids() {
+  const gateUids = window.__frisorAdminUids;
+  if (Array.isArray(gateUids) && gateUids.length) return gateUids;
+  return DEFAULT_FRISOR_ADMIN_UIDS;
+}
+
+export function isFrisorAdminUser(user) {
+  if (!user?.uid) return false;
+  return getFrisorAdminUids().includes(user.uid);
+}
+
 export async function isAdminUser(user, options = {}) {
   const { retry = true } = options;
   if (!user) return false;

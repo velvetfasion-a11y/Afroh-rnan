@@ -4,8 +4,7 @@ import {
   getFirebaseAuth,
   updateProfile,
   wireNavProfile,
-} from './firebase-auth.js?v=12';
-import { isAdminUser } from './admin-check.js?v=11';
+} from './firebase-auth.js?v=22';
 import {
   getStoredFavoriteSlugs,
   removeFavorite,
@@ -489,16 +488,6 @@ const profileBootTimer = window.setTimeout(() => {
 
 requireAuth(async (user) => {
   window.clearTimeout(profileBootTimer);
-
-  try {
-    if (await isAdminUser(user)) {
-      window.location.replace('admin.html');
-      return;
-    }
-  } catch (err) {
-    console.warn('Admin check failed on profile:', err);
-  }
-
   revealProfile(user);
 
   async function refreshFavoriteProducts() {

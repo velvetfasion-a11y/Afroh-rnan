@@ -38,7 +38,7 @@ import {
   sendPasswordResetEmail,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-import { isAdminUser } from './admin-check.js?v=11';
+import { isAdminUser, isFrisorAdminUser } from './admin-check.js?v=13';
 
 function getFirebaseConfig() {
   return window.firebaseConfig;
@@ -393,22 +393,22 @@ function loginUrl(nextPage) {
   return url.toString();
 }
 
-export async function redirectAfterAuth(user) {
-  const authInstance = getFirebaseAuth();
-  const authUser = user || authInstance.currentUser;
-
+export async function resolvePostLoginUrl(user) {
+  if (!user) return 'profile.html';
+  if (isFrisorAdminUser(user)) return 'admin-frisor.html';
   try {
-    if (authUser && (await isAdminUser(authUser))) {
-      window.location.replace('admin.html');
-      return;
-    }
+    if (await isAdminUser(user)) return 'admin.html';
   } catch (err) {
     console.warn('Admin check failed after login:', err);
   }
-
   const params = new URLSearchParams(window.location.search);
-  const next = safeNextPath(params.get('next')) || 'profile.html';
-  window.location.replace(next);
+  return safeNextPath(params.get('next')) || 'profile.html';
+}
+
+export async function redirectAfterAuth(user) {
+  const authInstance = getFirebaseAuth();
+  const authUser = user || authInstance.currentUser;
+  window.location.replace(await resolvePostLoginUrl(authUser));
 }
 
 export function wireNavProfile(options = {}) {
@@ -425,6 +425,9 @@ export function wireNavProfile(options = {}) {
           if (!user) {
             href = `${basePath}login.html`;
             label = 'Logga in';
+          } else if (isFrisorAdminUser(user)) {
+            href = `${basePath}admin-frisor.html`;
+            label = 'Frisör admin';
           } else if (await isAdminUser(user)) {
             href = `${basePath}admin.html`;
             label = 'Admin';
@@ -638,9 +641,20 @@ export function requireAuth(onUser, options = {}) {
       onAuthStateChanged(getFirebaseAuth(), async (user) => {
         if (onStateKnown) onStateKnown(user);
         if (!user) {
-          const page = window.location.pathname.split('/').pop() || 'profile.html';
-          window.location.assign(loginUrl(page));
+          window.location.assign('login.html');
           return;
+        }
+        if (isFrisorAdminUser(user)) {
+          window.location.replace('admin-frisor.html');
+          return;
+        }
+        try {
+          if (await isAdminUser(user)) {
+            window.location.replace('admin.html');
+            return;
+          }
+        } catch (err) {
+          console.warn('Admin check failed on protected page:', err);
         }
         if (!onUser) return;
         try {
@@ -667,6 +681,10 @@ export function requireAdmin(onUser) {
           window.location.assign(loginUrl('admin.html'));
           return;
         }
+        if (isFrisorAdminUser(user)) {
+          window.location.href = 'admin-frisor.html';
+          return;
+        }
         if (!(await isAdminUser(user))) {
           window.location.href = 'profile.html';
           return;
@@ -675,4 +693,28 @@ export function requireAdmin(onUser) {
       });
     })
     .catch((err) => logAuthError('requireAdmin init', err));
+}
+
+export function requireFrisorAdmin(onUser) {
+  if (!isFirebaseConfigured()) return;
+
+  ensureAuthReady()
+    .then(() => {
+      onAuthStateChanged(getFirebaseAuth(), async (user) => {
+        if (!user) {
+          window.location.assign('login.html');
+          return;
+        }
+        if (!isFrisorAdminUser(user)) {
+          if (await isAdminUser(user)) {
+            window.location.href = 'admin.html';
+          } else {
+            window.location.href = 'profile.html';
+          }
+          return;
+        }
+        if (onUser) await onUser(user);
+      });
+    })
+    .catch((err) => logAuthError('requireFrisorAdmin init', err));
 }

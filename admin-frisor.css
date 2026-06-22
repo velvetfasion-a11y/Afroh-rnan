@@ -1,0 +1,543 @@
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy: #1a2744;
+  --teal: #2db89a;
+  --teal-light: #e8f7f4;
+  --white: #ffffff;
+  --gray-50: #f8f9fb;
+  --gray-100: #eef0f4;
+  --gray-300: #c8cdd8;
+  --gray-500: #8892a4;
+  --gray-700: #4a5568;
+  --text: #1a2744;
+  --red: #e53e3e;
+  --red-light: #fff5f5;
+  --amber: #d97706;
+  --amber-light: #fffbeb;
+}
+
+body.frisor-admin-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--gray-50);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.frisor-admin-header {
+  background: var(--navy);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.frisor-admin-logo {
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  text-decoration: none;
+}
+
+.frisor-admin-logo span { color: var(--teal); }
+
+.frisor-admin-header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.frisor-admin-header-name {
+  color: #a8b8d8;
+  font-size: 13px;
+}
+
+.frisor-admin-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.frisor-admin-logout {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #d8e2f4;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.frisor-admin-logout:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.frisor-admin-loading {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.frisor-admin-tabs {
+  background: white;
+  border-bottom: 1px solid var(--gray-100);
+  padding: 0 24px;
+  display: flex;
+  gap: 0;
+}
+
+.frisor-admin-tab {
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.frisor-admin-tab.active {
+  color: var(--navy);
+  border-bottom-color: var(--teal);
+  font-weight: 600;
+}
+
+.frisor-admin-tab:hover:not(.active) { color: var(--gray-700); }
+
+.frisor-admin-view { padding: 20px 24px; }
+
+.frisor-admin-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--gray-100);
+  overflow: hidden;
+}
+
+.frisor-admin-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.frisor-admin-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.frisor-admin-card-subtitle {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+.frisor-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.frisor-cal-nav-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: center;
+}
+
+.frisor-cal-nav-week {
+  font-size: 11px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.frisor-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-100);
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-700);
+  font-size: 16px;
+}
+
+.frisor-nav-btn:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+}
+
+.frisor-week-grid {
+  display: grid;
+  grid-template-columns: 50px repeat(7, 1fr);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.frisor-week-day-header {
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+  border-right: 1px solid var(--gray-100);
+}
+
+.frisor-week-day-header.today { color: var(--teal); }
+
+.frisor-week-day-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  display: block;
+  margin-top: 2px;
+}
+
+.frisor-week-day-header.today .frisor-week-day-num {
+  color: white;
+  background: var(--teal);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px auto 0;
+  font-size: 15px;
+}
+
+.frisor-time-col { border-right: 1px solid var(--gray-100); }
+
+.frisor-time-rows {
+  display: grid;
+  grid-template-columns: 50px repeat(7, 1fr);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.frisor-time-rows::-webkit-scrollbar { width: 4px; }
+.frisor-time-rows::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+
+.frisor-time-label {
+  padding: 4px 8px 0;
+  height: 44px;
+  font-size: 10px;
+  color: var(--gray-500);
+  border-right: 1px solid var(--gray-100);
+}
+
+.frisor-day-cell {
+  height: 44px;
+  border-right: 1px solid var(--gray-100);
+  border-top: 1px solid var(--gray-50);
+  position: relative;
+  cursor: pointer;
+}
+
+.frisor-day-cell:hover { background: var(--teal-light); }
+
+.frisor-day-cell:hover::after {
+  content: '+';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  color: var(--teal);
+  font-weight: 300;
+  opacity: 0.7;
+}
+
+.frisor-slot-block {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 5px;
+  background: var(--teal);
+  padding: 3px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.frisor-slot-block.booked { background: var(--navy); }
+.frisor-slot-block.pending { background: var(--amber); }
+
+.frisor-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.frisor-stat-card {
+  background: white;
+  border: 1px solid var(--gray-100);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.frisor-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-500);
+  font-weight: 600;
+}
+
+.frisor-stat-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-top: 4px;
+}
+
+.frisor-stat-sub {
+  font-size: 11px;
+  color: var(--teal);
+  margin-top: 2px;
+}
+
+.frisor-booking-list { padding: 0; }
+
+.frisor-booking-item {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.frisor-booking-item:last-child { border-bottom: none; }
+
+.frisor-booking-time-col {
+  text-align: center;
+  min-width: 44px;
+}
+
+.frisor-booking-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.frisor-booking-duration {
+  font-size: 10px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+.frisor-booking-info { flex: 1; }
+
+.frisor-booking-client {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.frisor-booking-service {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+.frisor-booking-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-top: 4px;
+}
+
+.frisor-booking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.dot-confirmed { background: var(--teal); }
+.dot-pending { background: var(--amber); }
+.dot-cancelled { background: var(--red); }
+
+.frisor-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-confirmed { background: var(--teal-light); color: var(--teal); }
+.badge-pending { background: var(--amber-light); color: var(--amber); }
+.badge-cancelled { background: var(--red-light); color: var(--red); }
+
+.frisor-form-group { margin-bottom: 16px; }
+
+.frisor-form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.frisor-form-group input,
+.frisor-form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-100);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--navy);
+  font-family: inherit;
+  outline: none;
+}
+
+.frisor-form-group input:focus { border-color: var(--teal); }
+
+.frisor-settings-body { padding: 20px; }
+
+.frisor-btn {
+  padding: 11px 18px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.frisor-btn-primary {
+  background: var(--teal);
+  color: white;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.frisor-btn-primary:hover { background: #25a089; }
+
+.frisor-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+}
+
+.frisor-modal-overlay.open { display: flex; }
+
+.frisor-modal {
+  background: white;
+  border-radius: 16px;
+  width: min(360px, calc(100vw - 32px));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: frisorSlideUp 0.2s ease;
+}
+
+@keyframes frisorSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.frisor-modal-header {
+  background: var(--navy);
+  padding: 20px 22px;
+  color: white;
+}
+
+.frisor-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.frisor-modal-date {
+  font-size: 12px;
+  color: #a8b8d8;
+  margin-top: 3px;
+}
+
+.frisor-modal-body { padding: 22px; }
+
+.frisor-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.frisor-repeat-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.frisor-repeat-btn {
+  padding: 10px 6px;
+  border: 1.5px solid var(--gray-100);
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-700);
+  font-family: inherit;
+}
+
+.frisor-repeat-btn.selected {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: white;
+}
+
+.frisor-modal-footer {
+  padding: 0 22px 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.frisor-btn-ghost {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+@media (max-width: 900px) {
+  .frisor-stats-row { grid-template-columns: 1fr; }
+}

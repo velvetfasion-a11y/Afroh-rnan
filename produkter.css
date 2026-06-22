@@ -203,11 +203,9 @@
 }
 
 @media (max-width: 768px) {
-  .cat-nav {
+  .cat-nav-inner {
     gap: 1.5rem;
     padding: 0 1.2rem;
-    justify-content: flex-start;
-    overflow-x: auto;
   }
   .sec-head { padding: 2rem 1.2rem 1rem; }
   .product-grid { grid-template-columns: 1fr 1fr; }

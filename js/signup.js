@@ -15,7 +15,7 @@ import {
   isFirebaseConfigured,
   ensureAuthReady,
   isGoogleRedirectPending,
-} from './firebase-auth.js?v=20';
+} from './firebase-auth.js?v=22';
 
 const googleBtn = document.getElementById('googleSignup');
 

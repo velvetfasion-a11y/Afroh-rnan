@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Afrohörnan • Boka tid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="shared.css?v=13">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:wght@700&amp;display=swap');
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .premium-shadow {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+        }
+        
+        .salon-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #f1e7d2;
+        }
+        
+        .salon-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            border-color: #e8d9b8;
+        }
+        
+        .section-header {
+            font-family: 'Playfair Display', Georgia, serif;
+            letter-spacing: -0.025em;
+        }
+
+        .booking-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .booking-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .afro-logo {
+            background: linear-gradient(145deg, #111827, #1f2937);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .mini-badge {
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Time picker — Bokadirekt / Bella Vita style */
+        .time-picker-header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 106px;
+            z-index: 140;
+        }
+
+        .tp-back {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111827;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .tp-back:hover { background: #f9fafb; }
+
+        .tp-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1.2;
+        }
+
+        .tp-subtitle {
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-top: 1px;
+        }
+
+        .tp-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .tp-week-label {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -0.02em;
+        }
+
+        .tp-week-num {
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .tp-nav-btn {
+            font-size: 0.875rem;
+            color: #2563eb;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .tp-nav-btn:hover { color: #1d4ed8; }
+        .tp-nav-btn.disabled { color: #9ca3af; cursor: default; }
+
+        .tp-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 6px;
+            align-items: start;
+        }
+
+        .tp-day-head {
+            text-align: center;
+            padding-bottom: 8px;
+        }
+
+        .tp-day-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .tp-day-date {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+            margin-top: 2px;
+        }
+
+        .tp-today-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #111827;
+            margin: 4px auto 0;
+        }
+
+        .tp-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .time-slot {
+            width: 100%;
+            border: 1px solid #1a4d3e;
+            background: #edf7f3;
+            border-radius: 8px;
+            padding: 7px 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.12s ease;
+            font-family: inherit;
+        }
+
+        .time-slot:hover { background: #dff0ea; }
+
+        .time-slot .slot-time {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: #1a4d3e;
+            line-height: 1.2;
+        }
+
+        .time-slot .slot-price {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 500;
+            color: #4a7c6f;
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+
+        .time-slot.selected {
+            background: #1a4d3e;
+            border-color: #1a4d3e;
+        }
+
+        .time-slot.selected .slot-time,
+        .time-slot.selected .slot-price {
+            color: #fff;
+        }
+
+        .tp-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-top: 1px solid #e5e7eb;
+            padding: 14px 16px;
+            z-index: 50;
+        }
+
+        .tp-footer-inner {
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .tp-footer-label {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .tp-footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #2563eb;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .tp-footer-link:hover { color: #1d4ed8; }
+
+        .tp-content {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 16px 16px 80px;
+        }
+
+        @media (max-width: 520px) {
+            .tp-grid {
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                padding-bottom: 4px;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tp-day-col {
+                min-width: 72px;
+                flex-shrink: 0;
+                scroll-snap-align: start;
+            }
+        }
+
+        /* Checkout / login — Bokadirekt style */
+        .co-view {
+            min-height: 100vh;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .co-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            background: #fff;
+            position: sticky;
+            top: 106px;
+            z-index: 140;
+        }
+
+        .co-header-inner {
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .co-summary {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 20px 16px 0;
+            width: 100%;
+        }
+
+        .co-summary-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .co-salon-name {
+            font-size: 1.0625rem;
+            font-weight: 700;
+            color: #1a2b4a;
+            line-height: 1.3;
+        }
+
+        .co-summary-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .co-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .co-meta-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .co-meta-left i {
+            color: #6b7280;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .co-datetime {
+            font-weight: 500;
+            color: #111827;
+            white-space: nowrap;
+        }
+
+        .co-service-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+
+        .co-service-name {
+            font-size: 0.9375rem;
+            color: #111827;
+            line-height: 1.35;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .co-service-price {
+            font-size: 0.9375rem;
+            color: #111827;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .co-service-duration {
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .co-total-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-top: 1px solid #e5e7eb;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a2b4a;
+        }
+
+        .co-payment-section {
+            flex: 1;
+            background: #fff;
+            padding: 0 16px 32px;
+        }
+
+        .co-payment-inner {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .co-payment-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1a2b4a;
+            margin: 8px 0 14px;
+        }
+
+        .co-field {
+            margin-bottom: 12px;
+        }
+
+        .co-field label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .co-text-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #fff;
+            color: #111827;
+        }
+
+        .co-text-input::placeholder { color: #9ca3af; }
+
+        .co-text-input:focus {
+            outline: none;
+            border-color: #1a2b4a;
+            box-shadow: 0 0 0 2px rgba(26, 43, 74, 0.12);
+        }
+
+        .co-text-input.invalid {
+            border-color: #dc2626;
+            box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+        }
+
+        .co-pay-buttons {
+            margin-top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .co-apple-pay-btn {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 1.0625rem;
+            font-weight: 500;
+            font-family: inherit;
+            background: #000;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .co-apple-pay-btn:hover { background: #1a1a1a; }
+
+        .co-apple-pay-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .co-card-btn {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            background: #1a2b4a;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .co-card-btn:hover { background: #152238; }
+
+        .co-store-btn {
+            width: 100%;
+            border: 1px solid #1a2b4a;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            background: #fff;
+            color: #1a2b4a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .co-store-btn:hover { background: #f3f4f6; }
+
+        .co-login-section {
+            flex: 1;
+            background: #f3f4f6;
+            border-top: 1px solid #e5e7eb;
+            padding: 24px 16px 32px;
+        }
+
+        .co-login-inner {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .co-login-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1a2b4a;
+            margin-bottom: 16px;
+        }
+
+        .co-email-wrap {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .co-email-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 0.875rem;
+            pointer-events: none;
+        }
+
+        .co-email-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 14px 14px 14px 40px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #fff;
+            color: #111827;
+        }
+
+        .co-email-input::placeholder { color: #9ca3af; }
+        .co-email-input:focus {
+            outline: none;
+            border-color: #1a2b4a;
+            box-shadow: 0 0 0 2px rgba(26, 43, 74, 0.12);
+        }
+
+        .co-login-btn {
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            background: #1a2b4a;
+            color: #fff;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+
+        .co-login-btn:hover { background: #152238; }
+
+        .co-guest-link {
+            display: block;
+            width: 100%;
+            text-align: center;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: #2563eb;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            font-family: inherit;
+        }
+
+        .co-guest-link:hover { color: #1d4ed8; }
+
+        .co-terms {
+            margin-top: 20px;
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .co-terms a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        body.has-cat-nav > nav {
+            display: flex;
+            align-items: center;
+        }
+
+        body.has-cat-nav > nav.cat-nav {
+            display: block;
+            text-align: center;
+            width: 100%;
+            padding: 0;
+            line-height: 48px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="has-cat-nav bg-[#f8f5f0] min-h-screen">
+
+<nav>
+  <a href="index.html" class="logo">Afro<em>hörnan</em></a>
+  <ul class="nav-links">
+    <li><a href="har.html">Hårvård</a></li>
+    <li><a href="kosmetika.html">Skönhet</a></li>
+    <li><a href="mat.html">Mat</a></li>
+    <li><a href="accessoarer.html">Accessoarer</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="profile.html" class="nav-profile" aria-label="Mitt konto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <button class="nav-cart-btn" id="cartBtn" type="button" aria-label="Varukorg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </button>
+  </div>
+</nav>
+
+<nav class="cat-nav" aria-label="Sidnavigering">
+  <div class="cat-nav-inner">
+  <a href="har.html" class="cat-nav-link" data-cat="har">Hårvård</a>
+  <a href="kosmetika.html" class="cat-nav-link" data-cat="kosmetika">Skönhet</a>
+  <a href="mat.html" class="cat-nav-link" data-cat="mat">Mat</a>
+  <a href="accessoarer.html" class="cat-nav-link" data-cat="accessoarer">Accessoarer</a>
+  <a href="afrohornan_booking.html" class="cat-nav-link active" data-cat="frisor">Frisör</a>
+  </div>
+</nav>
+
+    <!-- ========== MAIN VIEW: Two Cards ========== -->
+    <div id="main-view">
+        <div class="max-w-7xl mx-auto px-5 pt-6 pb-4">
+            <div class="flex items-center bg-[#f8f5f0] border border-[#e8d9b8] rounded-3xl px-5 py-3 text-sm">
+                <div class="flex-1">
+                    <div class="flex items-center text-gray-700">
+                        <i class="fa-solid fa-search text-[#d4a017] mr-3"></i>
+                        <span class="font-medium">Flätning • Klippning • Extensions</span>
+                    </div>
+                    <div class="text-xs text-gray-500 pl-7">Idag • Från 18:00 • Märsta</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-5 pt-8 pb-12">
+            <div class="flex items-end justify-between mb-6">
+                <div>
+                    <h1 class="section-header text-4xl font-bold tracking-tighter text-gray-900">Välj ditt alternativ</h1>
+                    <p class="text-gray-600 mt-1">Två professionella upplevelser på samma adress</p>
+                </div>
+                <div class="hidden md:flex items-center text-xs px-3 py-1.5 bg-white border border-[#e8d9b8] rounded-2xl text-gray-500">
+                    <i class="fa-solid fa-clock mr-2 text-[#d4a017]"></i>
+                    <span>Idag från 18:00</span>
+                </div>
+            </div>
+
+            <!-- Two Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[1100px]">
+                
+                <!-- BARBER CARD -->
+                <div id="barber-card" class="salon-card bg-white rounded-3xl overflow-hidden premium-shadow flex flex-col">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=800&h=640&fit=crop"
+                             alt="Man med nyklippt professionell fade hos Barber Afrohörnan"
+                             class="w-full h-[320px] object-cover">
+                        
+                        <div class="absolute top-4 left-4">
+                            <div class="mini-badge px-3.5 py-1 bg-white/95 backdrop-blur-md text-gray-900 font-semibold rounded-2xl flex items-center gap-x-1.5 shadow-sm border border-white/60">
+                                <i class="fa-solid fa-cut text-[#d4a017]"></i>
+                                <span class="text-xs tracking-wider">BARBER</span>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute top-4 right-4 bg-white/95 backdrop-blur px-3 py-1 rounded-2xl text-xs font-medium flex items-center gap-x-1 shadow-sm">
+                            <span class="text-emerald-600">●</span>
+                            <span class="font-semibold text-gray-700">Öppet nu</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 flex flex-col flex-1">
+                        <div class="flex items-start gap-x-4">
+                            <div class="w-14 h-14 afro-logo rounded-2xl flex-shrink-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <span class="text-white text-sm font-black tracking-[1px]">BARBER</span>
+                                    <div class="text-[#d4a017] text-[9px] font-bold -mt-0.5 tracking-widest">AFROHÖRNAN</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 min-w-0 pt-0.5">
+                                <h3 class="font-bold text-2xl tracking-tighter text-gray-900">Barber Afrohörnan</h3>
+                                <div class="flex items-center gap-x-2 mt-1">
+                                    <div class="flex items-center">
+                                        <span class="font-bold text-xl text-gray-900">4.8</span>
+                                        <i class="fa-solid fa-star ml-1.5 text-[#d4a017]"></i>
+                                    </div>
+                                    <span class="text-xs text-gray-500">(187 recensioner)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between text-sm">
+                            <div>
+                                <div class="flex items-center text-gray-600">
+                                    <i class="fa-solid fa-map-marker-alt w-4 mr-2 text-[#d4a017]"></i>
+                                    <span class="font-medium">Hammargatan 6, Märsta</span>
+                                </div>
+                                <div class="flex items-center mt-1 text-emerald-700">
+                                    <i class="fa-regular fa-clock w-4 mr-2"></i>
+                                    <span class="font-semibold">Tider fr. 18:00 idag</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 text-[13.5px] leading-relaxed text-gray-600 flex-1">
+                            Professionell herrklippning, precisionsfades, skäggvård och modern styling. 
+                            Våra barberare levererar skarpa linjer och tidlösa looks.
+                        </div>
+
+                        <div class="mt-6 grid grid-cols-3 gap-2">
+                            <button onclick="showTimePicker('barber')"
+                                    class="col-span-1 booking-btn px-4 py-3 text-sm font-semibold bg-[#111827] hover:bg-black active:bg-gray-950 text-white rounded-2xl flex items-center justify-center gap-x-2">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                <span>Boka nu</span>
+                            </button>
+                            
+                            <button onclick="showTimePicker('barber')"
+                                    class="col-span-1 booking-btn px-4 py-3 text-sm font-medium border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-2xl flex items-center justify-center">
+                                Betala senare
+                            </button>
+                            
+                            <button onclick="showGiftCardModal()"
+                                    class="col-span-1 booking-btn px-4 py-3 text-sm font-medium border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-2xl flex items-center justify-center">
+                                Presentkort
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SALON CARD -->
+                <div id="salon-card" class="salon-card bg-white rounded-3xl overflow-hidden premium-shadow flex flex-col">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&h=640&fit=crop"
+                             alt="Kvinna med vackert färdigt flätat hår hos Salong Afrohörnan"
+                             class="w-full h-[320px] object-cover">
+                        
+                        <div class="absolute top-4 left-4">
+                            <div class="mini-badge px-3.5 py-1 bg-white/95 backdrop-blur-md text-gray-900 font-semibold rounded-2xl flex items-center gap-x-1.5 shadow-sm border border-white/60">
+                                <i class="fa-solid fa-spa text-[#d4a017]"></i>
+                                <span class="text-xs tracking-wider">SALONG</span>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute top-4 right-4 bg-white/95 backdrop-blur px-3 py-1 rounded-2xl text-xs font-medium flex items-center gap-x-1 shadow-sm">
+                            <span class="text-emerald-600">●</span>
+                            <span class="font-semibold text-gray-700">Öppet nu</span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 flex flex-col flex-1">
+                        <div class="flex items-start gap-x-4">
+                            <div class="w-14 h-14 afro-logo rounded-2xl flex-shrink-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <span class="text-white text-sm font-black tracking-[1px]">SALONG</span>
+                                    <div class="text-[#d4a017] text-[9px] font-bold -mt-0.5 tracking-widest">AFROHÖRNAN</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 min-w-0 pt-0.5">
+                                <h3 class="font-bold text-2xl tracking-tighter text-gray-900">Salong Afrohörnan</h3>
+                                <div class="flex items-center gap-x-2 mt-1">
+                                    <div class="flex items-center">
+                                        <span class="font-bold text-xl text-gray-900">4.8</span>
+                                        <i class="fa-solid fa-star ml-1.5 text-[#d4a017]"></i>
+                                    </div>
+                                    <span class="text-xs text-gray-500">(214 recensioner)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between text-sm">
+                            <div>
+                                <div class="flex items-center text-gray-600">
+                                    <i class="fa-solid fa-map-marker-alt w-4 mr-2 text-[#d4a017]"></i>
+                                    <span class="font-medium">Hammargatan 6, Märsta</span>
+                                </div>
+                                <div class="flex items-center mt-1 text-emerald-700">
+                                    <i class="fa-regular fa-clock w-4 mr-2"></i>
+                                    <span class="font-semibold">Tider fr. 18:00 idag</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 text-[13.5px] leading-relaxed text-gray-600 flex-1">
+                            Specialister på avancerade flätningar, hair extensions, perukinsättning och hårvård för afrohår. 
+                            Vi skapar vackra, hållbara flätor och naturliga transformationer.
+                        </div>
+
+                        <div class="mt-6 grid grid-cols-3 gap-2">
+                            <button onclick="showTimePicker('salon')"
+                                    class="col-span-1 booking-btn px-4 py-3 text-sm font-semibold bg-[#111827] hover:bg-black active:bg-gray-950 text-white rounded-2xl flex items-center justify-center gap-x-2">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                <span>Boka nu</span>
+                            </button>
+                            
+                            <button onclick="showTimePicker('salon')"
+                                    class="col-span-1 booking-btn px-4 py-3 text-sm font-medium border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-2xl flex items-center justify-center">
+                                Betala senare
+                            </button>
+                            
+                            <button onclick="showGiftCardModal()"
+                                    class="col-span-1 booking-btn px-4 py-3 text-sm font-medium border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-2xl flex items-center justify-center">
+                                Presentkort
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex flex-col md:flex-row items-center justify-center gap-x-8 gap-y-3 text-xs text-gray-500">
+                <div class="flex items-center gap-x-2">
+                    <i class="fa-solid fa-shield-halved text-[#d4a017]"></i>
+                    <span>Trygg bokning • Avbokning upp till 24h innan</span>
+                </div>
+                <div class="hidden md:block w-px h-3 bg-gray-300"></div>
+                <div>Båda alternativen på samma adress • Gratis parkering</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TIME PICKER VIEW ========== -->
+    <div id="time-picker-view" class="hidden min-h-screen bg-white">
+
+        <div class="time-picker-header sticky">
+            <div class="tp-content" style="padding-bottom:12px;padding-top:12px;">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="hideTimePicker()" class="tp-back" aria-label="Tillbaka">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div>
+                            <div class="tp-title" id="time-picker-title">Välj tid</div>
+                            <div class="tp-subtitle" id="time-picker-subtitle">Salong Afrohörnan</div>
+                        </div>
+                    </div>
+                    <div id="time-picker-logo" class="tp-logo afro-logo flex items-center justify-center"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tp-content">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <div class="tp-week-label" id="tp-week-label">22 - 28 JUN</div>
+                    <div class="tp-week-num" id="tp-week-num">VECKA 26</div>
+                </div>
+                <div class="flex items-center">
+                    <button type="button" id="tp-prev-week" class="tp-nav-btn disabled" onclick="changeWeek(-1)" disabled>
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                        <span>Tidigare</span>
+                    </button>
+                    <button type="button" id="tp-next-week" class="tp-nav-btn" onclick="changeWeek(1)">
+                        <span>Senare</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="tp-grid" id="day-columns-container"></div>
+        </div>
+
+        <div class="tp-footer">
+            <div class="tp-footer-inner">
+                <div class="tp-footer-label">1 vald tjänst</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== CHECKOUT / LOGIN VIEW ========== -->
+    <div id="checkout-view" class="co-view hidden">
+        <div class="co-header">
+            <div class="co-header-inner">
+                <button type="button" onclick="hideCheckoutView()" class="tp-back" aria-label="Tillbaka">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <div>
+                    <div class="tp-title">Slutför bokning</div>
+                    <div class="tp-subtitle" id="co-header-subtitle">Salong Afrohörnan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="co-summary">
+            <div class="co-summary-top">
+                <div class="co-salon-name" id="co-salon-name">Salong Afrohörnan</div>
+                <div id="co-summary-logo" class="co-summary-logo afro-logo">
+                    <span class="text-white text-[8px] font-black tracking-wider">SALONG</span>
+                </div>
+            </div>
+
+            <div class="co-meta-row">
+                <div class="co-meta-left">
+                    <i class="fa-regular fa-user"></i>
+                    <span>Valfri utförare</span>
+                </div>
+                <div class="co-datetime" id="co-datetime">23 juni 10:00</div>
+            </div>
+
+            <div class="co-service-row">
+                <div class="co-service-name" id="co-service-name">Flätning &amp; Extensions</div>
+                <div class="co-service-price" id="co-service-price">890 kr</div>
+            </div>
+            <div class="co-service-duration" id="co-service-duration">70 min</div>
+
+            <div class="co-total-row">
+                <span>Totalt</span>
+                <span id="co-total-price">890 kr</span>
+            </div>
+        </div>
+
+        <div class="co-payment-section">
+            <div class="co-payment-inner">
+                <h2 class="co-payment-title">Dina uppgifter</h2>
+
+                <div class="co-field">
+                    <label for="co-name">Namn</label>
+                    <input type="text" id="co-name" class="co-text-input" placeholder="För- och efternamn" autocomplete="name" required>
+                </div>
+
+                <div class="co-field">
+                    <label for="co-phone">Telefonnummer</label>
+                    <input type="tel" id="co-phone" class="co-text-input" placeholder="07X XXX XX XX" autocomplete="tel" required>
+                </div>
+
+                <div class="co-pay-buttons">
+                    <button type="button" class="co-apple-pay-btn" onclick="submitBookingPayment('apple')">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.493 2.219-1.332 3.023-.84.805-2.086 1.345-3.127 1.27-.147-1.09.507-2.247 1.273-3.012.766-.766 2.008-1.36 3.186-1.281zm.998 4.54c-1.747-.1-3.23 1.005-4.06 1.005-.84 0-2.13-.97-3.5-.944-1.8.026-3.46 1.05-4.38 2.67-1.87 3.24-.48 8.04 1.34 10.67.89 1.29 1.95 2.74 3.35 2.69 1.34-.05 1.84-.87 3.45-.87 1.61 0 2.04.87 3.44.84 1.42-.03 2.32-1.31 3.2-2.61 1.01-1.47 1.43-2.9 1.45-2.97-.03-.01-2.79-1.07-2.82-4.25-.03-2.67 2.17-3.95 2.27-4.02-1.24-1.81-3.17-2.01-3.85-2.05z"/></svg>
+                        <span>Betala med Apple Pay</span>
+                    </button>
+                    <button type="button" class="co-card-btn" onclick="submitBookingPayment('card')">
+                        <i class="fa-regular fa-credit-card"></i>
+                        <span>Betala med kort</span>
+                    </button>
+                    <button type="button" class="co-store-btn" onclick="submitBookingPayment('store')">
+                        <i class="fa-solid fa-store"></i>
+                        <span>Betala i butik</span>
+                    </button>
+                </div>
+
+                <p class="co-terms">
+                    Genom att betala godkänner du
+                    <a href="index.html#kontakt">Afrohörnans allmänna villkor</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" onclick="hideModal()" 
+         class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="bg-white w-full md:w-[380px] md:rounded-3xl md:m-4 rounded-t-3xl p-6 shadow-2xl">
+            
+            <div class="flex justify-center mb-4">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                    <i class="fa-solid fa-check text-4xl"></i>
+                </div>
+            </div>
+            
+            <h3 id="modal-title" class="text-center font-bold text-2xl tracking-tight">Bokning bekräftad!</h3>
+            <p id="modal-subtitle" class="text-center text-gray-600 mt-1 text-sm"></p>
+            
+            <div class="mt-6 bg-[#f8f5f0] rounded-2xl p-4 text-sm">
+                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Din tid</span>
+                    <span class="font-medium text-gray-700" id="modal-time"></span>
+                </div>
+                <div id="modal-location" class="font-semibold text-gray-800"></div>
+            </div>
+            
+            <button onclick="hideModalAndReset()" 
+                    class="mt-6 w-full py-4 bg-[#111827] text-white font-semibold rounded-2xl active:bg-black">
+                Stäng
+            </button>
+            
+            <p class="text-[10px] text-center text-gray-400 mt-3">Du får en bekräftelse via SMS och e-post</p>
+        </div>
+    </div>
+
+    <!-- Gift Card Modal -->
+    <div id="giftcard-modal" onclick="hideGiftCardModal()" 
+         class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end md:items-center justify-center">
+        <div onclick="event.stopImmediatePropagation()" 
+             class="bg-white w-full md:w-[380px] md:rounded-3xl md:m-4 rounded-t-3xl p-6 shadow-2xl">
+            
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-xl">Presentkort</h3>
+                <button onclick="hideGiftCardModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <p class="text-sm text-gray-600">Skicka ett presentkort till någon du bryr dig om. Gäller både hos Barber och Salong Afrohörnan.</p>
+            
+            <div class="mt-5 space-y-3">
+                <div>
+                    <label class="text-xs font-medium text-gray-500">Belopp</label>
+                    <div class="flex gap-2 mt-1">
+                        <div class="flex-1 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-medium">500 kr</div>
+                        <div class="flex-1 border border-[#d4a017] bg-[#fffaf0] rounded-2xl px-4 py-3 text-sm font-semibold text-[#d4a017]">1000 kr</div>
+                        <div class="flex-1 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-medium">2000 kr</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="text-xs font-medium text-gray-500">Till</label>
+                    <input type="text" value="Mamma" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mt-1">
+                </div>
+            </div>
+            
+            <button onclick="purchaseGiftCard()" 
+                    class="mt-6 w-full py-4 bg-[#d4a017] hover:bg-[#c4910f] active:bg-[#b07f0a] transition-colors text-white font-semibold rounded-2xl">
+                Köp presentkort
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentType = null;
+        let selectedTimeSlot = null;
+        let weekOffset = 0;
+
+        const SWEDISH_DAYS_SHORT = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
+        const SWEDISH_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAJ', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEC'];
+        const SWEDISH_MONTHS_LONG = ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
+        const MAX_WEEK_OFFSET = 8;
+
+        function getMondayOfWeek(refDate) {
+            const d = new Date(refDate);
+            const day = d.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            d.setDate(d.getDate() + diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function getWeekStart(offset) {
+            const monday = getMondayOfWeek(new Date());
+            monday.setDate(monday.getDate() + offset * 7);
+            return monday;
+        }
+
+        function formatWeekRange(weekStart) {
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            const startDay = weekStart.getDate();
+            const endDay = weekEnd.getDate();
+            const startMonth = SWEDISH_MONTHS[weekStart.getMonth()];
+            const endMonth = SWEDISH_MONTHS[weekEnd.getMonth()];
+            if (weekStart.getMonth() === weekEnd.getMonth()) {
+                return `${startDay} - ${endDay} ${startMonth}`;
+            }
+            return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+        }
+
+        function getISOWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function isSameDay(a, b) {
+            return a.getFullYear() === b.getFullYear()
+                && a.getMonth() === b.getMonth()
+                && a.getDate() === b.getDate();
+        }
+
+        function isPastDay(date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const check = new Date(date);
+            check.setHours(0, 0, 0, 0);
+            return check < today;
+        }
+
+        function getDayLabel(date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (isSameDay(date, today)) return 'Idag';
+            return SWEDISH_DAYS_SHORT[date.getDay()];
+        }
+
+        function formatBookingDateTime(dateIso, time) {
+            const [year, month, day] = dateIso.split('-').map(Number);
+            return `${day} ${SWEDISH_MONTHS_LONG[month - 1]} ${time}`;
+        }
+
+        function getBookingMeta(type) {
+            if (type === 'barber') {
+                return {
+                    salonName: 'Barber Afrohörnan',
+                    logoText: 'BARBER',
+                    service: 'Herrklippning / Fade',
+                    duration: '45 min',
+                    price: '750 kr',
+                };
+            }
+            return {
+                salonName: 'Salong Afrohörnan',
+                logoText: 'SALONG',
+                service: 'Flätning & Extensions',
+                duration: '70 min',
+                price: '890 kr',
+            };
+        }
+
+        function showCheckoutView() {
+            if (!selectedTimeSlot || !currentType) return;
+
+            const meta = getBookingMeta(currentType);
+            const datetime = formatBookingDateTime(selectedTimeSlot.dateIso, selectedTimeSlot.time);
+
+            document.getElementById('co-header-subtitle').textContent = meta.salonName;
+            document.getElementById('co-salon-name').textContent = meta.salonName;
+            document.getElementById('co-summary-logo').innerHTML = `<span class="text-white text-[8px] font-black tracking-wider">${meta.logoText}</span>`;
+            document.getElementById('co-datetime').textContent = datetime;
+            document.getElementById('co-service-name').textContent = meta.service;
+            document.getElementById('co-service-price').textContent = selectedTimeSlot.price;
+            document.getElementById('co-service-duration').textContent = meta.duration;
+            document.getElementById('co-total-price').textContent = selectedTimeSlot.price;
+            document.getElementById('co-name').value = '';
+            document.getElementById('co-phone').value = '';
+            document.getElementById('co-name').classList.remove('invalid');
+            document.getElementById('co-phone').classList.remove('invalid');
+
+            document.getElementById('time-picker-view').classList.remove('block');
+            document.getElementById('time-picker-view').classList.add('hidden');
+            document.getElementById('checkout-view').classList.remove('hidden');
+            document.getElementById('checkout-view').classList.add('flex');
+            window.scrollTo(0, 0);
+        }
+
+        function hideCheckoutView() {
+            document.getElementById('checkout-view').classList.remove('flex');
+            document.getElementById('checkout-view').classList.add('hidden');
+            document.getElementById('time-picker-view').classList.remove('hidden');
+            document.getElementById('time-picker-view').classList.add('block');
+        }
+
+        function finalizeBooking(paymentMethod) {
+            const checkoutView = document.getElementById('checkout-view');
+            checkoutView.classList.remove('flex');
+            checkoutView.classList.add('hidden');
+
+            const modal = document.getElementById('success-modal');
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const modalTime = document.getElementById('modal-time');
+            const locationEl = document.getElementById('modal-location');
+
+            const meta = getBookingMeta(currentType);
+            const datetime = formatBookingDateTime(selectedTimeSlot.dateIso, selectedTimeSlot.time);
+            const customerName = document.getElementById('co-name').value.trim();
+            const paymentMessages = {
+                apple: `Tack <strong>${customerName}</strong> – betalning via Apple Pay mottagen.`,
+                card: `Tack <strong>${customerName}</strong> – betalning via kort mottagen.`,
+                store: `Tack <strong>${customerName}</strong> – din bokning är klar. Du betalar i butiken vid besöket.`,
+            };
+
+            title.innerHTML = 'Bokning bekräftad!';
+            subtitle.innerHTML = paymentMessages[paymentMethod] || paymentMessages.store;
+            modalTime.innerHTML = `${datetime}`;
+            locationEl.innerHTML = `Hammargatan 6, Märsta • ${meta.service}`;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function validateCheckoutContact() {
+            const nameInput = document.getElementById('co-name');
+            const phoneInput = document.getElementById('co-phone');
+            const name = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
+            let valid = true;
+
+            nameInput.classList.remove('invalid');
+            phoneInput.classList.remove('invalid');
+
+            if (!name) {
+                nameInput.classList.add('invalid');
+                nameInput.focus();
+                valid = false;
+            } else if (!phone || phone.replace(/\D/g, '').length < 8) {
+                phoneInput.classList.add('invalid');
+                if (valid) phoneInput.focus();
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        function submitBookingPayment(method) {
+            if (!validateCheckoutContact()) return;
+            finalizeBooking(method);
+        }
+
+        function formatFullDate(date) {
+            const months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+            return `${SWEDISH_DAYS_SHORT[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+        }
+
+        function formatDateIso(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getSlotsForDate(date, type) {
+            if (isPastDay(date)) return [];
+
+            const dow = date.getDay();
+            if (dow === 0) return [];
+
+            const weekdaySlots = {
+                barber: ['10:00', '10:30', '11:15', '13:00', '14:30', '15:45', '17:30', '18:00', '18:30', '19:15'],
+                salon: ['10:00', '10:45', '12:15', '14:00', '15:30', '17:30', '18:00', '18:30', '19:15'],
+            };
+            const saturdaySlots = {
+                barber: ['10:00', '11:00', '12:30', '14:00'],
+                salon: ['10:00', '11:00', '12:30', '14:00'],
+            };
+
+            let slots = dow === 6 ? [...saturdaySlots[type]] : [...weekdaySlots[type]];
+
+            if (isSameDay(date, new Date())) {
+                const now = new Date();
+                slots = slots.filter((time) => {
+                    const [h, m] = time.split(':').map(Number);
+                    const slotTime = new Date();
+                    slotTime.setHours(h, m, 0, 0);
+                    return slotTime > now;
+                });
+            }
+
+            return slots;
+        }
+
+        function updateWeekHeader() {
+            const weekStart = getWeekStart(weekOffset);
+            document.getElementById('tp-week-label').textContent = formatWeekRange(weekStart);
+            document.getElementById('tp-week-num').textContent = `VECKA ${getISOWeekNumber(weekStart)}`;
+        }
+
+        function updateWeekNavButtons() {
+            const prevBtn = document.getElementById('tp-prev-week');
+            const nextBtn = document.getElementById('tp-next-week');
+
+            if (weekOffset <= 0) {
+                prevBtn.disabled = true;
+                prevBtn.classList.add('disabled');
+            } else {
+                prevBtn.disabled = false;
+                prevBtn.classList.remove('disabled');
+            }
+
+            if (weekOffset >= MAX_WEEK_OFFSET) {
+                nextBtn.disabled = true;
+                nextBtn.classList.add('disabled');
+            } else {
+                nextBtn.disabled = false;
+                nextBtn.classList.remove('disabled');
+            }
+        }
+
+        function changeWeek(delta) {
+            weekOffset += delta;
+            if (weekOffset < 0) weekOffset = 0;
+            if (weekOffset > MAX_WEEK_OFFSET) weekOffset = MAX_WEEK_OFFSET;
+            selectedTimeSlot = null;
+            updateWeekHeader();
+            generateDayColumns(currentType);
+            updateWeekNavButtons();
+        }
+
+        function renderWeek() {
+            updateWeekHeader();
+            generateDayColumns(currentType);
+            updateWeekNavButtons();
+        }
+
+        function initializeTailwind() {
+            // Any dynamic Tailwind classes can be added here if needed
+        }
+
+        // Show the time picker view for selected type
+        function showTimePicker(type) {
+            currentType = type;
+            selectedTimeSlot = null;
+            weekOffset = 0;
+            
+            const mainView = document.getElementById('main-view');
+            const timeView = document.getElementById('time-picker-view');
+            
+            mainView.style.display = 'none';
+            timeView.classList.remove('hidden');
+            timeView.classList.add('block');
+            
+            // Update header based on type
+            const titleEl = document.getElementById('time-picker-title');
+            const subtitleEl = document.getElementById('time-picker-subtitle');
+            const logoContainer = document.getElementById('time-picker-logo');
+            
+            if (type === 'barber') {
+                titleEl.textContent = 'Välj tid';
+                subtitleEl.textContent = 'Barber Afrohörnan';
+                logoContainer.innerHTML = '<span class="text-white text-[9px] font-black tracking-wider">BARBER</span>';
+            } else {
+                titleEl.textContent = 'Välj tid';
+                subtitleEl.textContent = 'Salong Afrohörnan';
+                logoContainer.innerHTML = '<span class="text-white text-[9px] font-black tracking-wider">SALONG</span>';
+            }
+            
+            renderWeek();
+        }
+        
+        function hideTimePicker() {
+            const mainView = document.getElementById('main-view');
+            const timeView = document.getElementById('time-picker-view');
+            
+            timeView.classList.remove('block');
+            timeView.classList.add('hidden');
+            mainView.style.display = 'block';
+            
+            // Reset selection
+            selectedTimeSlot = null;
+        }
+        
+        // Generate the day columns with time slots
+        function generateDayColumns(type) {
+            const container = document.getElementById('day-columns-container');
+            container.innerHTML = '';
+
+            const price = type === 'barber' ? '750 kr' : '890 kr';
+            const weekStart = getWeekStart(weekOffset);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < 7; i += 1) {
+                const date = new Date(weekStart);
+                date.setDate(weekStart.getDate() + i);
+
+                const dayCol = document.createElement('div');
+                dayCol.className = 'tp-day-col';
+
+                const times = getSlotsForDate(date, type);
+                const fullLabel = formatFullDate(date);
+                const dateIso = formatDateIso(date);
+                const isToday = isSameDay(date, today);
+
+                let html = `
+                    <div class="tp-day-head">
+                        <div class="tp-day-name">${getDayLabel(date)}</div>
+                        <div class="tp-day-date">${date.getDate()}</div>
+                        ${isToday ? '<div class="tp-today-dot"></div>' : ''}
+                    </div>
+                    <div class="tp-slots">
+                `;
+
+                times.forEach((time) => {
+                    html += `
+                        <button type="button"
+                                onclick="selectTimeSlot(this, '${time}', '${fullLabel}', '${price}', '${dateIso}')"
+                                class="time-slot">
+                            <span class="slot-time">${time}</span>
+                            <span class="slot-price">${price}</span>
+                        </button>
+                    `;
+                });
+
+                html += '</div>';
+                dayCol.innerHTML = html;
+                container.appendChild(dayCol);
+            }
+        }
+
+        function selectTimeSlot(buttonElement, time, day, price, dateIso) {
+            document.querySelectorAll('.time-slot').forEach((el) => el.classList.remove('selected'));
+
+            buttonElement.classList.add('selected');
+            selectedTimeSlot = { time, day, price, dateIso };
+            showCheckoutView();
+        }
+        
+        // Confirm the booking (legacy)
+        function confirmBooking() {
+            if (!selectedTimeSlot) {
+                const firstSlot = document.querySelector('.time-slot');
+                if (firstSlot) {
+                    firstSlot.click();
+                } else {
+                    alert('Välj en tid först');
+                }
+                return;
+            }
+            showCheckoutView();
+        }
+        
+        function hideModal() {
+            const modal = document.getElementById('success-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        function hideModalAndReset() {
+            hideModal();
+            const mainView = document.getElementById('main-view');
+            const timeView = document.getElementById('time-picker-view');
+            const checkoutView = document.getElementById('checkout-view');
+            timeView.classList.remove('block');
+            timeView.classList.add('hidden');
+            checkoutView.classList.remove('flex');
+            checkoutView.classList.add('hidden');
+            mainView.style.display = 'block';
+            
+            // Reset cards visual state
+            document.getElementById('barber-card').style.borderColor = '#f1e7d2';
+            document.getElementById('barber-card').style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05)';
+            document.getElementById('salon-card').style.borderColor = '#f1e7d2';
+            document.getElementById('salon-card').style.boxShadow = '0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05)';
+            
+            selectedTimeSlot = null;
+            currentType = null;
+        }
+        
+        function showGiftCardModal() {
+            const modal = document.getElementById('giftcard-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function hideGiftCardModal() {
+            const modal = document.getElementById('giftcard-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        function purchaseGiftCard() {
+            const modal = document.getElementById('giftcard-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-white shadow-xl border border-[#e8d9b8] px-6 py-4 rounded-3xl flex items-center gap-x-3 z-[200]`;
+            toast.innerHTML = `
+                <i class="fa-solid fa-gift text-[#d4a017] text-xl"></i>
+                <div>
+                    <div class="font-semibold text-sm">Tack! Presentkortet är köpt.</div>
+                    <div class="text-xs text-gray-500">Det skickas direkt till mottagaren.</div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.3s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2800);
+        }
+        
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "Escape") {
+                const successModal = document.getElementById('success-modal');
+                const giftModal = document.getElementById('giftcard-modal');
+                const timeView = document.getElementById('time-picker-view');
+                const checkoutView = document.getElementById('checkout-view');
+                
+                if (!successModal.classList.contains('hidden')) {
+                    successModal.classList.add('hidden');
+                    successModal.classList.remove('flex');
+                } else if (!giftModal.classList.contains('hidden')) {
+                    giftModal.classList.add('hidden');
+                    giftModal.classList.remove('flex');
+                } else if (!checkoutView.classList.contains('hidden')) {
+                    hideCheckoutView();
+                } else if (!timeView.classList.contains('hidden')) {
+                    hideTimePicker();
+                }
+            }
+        });
+        
+        function init() {
+            initializeTailwind();
+            
+            // Subtle entrance for cards
+            const cards = document.querySelectorAll('.salon-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    card.style.transitionDelay = (index * 80) + 'ms';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 120);
+            });
+            
+            // Set current time in status bar (demo)
+            const statusTime = document.getElementById('status-time');
+            if (statusTime) {
+                const now = new Date();
+                statusTime.textContent = now.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            console.log('%c[Afrohörnan] Bokningssida med tidval redo.', 'color:#9ca3af');
+        }
+        
+        window.onload = init;
+    </script>
+    <script src="js/cart.js"></script>
+</body>
+</html>

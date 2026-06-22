@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frisör Admin – Afrohörnan</title>
+<link rel="stylesheet" href="admin-frisor.css?v=1">
+</head>
+<body class="frisor-admin-body">
+
+<header class="frisor-admin-header">
+  <a href="afrohornan_booking.html" class="frisor-admin-logo">Afrohörnan <span>Frisör</span></a>
+  <div class="frisor-admin-header-user">
+    <div class="frisor-admin-header-name" id="frisorAdminName">—</div>
+    <div class="frisor-admin-avatar" id="frisorAdminAvatar">AF</div>
+    <button type="button" class="frisor-admin-logout" id="frisorAdminLogout">Logga ut</button>
+  </div>
+</header>
+
+<p class="frisor-admin-loading" id="frisorAdminLoading">Verifierar behörighet…</p>
+
+<div id="frisorAdminApp" hidden>
+  <div class="frisor-admin-tabs" role="tablist">
+    <button type="button" class="frisor-admin-tab active" data-view="calendar">Kalender</button>
+    <button type="button" class="frisor-admin-tab" data-view="bookings">Bokningar</button>
+    <button type="button" class="frisor-admin-tab" data-view="settings">Inställningar</button>
+  </div>
+
+  <div id="view-calendar" class="frisor-admin-view">
+    <div class="frisor-stats-row">
+      <div class="frisor-stat-card">
+        <div class="frisor-stat-label">Idag</div>
+        <div class="frisor-stat-value" id="stat-today">0</div>
+        <div class="frisor-stat-sub">bokningar</div>
+      </div>
+      <div class="frisor-stat-card">
+        <div class="frisor-stat-label">Denna vecka</div>
+        <div class="frisor-stat-value" id="stat-week">0</div>
+        <div class="frisor-stat-sub">bokningar</div>
+      </div>
+      <div class="frisor-stat-card">
+        <div class="frisor-stat-label">Intäkt</div>
+        <div class="frisor-stat-value" id="stat-revenue">0</div>
+        <div class="frisor-stat-sub">kr denna vecka</div>
+      </div>
+    </div>
+
+    <div class="frisor-admin-card">
+      <div class="frisor-cal-nav">
+        <button type="button" class="frisor-nav-btn" id="week-prev" aria-label="Föregående vecka">‹</button>
+        <div style="text-align:center;">
+          <div class="frisor-cal-nav-title" id="week-range">—</div>
+          <div class="frisor-cal-nav-week" id="week-num">—</div>
+        </div>
+        <button type="button" class="frisor-nav-btn" id="week-next" aria-label="Nästa vecka">›</button>
+      </div>
+      <div class="frisor-week-grid" id="day-headers">
+        <div class="frisor-time-col"></div>
+      </div>
+      <div class="frisor-time-rows" id="time-rows"></div>
+    </div>
+  </div>
+
+  <div id="view-bookings" class="frisor-admin-view" hidden style="max-width:700px;">
+    <div class="frisor-admin-card">
+      <div class="frisor-admin-card-header">
+        <div>
+          <div class="frisor-admin-card-title">Kommande bokningar</div>
+          <div class="frisor-admin-card-subtitle" id="bookings-week-label">—</div>
+        </div>
+      </div>
+      <div class="frisor-booking-list" id="booking-list"></div>
+    </div>
+  </div>
+
+  <div id="view-settings" class="frisor-admin-view" hidden style="max-width:600px;">
+    <div class="frisor-admin-card">
+      <div class="frisor-admin-card-header">
+        <div class="frisor-admin-card-title">Salonginformation</div>
+      </div>
+      <div class="frisor-settings-body">
+        <div class="frisor-form-group">
+          <label for="settings-salon">Salong</label>
+          <input type="text" id="settings-salon" value="Salong Afrohörnan">
+        </div>
+        <div class="frisor-form-group">
+          <label for="settings-address">Adress</label>
+          <input type="text" id="settings-address" value="Hammargatan 6, Märsta">
+        </div>
+        <div class="frisor-form-group">
+          <label for="settings-phone">Telefon</label>
+          <input type="text" id="settings-phone" value="+460974423">
+        </div>
+        <button type="button" class="frisor-btn frisor-btn-primary" id="settings-save">Spara ändringar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="frisor-modal-overlay" id="modal-overlay">
+  <div class="frisor-modal" role="dialog" aria-labelledby="modal-title">
+    <div class="frisor-modal-header">
+      <div class="frisor-modal-title" id="modal-title">Lägg till tid</div>
+      <div class="frisor-modal-date" id="modal-date-label">—</div>
+    </div>
+    <div class="frisor-modal-body">
+      <div class="frisor-form-group">
+        <label for="slot-title">Titel / Tjänst</label>
+        <input type="text" id="slot-title" placeholder="t.ex. Klippning, Färgning...">
+      </div>
+      <div class="frisor-form-group">
+        <label>Tid</label>
+        <div class="frisor-time-row">
+          <input type="time" id="slot-start" value="10:00">
+          <input type="time" id="slot-end" value="11:00">
+        </div>
+      </div>
+      <div class="frisor-form-group">
+        <label>Upprepa</label>
+        <div class="frisor-repeat-options">
+          <button type="button" class="frisor-repeat-btn selected" data-repeat="once">Idag</button>
+          <button type="button" class="frisor-repeat-btn" data-repeat="daily">Varje dag</button>
+          <button type="button" class="frisor-repeat-btn" data-repeat="weekly">Varje vecka</button>
+        </div>
+      </div>
+    </div>
+    <div class="frisor-modal-footer">
+      <button type="button" class="frisor-btn frisor-btn-ghost" id="modal-cancel">Avbryt</button>
+      <button type="button" class="frisor-btn frisor-btn-primary" id="modal-save" style="width:auto;">Lägg till</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/firebase-config.js?v=10"></script>
+<script src="js/admin-gate.js?v=12"></script>
+<script type="module" src="js/admin-frisor.js?v=2"></script>
+</body>
+</html>

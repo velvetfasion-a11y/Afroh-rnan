@@ -1,4 +1,4 @@
-import { getFirebaseAuth, onAuthStateChanged, isFirebaseConfigured } from './firebase-auth.js?v=20';
+import { getFirebaseAuth, onAuthStateChanged, isFirebaseConfigured } from './firebase-auth.js?v=22';
 
 function fillField(id, value) {
   const el = document.getElementById(id);

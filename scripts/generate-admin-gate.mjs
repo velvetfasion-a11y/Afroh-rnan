@@ -45,10 +45,16 @@ const hashes = emails.map((email) =>
   createHash('sha256').update(email).digest('hex')
 );
 
+const frisorUids = (loadEnv(envPath).VITE_FRISOR_ADMIN_UID || 'EvGx87o7khOq6fH4Mgckp1PNiA02')
+  .split(/[,;]/)
+  .map((uid) => uid.trim())
+  .filter(Boolean);
+
 const lines = [
   '// Auto-generated from .env — do not edit. Contains no plaintext email.',
   `window.__adminEmailHashes = ${JSON.stringify(hashes)};`,
   `window.__adminEmailHash = ${JSON.stringify(hashes[0])};`,
+  `window.__frisorAdminUids = ${JSON.stringify(frisorUids)};`,
   '',
 ];
 

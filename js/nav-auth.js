@@ -1,4 +1,4 @@
-import { wireNavProfile } from './firebase-auth.js?v=20';
+import { wireNavProfile } from './firebase-auth.js?v=22';
 
 const basePath = window.location.pathname.includes('/products/') ? '../' : '';
 wireNavProfile({ basePath });
