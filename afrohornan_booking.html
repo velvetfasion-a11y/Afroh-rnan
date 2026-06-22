@@ -7,6 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { corePlugins: { preflight: false } };
+    </script>
     <link rel="stylesheet" href="shared.css?v=13">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -14,6 +17,68 @@
         
         body {
             font-family: 'Inter', system_ui, sans-serif;
+            background: #f8f5f0;
+        }
+
+        .booking-content {
+            width: 100%;
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 1.25rem 3rem;
+        }
+
+        .booking-search-bar {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            background: #f8f5f0;
+            border: 1px solid #e8d9b8;
+            border-radius: 1.5rem;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.875rem;
+        }
+
+        .booking-intro {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .booking-cards-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            .booking-cards-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .booking-trust-row {
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem 2rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .booking-trust-row {
+                flex-direction: row;
+            }
         }
         
         .premium-shadow {
@@ -366,6 +431,18 @@
             margin-bottom: 4px;
         }
 
+        .co-service-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .co-service-footer .co-service-duration {
+            margin-bottom: 0;
+        }
+
         .co-service-name {
             font-size: 0.9375rem;
             color: #111827;
@@ -384,7 +461,69 @@
         .co-service-duration {
             font-size: 0.8125rem;
             color: #6b7280;
-            margin-bottom: 16px;
+        }
+
+        .co-service-picker-wrap {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .co-service-picker-label {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .co-service-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .co-service-btn {
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: #374151;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .co-service-btn:hover {
+            border-color: #1a2b4a;
+            color: #1a2b4a;
+        }
+
+        .co-service-btn.selected {
+            background: #1a2b4a;
+            border-color: #1a2b4a;
+            color: #fff;
+        }
+
+        .co-service-other-wrap {
+            margin-top: 10px;
+        }
+
+        .co-service-other-wrap[hidden] {
+            display: none;
+        }
+
+        .co-service-static-name {
+            font-size: 0.9375rem;
+            color: #111827;
+            line-height: 1.35;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .co-service-static-name[hidden],
+        .co-service-picker-wrap[hidden] {
+            display: none;
         }
 
         .co-total-row {
@@ -620,18 +759,32 @@
             text-decoration: underline;
         }
 
-        body.has-cat-nav > nav {
-            display: flex;
+        body.has-cat-nav > nav:not(.cat-nav) {
+            display: flex !important;
             align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            width: 100%;
+            height: 58px;
+            background: #fff;
+            border-bottom: 1px solid #E8E0D5;
+            padding: 0 2.5rem;
         }
 
         body.has-cat-nav > nav.cat-nav {
-            display: block;
+            display: block !important;
             text-align: center;
             width: 100%;
             padding: 0;
             line-height: 48px;
             white-space: nowrap;
+            position: sticky;
+            top: 58px;
+            z-index: 150;
+            background: #fff;
+            border-bottom: 1px solid #E8E0D5;
         }
     </style>
 </head>
@@ -668,9 +821,9 @@
 
     <!-- ========== MAIN VIEW: Two Cards ========== -->
     <div id="main-view">
-        <div class="max-w-7xl mx-auto px-5 pt-6 pb-4">
-            <div class="flex items-center bg-[#f8f5f0] border border-[#e8d9b8] rounded-3xl px-5 py-3 text-sm">
-                <div class="flex-1">
+        <div class="booking-content">
+            <div class="booking-search-bar">
+                <div style="flex:1;">
                     <div class="flex items-center text-gray-700">
                         <i class="fa-solid fa-search text-[#d4a017] mr-3"></i>
                         <span class="font-medium">Flätning • Klippning • Extensions</span>
@@ -678,10 +831,8 @@
                     <div class="text-xs text-gray-500 pl-7">Idag • Från 18:00 • Märsta</div>
                 </div>
             </div>
-        </div>
 
-        <div class="max-w-7xl mx-auto px-5 pt-8 pb-12">
-            <div class="flex items-end justify-between mb-6">
+            <div class="booking-intro">
                 <div>
                     <h1 class="section-header text-4xl font-bold tracking-tighter text-gray-900">Välj ditt alternativ</h1>
                     <p class="text-gray-600 mt-1">Två professionella upplevelser på samma adress</p>
@@ -693,7 +844,7 @@
             </div>
 
             <!-- Two Cards -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[1100px]">
+            <div class="booking-cards-grid">
                 
                 <!-- BARBER CARD -->
                 <div id="barber-card" class="salon-card bg-white rounded-3xl overflow-hidden premium-shadow flex flex-col">
@@ -854,7 +1005,7 @@
                 </div>
             </div>
 
-            <div class="mt-8 flex flex-col md:flex-row items-center justify-center gap-x-8 gap-y-3 text-xs text-gray-500">
+            <div class="booking-trust-row">
                 <div class="flex items-center gap-x-2">
                     <i class="fa-solid fa-shield-halved text-[#d4a017]"></i>
                     <span>Trygg bokning • Avbokning upp till 24h innan</span>
@@ -944,10 +1095,25 @@
             </div>
 
             <div class="co-service-row">
-                <div class="co-service-name" id="co-service-name">Flätning &amp; Extensions</div>
+                <div class="co-service-picker-wrap" id="co-service-picker-wrap">
+                    <div class="co-service-picker-label">Välj tjänst</div>
+                    <div class="co-service-picker" id="co-service-picker" role="group" aria-label="Välj tjänst">
+                        <button type="button" class="co-service-btn" data-service="Mina val">Mina val</button>
+                        <button type="button" class="co-service-btn" data-service="Flätor">Flätor</button>
+                        <button type="button" class="co-service-btn" data-service="Peruk">Peruk</button>
+                        <button type="button" class="co-service-btn" data-service="Extensions">Extensions</button>
+                        <button type="button" class="co-service-btn" data-service="annat">Annat val</button>
+                    </div>
+                    <div class="co-service-other-wrap" id="co-service-other-wrap" hidden>
+                        <input type="text" id="co-service-other" class="co-text-input" placeholder="Beskriv vad du vill boka…" maxlength="120">
+                    </div>
+                </div>
+                <div class="co-service-static-name" id="co-service-static" hidden>Herrklippning / Fade</div>
+            </div>
+            <div class="co-service-footer">
+                <div class="co-service-duration" id="co-service-duration">70 min</div>
                 <div class="co-service-price" id="co-service-price">890 kr</div>
             </div>
-            <div class="co-service-duration" id="co-service-duration">70 min</div>
 
             <div class="co-total-row">
                 <span>Totalt</span>
@@ -1134,6 +1300,98 @@
             return `${day} ${SWEDISH_MONTHS_LONG[month - 1]} ${time}`;
         }
 
+        let selectedServiceChoice = null;
+
+        function resetServicePicker() {
+            selectedServiceChoice = null;
+            const picker = document.getElementById('co-service-picker');
+            const otherWrap = document.getElementById('co-service-other-wrap');
+            const otherInput = document.getElementById('co-service-other');
+            picker?.querySelectorAll('.co-service-btn').forEach((btn) => btn.classList.remove('selected'));
+            if (otherWrap) otherWrap.hidden = true;
+            if (otherInput) {
+                otherInput.value = '';
+                otherInput.classList.remove('invalid');
+            }
+        }
+
+        function initServicePicker(type) {
+            const pickerWrap = document.getElementById('co-service-picker-wrap');
+            const staticName = document.getElementById('co-service-static');
+            const meta = getBookingMeta(type);
+            resetServicePicker();
+
+            if (type === 'salon') {
+                pickerWrap.hidden = false;
+                staticName.hidden = true;
+            } else {
+                pickerWrap.hidden = true;
+                staticName.hidden = false;
+                staticName.textContent = meta.service;
+            }
+        }
+
+        function selectServiceChoice(button) {
+            const service = button.dataset.service;
+            selectedServiceChoice = service;
+
+            document.querySelectorAll('#co-service-picker .co-service-btn').forEach((btn) => {
+                btn.classList.toggle('selected', btn === button);
+            });
+
+            const otherWrap = document.getElementById('co-service-other-wrap');
+            const otherInput = document.getElementById('co-service-other');
+            const isOther = service === 'annat';
+
+            if (otherWrap) otherWrap.hidden = !isOther;
+            if (otherInput) {
+                otherInput.classList.remove('invalid');
+                if (isOther) {
+                    window.setTimeout(() => otherInput.focus(), 50);
+                } else {
+                    otherInput.value = '';
+                }
+            }
+        }
+
+        function getSelectedServiceLabel() {
+            if (currentType !== 'salon') {
+                return getBookingMeta(currentType).service;
+            }
+            if (!selectedServiceChoice) return '';
+            if (selectedServiceChoice === 'annat') {
+                return document.getElementById('co-service-other').value.trim();
+            }
+            return selectedServiceChoice;
+        }
+
+        function validateServiceSelection() {
+            if (currentType !== 'salon') return true;
+
+            if (!selectedServiceChoice) {
+                document.getElementById('co-service-picker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+
+            if (selectedServiceChoice === 'annat') {
+                const otherInput = document.getElementById('co-service-other');
+                const value = otherInput.value.trim();
+                if (!value) {
+                    otherInput.classList.add('invalid');
+                    otherInput.focus();
+                    return false;
+                }
+                otherInput.classList.remove('invalid');
+            }
+
+            return true;
+        }
+
+        document.getElementById('co-service-picker')?.addEventListener('click', (event) => {
+            const button = event.target.closest('.co-service-btn');
+            if (button) selectServiceChoice(button);
+        });
+
         function getBookingMeta(type) {
             if (type === 'barber') {
                 return {
@@ -1163,7 +1421,7 @@
             document.getElementById('co-salon-name').textContent = meta.salonName;
             document.getElementById('co-summary-logo').innerHTML = `<span class="text-white text-[8px] font-black tracking-wider">${meta.logoText}</span>`;
             document.getElementById('co-datetime').textContent = datetime;
-            document.getElementById('co-service-name').textContent = meta.service;
+            initServicePicker(currentType);
             document.getElementById('co-service-price').textContent = selectedTimeSlot.price;
             document.getElementById('co-service-duration').textContent = meta.duration;
             document.getElementById('co-total-price').textContent = selectedTimeSlot.price;
@@ -1209,7 +1467,7 @@
             title.innerHTML = 'Bokning bekräftad!';
             subtitle.innerHTML = paymentMessages[paymentMethod] || paymentMessages.store;
             modalTime.innerHTML = `${datetime}`;
-            locationEl.innerHTML = `Hammargatan 6, Märsta • ${meta.service}`;
+            locationEl.innerHTML = `Hammargatan 6, Märsta • ${getSelectedServiceLabel()}`;
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -1239,6 +1497,7 @@
         }
 
         function submitBookingPayment(method) {
+            if (!validateServiceSelection()) return;
             if (!validateCheckoutContact()) return;
             finalizeBooking(method);
         }
